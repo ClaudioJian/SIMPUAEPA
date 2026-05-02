@@ -1,0 +1,11 @@
+Here puts all code for installation and setting for webs.
+
+database - create user, table and database. can be .sql or php
+
+lib - source code for libray included by src
+
+src - main code for installation, setting
+
+server(php) - setting php.ini, .htacess if necessary
+
+can put .env or others setting data here

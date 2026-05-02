@@ -1,0 +1,2 @@
+cache - contain all cached html and js to use for perfomance
+render - generate html/js for manunteability, readibility and to help generate some common used or need dynamically change html/js
