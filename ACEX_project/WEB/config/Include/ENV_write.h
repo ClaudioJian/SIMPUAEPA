@@ -15,8 +15,8 @@
  * @return
  * - 0 = sucess
  * 
- * - -1 = error: cannot create/overwrite file, fclose error
+ * - -1 = error: cannot create/overwrite file, fclose error, encoding_error, buffer ovwerflow
  */
-int ENV_CONFIG_write(ENV_CONFIG_field *data,char* file_name,int *error_code);
+int ENV_CONFIG_write(ENV_CONFIG_field *data,const char* file_name,int *error_code);
 
 #endif

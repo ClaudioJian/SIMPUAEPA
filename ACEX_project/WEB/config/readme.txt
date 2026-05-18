@@ -50,10 +50,10 @@
     When you are adding new/modify env values that is used in other files, please change key name and value of .env.example for others developers use.
     If you are changing folder location inside this folder, please change constant in Include/ENV_const.h and notice others developers about this change
 
-    Only support .sql and php script to run. The database only supported is mysql.
+    Only support php script to run. The database only supported is mysql.
     You can use makefile to recompile, only necessary if you are changing any script except inside: src/database , src/server, all files in config
 
-    If that fail, please see instruction for "x. mannually setting".
+    If that fail, please see instruction for "5. mannually setting".
 
     
 
@@ -64,7 +64,14 @@
         3. change mostly of value inside .env
     .env should store sensitive data(WARNING: ONLY IN BACKEND .env) and usual configure
     do not move .exe to other place, if you want move/change .c or other file(like install_composer.php) to other place, please configure makefile and setup.c to match changes and uptade .exe
-
+    Downloading depencity:
+    in command line, first go to project root where contain composer.phar(cd), if composer.lock don't exist, run composer.phar update else run composer.phar install.
+    If has warning like: Warning: The lock file is not up to date..., then try run composer.phar update --with-all-dependencies.
+    
+    Assumming database and server setting script has working well and do not overwrite existing data, run all files listed in internal.cfg or look inside folder [src/database] and [src/server]
+    If database script don't support version control/migration, you must look inside of their code and copy script that are necessary to avoid data loss
+    (example, if you have alredy one of table in code, don't run it)
+    You can ignore setup.exe and makefile as well.
 
     
 6. troubleshooting
@@ -72,7 +79,7 @@
         1. system clock desync
         2. certificate out data, uptade in https://curl.se/docs/caextract.html
         3. antivirus fault, disable it TEMPORARY to check. also
-        see in https://getcomposer.org/doc/articles/troubleshooting.md#ssl-certificate-problem-unable-to-get-local-issuer-certificate
+        see in https://getcomposer.org/doc/articles/troubleshooting.md#ssl-certificate-problem-unable-to-get-local-issuer-certificate for more details.
 
 6. To uptade setup.exe(skip this if setup.c or other file need compiles never changed):
     Assumming you have gcc installed

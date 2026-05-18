@@ -10,7 +10,6 @@ Please also change in section below: IMPORTANT CONST
 #ifndef ENV_const
 #define ENV_const
 
-#include "general_includes.h"
 
 
 //-----------------------define const--------------------------
@@ -18,28 +17,11 @@ Please also change in section below: IMPORTANT CONST
 //root is relative from .exe, not this .c file
 // WARNING: current folder of .exe is in ROOT!!!!
 #if defined(_WIN32) || defined(_WIN64)
-    #define OS "Windows"
-
-    #include <direct.h>
-
-    #define chdir _chdir
-    #define setenv _putenv_s
-    #define access _access
-    #define F_OK 0
-
     #define SLASH_CHR '\\'
     #define SLASH "\\"
-    #define ROOT "..\\"
-    #define NULL_REDIRECT ">nul 2>&1"
 #else
-    #define OS "Unix"
-
-    #include <unistd.h>
-
     #define SLASH "/"
     #define SLASH_CHR '/'
-    #define ROOT "../"
-    #define NULL_REDIRECT ">dev/null 2>&1"
 #endif
 
 //==================IMPORTANT CONST====================
@@ -99,22 +81,42 @@ Please also change in section below: IMPORTANT CONST
 
 
 
+#if defined(_WIN32) || defined(_WIN64)
+    #define OS "Windows"
+    
+    #include <direct.h>
+
+    // Exclude some Windows API
+    #define WIN32_LEAN_AND_MEAN
+
+    #include <Processthreadsapi.h>
+    #include <wtypesbase.h>
 
 
+    //function name
+    #define chdir _chdir
+    #define setenv _putenv_s
+    #define access _access
+    #define ExecPHP_script PHP_WinExec
+    #define F_OK 0
 
+    #define ROOT "..\\"
+    #define NULL_REDIRECT ">nul 2>&1"
+#else
+    #define OS "Unix"
 
+    #include <unistd.h>
 
+    //function name
+    #define ExecPHP_script PHP_ForkExec
 
+    #define SLASH "/"
+    #define SLASH_CHR '/'
+    #define ROOT "../"
+    #define NULL_REDIRECT ">dev/null 2>&1"
+#endif
 
-
-
-
-
-
-
-
-
-
+#include "general_includes.h"
 
 //global values
 extern char* ABSOLUTE_PATH;
@@ -123,28 +125,34 @@ extern int WARNING_FLAGS;
 
 typedef enum{
     buffer_overflow = 100,
-    fopen_error,
-    fclose_error,
-    variable_start_digit,
-    variable_start_special_char,
-    ENV_invalid_format,
-    ENV_empty_value,
-    invalid_path,
-    fseek_error,
-    malloc_error,
-    php_not_found,
-    extension_invalid,
-    too_many_options,
+    // standart function error
+    ERR_fopen,
+    ERR_fclose,
+    ERR_pclose,
+    ERR_fseek,
+    ERR_encoding,
+    ERR_malloc,
     ERR_file_creation,
-    premition_denied,
-    invalid_boolean,
-    pclose_error,
-    no_abs_path,
-    composer_not_exist,
-    ERR_set_enviroment_value,
-    ssl_cert_error,
-    composer_error,
+    ERR_WinCreateProcess,
+    ERR_set_EnvVal,
+    // php and composer related
+    ERR_PHP_not_found,
+    ERR_COMPOSER_not_found,
+    ERR_ssl_cert,
+    ERR_COMPOSER_depencity,
+    //path related
+    ERR_PATH_invalid,
+    ERR_PATH_get_curr_abs,
+    //custom err
+    ERR_ENV_invalid_format,
+    ERR_ENV_empty_value,
+    ERR_variable_start_digit,
+    ERR_variable_start_special_char,    
+    ERR_invalid_extension,
+    ERR_too_many_options,
+    ERR_permition_denied,
+    ERR_invalid_boolean,
     test_sucess,
-}error_code;
+}error_code_list;
 
 #endif

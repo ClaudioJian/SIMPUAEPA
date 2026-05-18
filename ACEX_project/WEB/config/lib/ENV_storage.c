@@ -17,6 +17,10 @@ static int ENV_scan_storage(const char *setting,config_node *node){
     return 0;
 }
 
+
+
+
+
 /**
  * find if in passed file storage has set.
  * 
@@ -65,12 +69,12 @@ int ENV_CONFIG_is_alredy_set(const char *setting, ENV_CONFIG_field *data){
  * - -1 = error when: malloc/buffer overflow/extension_invalid
 */
 static int track_file(ENV_CONFIG_field *data, int *error_code){
-    int extension = valid_extension(data->value,error_code);
+    const int extension = valid_extension(data->value,error_code);
     if(*error_code) return -1;
 
     //0 = invalid/not supported file type
     if(!extension) {
-        *error_code = extension_invalid;
+        *error_code = ERR_invalid_extension;
         return -1;
     }
 
@@ -79,7 +83,7 @@ static int track_file(ENV_CONFIG_field *data, int *error_code){
         free(new_node);
         new_node = NULL;
 
-        *error_code = malloc_error;
+        *error_code = ERR_malloc;
         return -1;
     }
 
@@ -109,7 +113,7 @@ static int track_file(ENV_CONFIG_field *data, int *error_code){
 static int track_setting(ENV_CONFIG_field *data, int *error_code){
     config_node* new_node = (config_node*)malloc(sizeof(config_node));
     if(!new_node) {
-        *error_code = malloc_error;
+        *error_code = ERR_malloc;
         return -1;
     }
 
@@ -143,7 +147,7 @@ int ENV_CONFIG_track_depencity(ENV_CONFIG_field *data, int *error_code){
         if(*error_code || upper_input == NULL) {
             free(upper_input);
             upper_input = NULL;
-            *error_code = malloc_error;
+            *error_code = ERR_malloc;
             return -1;
         }
         

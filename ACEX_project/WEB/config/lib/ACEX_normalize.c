@@ -1,7 +1,7 @@
-#include "normalize.h"
+#include "ACEX_normalize.h"
 
 
-int convert_str_to_int(char* string){
+int convert_str_to_int(const char* string){
     int is_int=1;
     int op = 0;
 
@@ -20,18 +20,18 @@ int convert_str_to_int(char* string){
 }
 
 
-char *convert_str_to_upper(char *string,int*error_code){
+char *convert_str_to_upper(const char *string,int *error_code){
     char *buffer = malloc(strlen(string)+1);
     if(!buffer){ 
         free(buffer);
         buffer = NULL;
 
-        *error_code = malloc_error;
+        *error_code = ERR_malloc;
         return NULL;
     }
 
     for(int i=0;string[i]!='\0';i++){
-        buffer[i] = toupper(string[i]);
+        buffer[i] = (char)toupper((char)string[i]);
     }
     buffer[strlen(string)] = '\0';
     return buffer;
@@ -43,9 +43,8 @@ char *convert_str_to_upper(char *string,int*error_code){
 
 
 
-int valid_path_chr(char chr){
-    
-    char invalid_chr[] = {'<','>','"','|','*','?','\0'};
+int valid_path_chr(const char chr){
+    const char invalid_chr[] = {'<','>','"','|','*','?','\0'};
     if(chr>=0 && chr<=31) return -1;
     
 
@@ -63,7 +62,7 @@ int valid_path_chr(char chr){
 
 
 
-int is_ignorable_chr(char chr){
+int is_ignorable_chr(const char chr){
     if(chr>=0 && chr<=31 && chr !='\n' && chr !='\0') return 1;
     if(chr == '\r' || chr == '\t') return 1;
     return 0;
@@ -71,7 +70,7 @@ int is_ignorable_chr(char chr){
 
 
 
-char* normalize_value(char *dst,char **src_ptr,const int max_size,char delimiter,int *error_code){
+char* normalize_value(char *dst,char **src_ptr,const int max_size,const char delimiter,int *error_code){
     char *start = dst;
     int count = 0;
     
@@ -110,15 +109,22 @@ char* normalize_value(char *dst,char **src_ptr,const int max_size,char delimiter
 
 
 
-char* normalize_path(char* path,int *error_code){
+char* normalize_path(const char* path,int *error_code){
     if(!path) return NULL;
+
+    if(strstr(path,".." SLASH) != NULL){
+        printf("%p\n",strstr(path,".." SLASH));
+        *error_code = ERR_PATH_invalid;
+        return NULL;
+    }
+
     char *buffer = malloc(MAX_INPUT_SIZE);
 
     if(!buffer) {
         free(buffer);
         buffer = NULL;
 
-        *error_code = malloc_error;
+        *error_code = ERR_malloc;
         return NULL;
     }
 
@@ -131,6 +137,8 @@ char* normalize_path(char* path,int *error_code){
     for(; i<MAX_INPUT_SIZE && path[i] != '\n' && path[i] != '\0';i++){
 
         if(valid_path_chr(path[i])) return NULL;
+        //avoid escaping root dir
+
 
         if(path[i]=='\\' || path[i]=='/') *buf_ptr = SLASH_CHR;
         else *buf_ptr = path[i];
@@ -150,7 +158,7 @@ char* normalize_path(char* path,int *error_code){
 }
 
 
-int valid_extension(char extension[MAX_VALUE_SIZE],int *error_code){
+int valid_extension(char *extension,int *error_code){
     char buffer[MAX_VALUE_SIZE];
     int start_extension = 0;
     int j=0;
@@ -168,7 +176,7 @@ int valid_extension(char extension[MAX_VALUE_SIZE],int *error_code){
     for (int i = 0; i < (int)strlen(extension) && (extension[i]!= '\0'||extension[i]!= '\n'||extension[i]!= '\r'); i++)
     {
         if(start_extension) {
-            buffer[j] = toupper(extension[i]);
+            buffer[j] = (char)toupper((char)extension[i]);
             j++;
         }        
         if(extension[i]=='.') {
@@ -184,7 +192,6 @@ int valid_extension(char extension[MAX_VALUE_SIZE],int *error_code){
 
 
     if(strcmp(buffer,"PHP")==0) return 1;
-    if(strcmp(buffer,"SQL")==0) return 2;
     else return 0;
 }
 

@@ -1,5 +1,5 @@
-ENV_CONFIG.dll: lib\ENV_CONFIG.c include/ENV_CONFIG.h \
- include/general_includes.h C:/msys64/ucrt64/include/stdio.h \
+error.dll: lib\error.c include/error.h include/general_includes.h \
+ C:/msys64/ucrt64/include/stdio.h \
  C:/msys64/ucrt64/include/corecrt_stdio_config.h \
  C:/msys64/ucrt64/include/corecrt.h C:/msys64/ucrt64/include/_mingw.h \
  C:/msys64/ucrt64/include/_mingw_mac.h \
@@ -219,8 +219,8 @@ ENV_CONFIG.dll: lib\ENV_CONFIG.c include/ENV_CONFIG.h \
  C:/msys64/ucrt64/include/oleidl.h C:/msys64/ucrt64/include/servprov.h \
  C:/msys64/ucrt64/include/msxml.h C:/msys64/ucrt64/include/oaidl.h \
  C:/msys64/ucrt64/include/propidl.h C:/msys64/ucrt64/include/oleauto.h \
- include/error.h include/ACEX_normalize.h
-include/ENV_CONFIG.h:
+ include/error.h include/ACEX_normalize.h include/ENV_const.h
+include/error.h:
 include/general_includes.h:
 C:/msys64/ucrt64/include/stdio.h:
 C:/msys64/ucrt64/include/corecrt_stdio_config.h:
@@ -483,3 +483,4 @@ C:/msys64/ucrt64/include/propidl.h:
 C:/msys64/ucrt64/include/oleauto.h:
 include/error.h:
 include/ACEX_normalize.h:
+include/ENV_const.h:

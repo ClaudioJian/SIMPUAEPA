@@ -16,60 +16,7 @@ char* ABSOLUTE_PATH;
 
 
 //-------------------------------------function----------------------------------------------------
-static void print_error(int error_code){
-    printf("| ERROR FOUND!\n");
-        switch(error_code){
-            case buffer_overflow:
-                printf("| buffer overflow!"); break;
-            case fopen_error:
-                printf("| cannot open/create file!"); break;
-            case fclose_error:
-                printf("| some thing happen when writing! please check if is open or it's permission"); break;
-            case variable_start_digit:
-                printf("| variable name/key in .env.example cannot start with any digit!"); break;
-            case variable_start_special_char:
-                printf("| variable name/key in .env.example cannot start with any special char(except for file)!");break;
-            case ENV_invalid_format:
-                printf("| format for variable name/key in .env.example shoud contain \"=\"!"); break;
-            case ENV_empty_value:
-                printf("| Values with skip flag in configuration file cannot be empty!"); break;
-            case invalid_path:
-                printf("| format for path contains invalid characters(note: some invalid character are not included)!"); break;
-            case fseek_error:
-                printf("| format for variable name/key in .env.example shoud contain \"=\"!"); break;
-            case extension_invalid:
-                printf("| file type is not supported!"); break;
-            case malloc_error:
-                printf("| cannot allocate memory for malloc()!"); break;
-            case php_not_found:
-                printf("| cannot find php!"); break;
-            case too_many_options:
-                printf("| max option can be used is %i!",MAX_OPTIONS); break;
-            case ERR_file_creation:
-                printf("| cannot create file! Please check if you have permission and isn't open!"); break;
-            case premition_denied:
-                printf("| Permission denied!"); break;
-            case invalid_boolean:
-                printf("| invalid boolean value! only accept \"on\", \"off\", \"true\", \"false\", integer 0(false) and positive integer 1(true)!"); break;
-            case pclose_error:
-                printf("| Command not found or exited with error status!"); break;
-            case no_abs_path:
-                printf("| cannot get absolute path of project root!\n"); break;
-            case composer_not_exist:
-                printf("| composer.phar not found in project root! Please check if you have it and try again!"); break;
-            case composer_error:
-                printf("| Dependency solving error code in composer!"); break;
-            case ERR_set_enviroment_value:
-                printf("| some thing went wrong when set enviroment variable!"); break;
-            case ssl_cert_error:
-                printf("| SSL certificate problem!\n");
-                printf("| Please check if certification exist and are up to date!\n");
-                printf("| Also verify in read me to more possible reason...");
-                break;
-            case test_sucess:
-                printf("| test went sucessfull!"); break;
-        }
-}
+
 
 //----------------------------------------main---------------------------------------------------------------------
 #include <stdlib.h>

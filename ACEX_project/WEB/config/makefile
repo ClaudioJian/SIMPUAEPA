@@ -108,7 +108,7 @@ Include_Dirs = $(call FIX_PATH,./include)
 
 # -L find where .a/.lib is. $(foreach i,$(Include_Dirs),-I$(i)) -> search in all include folder
 # example: -I./include -I./include/anything -wall -Wextra -L.
-CFLAGS = $(foreach i,$(Include_Dirs),-I$(i)) -Wall -Wextra -L$(LIB_FINAL_LOCATION)
+CFLAGS = $(foreach i,$(Include_Dirs),-I$(i)) -O3 -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Wshadow -L$(LIB_FINAL_LOCATION)
 
 # example: -shared --out-implib=./libENV_CONFIG.lib
 DLLFLAGS = -shared -Wl,--out-implib=$(call FIX_PATH,$(LIB_FINAL_LOCATION)/lib)
@@ -122,27 +122,31 @@ HCHECK = -MD -MP -MF $(call FIX_PATH,$(DFILES_FINAL_LOCATION)/)
 
 #====================================LIB==========================================
 # LIB NAME: lib id[x] has name
-LIB_id1_NAME = normalize
-LIB_id2_NAME = ENV_CONFIG
-LIB_id3_NAME = ENV_read
-LIB_id4_NAME = ENV_storage
-LIB_id5_NAME = ENV_UI
-LIB_id6_NAME = ENV_write
+LIB_id1_NAME = error
+LIB_id2_NAME = ACEX_normalize
+LIB_id3_NAME = ENV_CONFIG
+LIB_id4_NAME = ENV_read
+LIB_id5_NAME = ENV_storage
+LIB_id6_NAME = ENV_UI
+LIB_id7_NAME = ENV_write
+
 
 
 #-------------------------------LIB depencity--------------------------------------------
-LIB_id1_LIBS_IDS = 
-LIB_id2_LIBS_IDS = 
-LIB_id3_LIBS_IDS = 1 2
-LIB_id4_LIBS_IDS = 1 2
-LIB_id5_LIBS_IDS = 1 2 3 4
-LIB_id6_LIBS_IDS = 1 2
+LIB_id1_LIBS_IDS =
+LIB_id2_LIBS_IDS = 1
+LIB_id3_LIBS_IDS = 1
+LIB_id4_LIBS_IDS = 1 2 3
+LIB_id5_LIBS_IDS = 1 2 3
+LIB_id6_LIBS_IDS = 1 2 3 4 5
+LIB_id7_LIBS_IDS = 1 2 3
+
 
 #------------------------------OFILE ------------------------------------------
 OFILE_id1_NAME = logic_main
 
 #------------------------------OFILE depencity--------------------------------------------
-OFILE_id1_LIBS_IDS = 1 2 3 4 5 6
+OFILE_id1_LIBS_IDS = 1 2 3 4 5 6 7
 
 
 #==============================EXE================================================
@@ -161,7 +165,7 @@ EXE_id1_OFILE_IDS = 1
 
 
 # ---------------------------------LIB LIST---------------------------------------
-EXE_id1_LIBS_IDS = 1 2 3 4 5 6
+EXE_id1_LIBS_IDS = 1 2 3 4 5 6 7
 
 
 #------------------------------shortcut-------------------------------------------
@@ -173,7 +177,7 @@ ALL_EXECUTABLES = $(foreach exeid,$(ALL_EXE_IDS),$(EXE_id$(exeid)_NAME))
 ALL_OFILE_IDS = 1
 ALL_OFILES = $(foreach ofileid,$(ALL_OFILE_IDS),$(call FIX_PATH,$(OFILE_FINAL_LOCATION)/$(OFILE_id$(ofileid)_NAME).o))
 
-ALL_LIB_IDS = 1 2 3 4 5 6
+ALL_LIB_IDS = 1 2 3 4 5 6 7
 ALL_LIB = $(foreach libid,$(ALL_LIB_IDS),$(call FIX_PATH,$(TARGETS_DIRS)/$(LIB_id$(libid)_NAME).dll))
 #=================================================================================
 
@@ -218,7 +222,7 @@ define COMPILE_template
 # third part from depencity: loop through list(EXE_id[n]_LIBS_IDS) and grab its name
 $(EXE_id$(1)_NAME) : $(EXE_id$(1)_CFILE) $(call all_OFILES,$(1)) $(call all_LIBS,$(1))
 	$(DISPLAY)@echo $(PIPE_L)  $(PIPE_L)__ Compiling $(EXE_id$(1)_NAME)...$(RIGHT)
-	$(Q)gcc $(EXE_id$(1)_CFILE) $(CFLAGS) $(HCHECK)$(basename $(EXE_id$(1)_NAME)).d  $(call all_OFILES,$(1)) -o $$@ $(foreach id,$(EXE_id$(1)_LIBS_IDS),-l$(LIB_id$(id)_NAME)) -mconsole
+	$(Q)gcc $(EXE_id$(1)_CFILE) $(CFLAGS) $(HCHECK)$(basename $(EXE_id$(1)_NAME)).d -L$(TARGETS_DIRS) $(call all_OFILES,$(1)) -o $$@ $(foreach id,$(EXE_id$(1)_LIBS_IDS),-l$(LIB_id$(id)_NAME)) -mconsole
 endef
 
 # Create a template for libraries
@@ -226,7 +230,7 @@ endef
 define LIB_template
 $(call FIX_PATH,$(TARGETS_DIRS)/$(LIB_id$(1)_NAME).dll) : $(call FIX_PATH,$(LIB_SOURCE_LOCATION)/$(LIB_id$(1)_NAME).c) $(call LIB_all_LIBS,$(1))
 	$(DISPLAY)@echo $(PIPE_L)  $(PIPE_L)__ Compiling library $(LIB_id$(1)_NAME).dll...$(RIGHT)
-	$(Q)gcc $$< $(CFLAGS) $(HCHECK)$(LIB_id$(1)_NAME).d $(DLLFLAGS)$(LIB_id$(1)_NAME).lib $(foreach id,$(LIB_id$(1)_LIBS_IDS),-l$(LIB_id$(id)_NAME)) -o $$@
+	$(Q)gcc $$< $(CFLAGS) $(HCHECK)$(LIB_id$(1)_NAME).d $(DLLFLAGS)$(LIB_id$(1)_NAME).lib -L$(TARGETS_DIRS) $(foreach id,$(LIB_id$(1)_LIBS_IDS),-l$(LIB_id$(id)_NAME)) -o $$@
 endef
 
 define OFILE_template

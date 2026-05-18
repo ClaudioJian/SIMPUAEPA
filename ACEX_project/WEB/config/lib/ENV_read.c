@@ -8,12 +8,12 @@
  * 
  * - 0 sucess
  */
-static int ENV_CONFIG_validate_first_char(char first, int *error_code){
+static int ENV_CONFIG_validate_first_char(const char first, int *error_code){
     //mean first finded should not be number
     if(!isalpha(first)){
         // enconter special char or digit: error if is not file else mean is file and allow first char be .  
-        if(isdigit(first)) *error_code = variable_start_digit;
-        else *error_code = variable_start_special_char;
+        if(isdigit(first)) *error_code = ERR_variable_start_digit;
+        else *error_code = ERR_variable_start_special_char;
 
         return -1;
     }
@@ -35,7 +35,7 @@ static int ENV_CONFIG_validate_first_char(char first, int *error_code){
 static void ENV_CONFIG_parse_line(char **curr_ptr, ENV_CONFIG_field *data, int *error_code){
     if(*error_code) return;
 
-    // change key to "[FILE]"
+    // change key to "[FILE]" if is file
     if(!(data->is_file)) {
         ENV_CONFIG_validate_first_char(**curr_ptr,error_code);
         if(*error_code) return;
@@ -50,7 +50,7 @@ static void ENV_CONFIG_parse_line(char **curr_ptr, ENV_CONFIG_field *data, int *
 
     if(*error_code) return;
     if(data->mode==-1 && data->value[0]=='\0'){
-        *error_code = ENV_empty_value;
+        *error_code = ERR_ENV_empty_value;
         return;
     }
     memcpy(data->original_value,data->value,MAX_VALUE_SIZE);
@@ -60,7 +60,7 @@ static void ENV_CONFIG_parse_line(char **curr_ptr, ENV_CONFIG_field *data, int *
 
 
 //check if mode supported
-static int is_option(char op){
+static int is_option(const char op){
     if(op == 'l' || op =='r' ||  op=='s' || op=='f' || op == 'o' || op == 'e') return 1;
     else return 0;
 }
@@ -87,7 +87,7 @@ static void store_option(char **curr_chr,ENV_CONFIG_field *data,const char delim
         free(new_node);
         new_node = NULL;
 
-        *error_code = malloc_error;
+        *error_code = ERR_malloc;
         return;
     }
 
@@ -130,7 +130,7 @@ static void option_logic(char **curr_chr,ENV_CONFIG_field *data,int *error_code)
         store_option(curr_chr,data,OPTIONS_DELIMITERS_CHR,error_code);
         n_option++;
         if(n_option>MAX_OPTIONS){
-            *error_code = too_many_options;
+            *error_code = ERR_too_many_options;
             return;
         }
     }
@@ -150,7 +150,7 @@ static void option_logic(char **curr_chr,ENV_CONFIG_field *data,int *error_code)
  * - error when: buffer overflow, malloc error, too many options
 */
 static void ENV_CONFIG_mode_logic(char **curr_chr, ENV_CONFIG_field *data,int *error_code){
-    char type = **curr_chr; //store l or r or s
+    const char type = **curr_chr; //store l or r or s
 
     (*curr_chr)++; //skip l or r or s
     if(**curr_chr==':') (*curr_chr)++; //skip :
@@ -183,9 +183,8 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, int *error_code){
         char *curr_chr = line;
         
         //skip leading space
-        while(*curr_chr==' '||is_ignorable_chr(*curr_chr)) {
-            curr_chr++;
-        }
+        while(*curr_chr==' '||is_ignorable_chr(*curr_chr)) curr_chr++;
+        
         
         if(*curr_chr == '\n' || *curr_chr == '\0') continue; //this line is over
 
@@ -197,7 +196,7 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, int *error_code){
             return 1;
         }else{
             curr_chr++; // skip #
-            while(*curr_chr==' '||is_ignorable_chr(*curr_chr)) curr_chr++; //skip space after #
+            while(*curr_chr==' '|| is_ignorable_chr(*curr_chr)) curr_chr++; //skip space after #
             //find label l:, required r: or s: skip and continue until find real key=value
             if(is_option(*curr_chr)){
                 //make it skip to label/r/s when start from top
@@ -236,7 +235,7 @@ int ENV_CONFIG_match(const char *setting, ENV_CONFIG_field *data, int *error_cod
 
 
     //avoid loss of track
-    long curr_ptr = ftell(data->fp);
+    const long curr_ptr = ftell(data->fp);
 
     ENV_CONFIG_rewind(data);
 
@@ -257,7 +256,7 @@ int ENV_CONFIG_match(const char *setting, ENV_CONFIG_field *data, int *error_cod
     // jmp to shortcut if previous has find
     if(data->start_offset && curr_ptr < data->start_offset) fseek(data->fp,data->start_offset,SEEK_SET);
     if(fseek(data->fp,curr_ptr,SEEK_SET)) {
-        *error_code = fseek_error;
+        *error_code = ERR_fseek;
         return -1;
     }    
     

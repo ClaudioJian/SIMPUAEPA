@@ -18,7 +18,7 @@
  * @param new_line_prefix the prefix for new line, for example: "|  || "
  * @param line_chr initial number of char in current line
  */
-void display_wrapped_text(char *label,char* new_line_prefix,int line_chr,int max_line_chr);
+void display_wrapped_text(const char *label,const char *new_line_prefix,size_t line_chr,const size_t max_line_chr);
 
 /**  
  * start from the latest posision to grab value. if alredy set, skip that value. stop only when find new value that isn't set.

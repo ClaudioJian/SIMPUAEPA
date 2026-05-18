@@ -10,4 +10,5 @@ $dotenv->load();
 
 echo $_ENV['ENVIROMENT'];
 
+return 0;
 ?>

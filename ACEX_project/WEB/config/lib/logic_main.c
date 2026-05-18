@@ -15,7 +15,7 @@ int set_abs_path(int *error_code){
     ABSOLUTE_PATH = malloc(MAX_PATH_LEN);
 
     if(!ABSOLUTE_PATH){
-        *error_code = malloc_error;
+        *error_code = ERR_malloc;
         return -1;
     }
 
@@ -25,7 +25,7 @@ int set_abs_path(int *error_code){
         fgets(ABSOLUTE_PATH,MAX_PATH_LEN,fp);
 
         if (pclose(fp)) {
-            *error_code = pclose_error;
+            *error_code = ERR_pclose;
             return -1;
         }
     }else{
@@ -33,7 +33,7 @@ int set_abs_path(int *error_code){
     }
 
     if(ABSOLUTE_PATH == NULL){
-        *error_code = no_abs_path;
+        *error_code = ERR_PATH_get_curr_abs;
         return -1;
     }else{
         char *pos; //position of \n and \r in the end of path
@@ -56,15 +56,19 @@ static int set_certificate_enviroment(int *error_code){
     char abs_dir[MAX_PATH_LEN];
 
     int sucess = 0;
-    snprintf(abs_path,MAX_PATH_LEN,"%s%c%s%c%s", ABSOLUTE_PATH, SLASH_CHR , CERTIFICATES_DIR, SLASH_CHR , CERTIFICATES_FILE_NAME);
+    int expected;
+    expected = snprintf(abs_path,MAX_PATH_LEN,"%s%c%s%c%s", ABSOLUTE_PATH, SLASH_CHR , CERTIFICATES_DIR, SLASH_CHR , CERTIFICATES_FILE_NAME);
+    if(ERR_snprintf(expected,MAX_PATH_LEN,error_code)) return -1;
+
     snprintf(abs_dir,MAX_PATH_LEN,"%s%c%s", ABSOLUTE_PATH, SLASH_CHR , CERTIFICATES_DIR);
+    if(ERR_snprintf(expected,MAX_PATH_LEN,error_code)) return -1;
 
     sucess = setenv("SSL_CERT_FILE", abs_path);
     if(!sucess) sucess = setenv("SSL_CERT_DIR", abs_dir);
     
 
     if(sucess){
-        *error_code = ERR_set_enviroment_value;
+        *error_code = ERR_set_EnvVal;
         return -1;
     }
 
@@ -79,19 +83,18 @@ static int set_certificate_enviroment(int *error_code){
  * - 0 = denied
  * 
  * - 1 = accepted
+ * 
+ * - -1 = error: buffer_overflow, enconding error
 */ 
 static int confirmation(char *action,int* error_code){
     char answer[MAX_INPUT_SIZE];
 
     while(1){
         char text[MAX_TEXT_SIZE];
-        int expected = snprintf(text,MAX_TEXT_SIZE,"| WARNING: This program is trying to %s",action);
+        const int expected = snprintf(text,MAX_TEXT_SIZE,"| WARNING: This program is trying to %s",action);
         text[strlen(text)] = '\0';
 
-        if(expected >= MAX_TEXT_SIZE){
-            *error_code = buffer_overflow;
-            return 0;
-        }
+        if(ERR_snprintf(expected,MAX_TEXT_SIZE,error_code)) return -1;
 
         display_wrapped_text(text,"|",0,MAX_LINE_CHR); putchar('\n');
 
@@ -99,7 +102,7 @@ static int confirmation(char *action,int* error_code){
         printf("|  |__[Y/N]:");
         scanf("%39s",answer);
         if(answer[0]!='y'&& answer[0]!='Y'){
-            *error_code = premition_denied;
+            *error_code = ERR_permition_denied;
             return 0;
         }else break;
     }
@@ -121,7 +124,7 @@ static int confirmation(char *action,int* error_code){
  * - -1 = buffer overflow, fseek error, malloc error
  */
 static int PHP_exists(ENV_CONFIG_field *data, int *error_code){
-    const int size_cmd = MAX_BUFFER_SIZE + 13;
+    const size_t size_cmd = MAX_BUFFER_SIZE + 13;
     char cmd[size_cmd];
 
     int exit_code;
@@ -137,7 +140,7 @@ static int PHP_exists(ENV_CONFIG_field *data, int *error_code){
             char *right_path = normalize_path(data->value,error_code);
             if(*error_code) return -1;
 
-            if(right_path==NULL) *error_code = invalid_path;
+            if(right_path==NULL) *error_code = ERR_PATH_invalid;
             if(*error_code) return -1;
 
             
@@ -148,16 +151,11 @@ static int PHP_exists(ENV_CONFIG_field *data, int *error_code){
 
             if(strcmp(OS,"Windows")==0){
                 // join real php path
-
-                int expected = snprintf(cmd,size_cmd,"\"%s\\php.exe\" -v %s",data->value,NULL_REDIRECT);
+                const int expected = snprintf(cmd,size_cmd,"%s\\php.exe",data->value);
                 // check buffer overflow
+                if(ERR_snprintf(expected,size_cmd,error_code)) return -1;
 
-                if(expected >= size_cmd){
-                    *error_code = buffer_overflow;
-                    return -1;
-                }
-
-                exit_code = system(cmd);
+                exit_code = access(cmd,F_OK);
             }
 
             //not find, tell to user
@@ -169,7 +167,7 @@ static int PHP_exists(ENV_CONFIG_field *data, int *error_code){
             printf("| php is not finded, perhabs setting for [%s] was wrong!\n",PHP_path_envKeyName);
             printf("|\n");
             // when hit eof or is skippable and not find
-            if(data->mode== -1) *error_code = php_not_found;
+            if(data->mode== -1) *error_code = ERR_PHP_not_found;
             ENV_CONFIG_clear(data);
             if(*error_code) return -1;
             return 0;
@@ -189,7 +187,7 @@ static int PHP_exists(ENV_CONFIG_field *data, int *error_code){
     ENV_CONFIG_clear(data);
 
     if(PHP_LOCATION == NULL) {
-        *error_code = malloc_error;
+        *error_code = ERR_malloc;
         return -1;
     }
 
@@ -199,9 +197,54 @@ static int PHP_exists(ENV_CONFIG_field *data, int *error_code){
 }
 
 
+static int PHP_WinExec(const char *file_name, int *error_code){
+    char cmd[MAX_PATH_LEN];
+    // absolute_path_to_php/php
+    int expected = snprintf(cmd,MAX_PATH_LEN,"%s%cphp.exe %s%c%s%c%s", PHP_LOCATION, SLASH_CHR, ABSOLUTE_PATH, SLASH_CHR, SETUP_FOLDER, SLASH_CHR, file_name);
+    if(ERR_snprintf(expected,MAX_PATH_LEN,error_code)) return -1;
+
+    STARTUPINFO si;
+    // clean data
+    PROCESS_INFORMATION pi;
+
+    //zeromemory = memset
+    ZeroMemory( &si, sizeof(si) );
+    //size of structure, other flag isn't used
+    si.cb = sizeof(si);
+    ZeroMemory( &pi, sizeof(pi) );
+
+    // null mean use parent enviroment, lpcurrentdirectory null mean use current directory as caller
+    const int res = CreateProcessA(
+        NULL,
+        cmd,
+        0,
+        0,
+        0,
+        CREATE_NO_WINDOW,
+        NULL,
+        NULL,
+        &si,
+        &pi
+    );
+
+    if(!res) {
+        *error_code = ERR_WinCreateProcess;
+        return -1;
+    }
+
+    // Wait until child process exits.
+    WaitForSingleObject( pi.hProcess, INFINITE);
+
+    // Close process and thread handles. 
+    CloseHandle( pi.hProcess );
+    CloseHandle( pi.hThread );
+
+    return res;
+}
+
 static void run_all_file(ENV_CONFIG_field *data, int *error_code){
     if(!PHP_LOCATION) {
-        *error_code = php_not_found;
+        *error_code = ERR_PHP_not_found;
         return;
     }
 
@@ -211,23 +254,10 @@ static void run_all_file(ENV_CONFIG_field *data, int *error_code){
 
     //clear depencity list
     while(curr_node != NULL){
-        const int size_cmd = MAX_BUFFER_SIZE + 13;
+        const size_t size_cmd = MAX_BUFFER_SIZE + 13;
         char cmd[size_cmd];
 
-        int expected;
-
-        if(curr_node->extension==1){
-            //PHP_LOCATION/php ABSOLUTE_PATH/SETUP_FOLDER/curr_node->file
-            expected = snprintf(cmd,size_cmd,"%s%cphp %s%c%s%c%s", PHP_LOCATION, SLASH_CHR , ABSOLUTE_PATH , SLASH_CHR , SETUP_FOLDER, SLASH_CHR , curr_node->file);
-        }else if(curr_node->extension==2){
-            //sql
-        }
-         
-        // check buffer overflow
-        if(expected >= size_cmd){
-            *error_code = buffer_overflow;
-            return;
-        }
+        int expected = 0;
 
         // if WARNING_FLAGS is set, ask for confirmation before run each file
         if(WARNING_FLAGS){
@@ -236,10 +266,7 @@ static void run_all_file(ENV_CONFIG_field *data, int *error_code){
             char buffer[MAX_TEXT_SIZE];
             expected = snprintf(buffer,MAX_TEXT_SIZE,"run a file: [%s%s%s] (CAUTIONS! THE FILE CAN BE DANGEROUS).", ABSOLUTE_PATH , SLASH ,curr_node->file);
 
-            if(expected >= MAX_TEXT_SIZE){
-                *error_code = buffer_overflow;
-                return;
-            }
+            if(ERR_snprintf(expected,MAX_TEXT_SIZE,error_code)) return;
 
             confirmation(buffer,error_code);
             if(*error_code) return;
@@ -252,7 +279,13 @@ static void run_all_file(ENV_CONFIG_field *data, int *error_code){
         printf(" Running file: %s\n",curr_node->file);
         putchar('\n');
 
-        system(cmd);
+        //php
+        if(curr_node->extension==1){
+            ExecPHP_script(curr_node->file,error_code);
+        }else{
+            *error_code = ERR_invalid_extension;
+            return;
+        }
         
         memset(cmd,0,size_cmd);
 
@@ -292,6 +325,7 @@ static int ENV_CONFIG_set_all(ENV_CONFIG_field *data, int *error_code){
  */
 static char* set_enviroment(ENV_CONFIG_field *ENV_data,int *error_code){
     char *ENV_FILE_name = malloc(MAX_VALUE_SIZE+5);
+    int expected;
 
     //store it in temp location to set name for .env, don't sufix if NULL
     char buf[MAX_VALUE_SIZE+1]; 
@@ -303,7 +337,8 @@ static char* set_enviroment(ENV_CONFIG_field *ENV_data,int *error_code){
     
     // if value is NULL, don't sufix. else add "." and value
     if(strcmp(ENV_data->value,"NULL")!=0){
-        snprintf(buf,MAX_VALUE_SIZE+1,".%s",ENV_data->value);
+        expected = snprintf(buf,MAX_VALUE_SIZE+1,".%s",ENV_data->value);
+        if(ERR_snprintf(expected,MAX_VALUE_SIZE+1,error_code))return NULL;
     }else{
         //copy default value to value, since the data is NULL still
         memcpy(ENV_data->value,ENV_data->original_value,MAX_VALUE_SIZE);
@@ -311,7 +346,8 @@ static char* set_enviroment(ENV_CONFIG_field *ENV_data,int *error_code){
         if(*error_code) return NULL;
     }
 
-    snprintf(ENV_FILE_name,MAX_VALUE_SIZE+5,".env%s",buf);
+    expected = snprintf(ENV_FILE_name,MAX_VALUE_SIZE+5,".env%s",buf);
+    if(ERR_snprintf(expected,MAX_VALUE_SIZE+5,error_code))return NULL;
 
     return ENV_FILE_name;
 }
@@ -328,13 +364,13 @@ static char* set_enviroment(ENV_CONFIG_field *ENV_data,int *error_code){
  * 
  * @return 0 false | 1 true
  */
-static int is_on(char *string,int *error_code){
+static int is_on(const char *string,int *error_code){
     char* upper_str = convert_str_to_upper(string,error_code);
     if(upper_str==NULL||*error_code){
         free(upper_str);
         upper_str = NULL;
         
-        *error_code = malloc_error;
+        *error_code = ERR_malloc;
         return 0;
     }
     int on=1;
@@ -352,7 +388,7 @@ static int is_on(char *string,int *error_code){
         str_int == 0
     ) on = 0;
     else{
-        *error_code = invalid_boolean;
+        *error_code = ERR_invalid_boolean;
         on = 0;
     }
 
@@ -376,14 +412,12 @@ static void set_warning_flags(ENV_CONFIG_field *data,int *error_code){
 
 
 static int composer_exists(int *error_code){
-    char cmd[MAX_BUFFER_SIZE];
-    int response;
-    int expected;
-    expected = snprintf(cmd,MAX_BUFFER_SIZE,"%s%cphp %s%c%s %s", PHP_LOCATION, SLASH_CHR , ABSOLUTE_PATH , SLASH_CHR , "composer.phar --version",NULL_REDIRECT);
-    if(expected >= MAX_BUFFER_SIZE){*error_code = buffer_overflow; return -1;} 
-    response = system(cmd);
-    if(response){
-        *error_code = composer_not_exist;
+    char composer_location[MAX_PATH_LEN];
+    const int expected = snprintf(composer_location,MAX_PATH_LEN,"%s%c%s", ABSOLUTE_PATH , SLASH_CHR , "composer.phar");
+    if(ERR_snprintf(expected,MAX_PATH_LEN,error_code))return -1; 
+
+    if(access(composer_location, F_OK)){
+        *error_code = ERR_COMPOSER_not_found;
         return -1;
     }
     return 1;
@@ -398,21 +432,23 @@ static int composer_exists(int *error_code){
  * 
  * - -1 error: composer_error, buffer overflow
  */
-static int update_depencity(int *error_code, int *expected, char *cmd){
+static int update_depencity(int *error_code,int *expected, char *cmd){
     //check is up to date, --strict: Return a non-zero exit code for warnings as well as errors.
     *expected = snprintf(cmd,MAX_BUFFER_SIZE,"%s%cphp %s%c%s", PHP_LOCATION, SLASH_CHR , ABSOLUTE_PATH , SLASH_CHR , "composer.phar validate --check-lock --no-check-version --strict");
-    if(*expected >= MAX_BUFFER_SIZE){*error_code = buffer_overflow; return -1;} 
+    if(ERR_snprintf(*expected,MAX_BUFFER_SIZE,error_code))return -1;
 
-    int response = system(cmd);
+    const int response = system(cmd);
 
     // 1 = not up to date
     if(response==1){
         *expected = snprintf(cmd,MAX_BUFFER_SIZE,"%s%cphp %s%c%s", PHP_LOCATION, SLASH_CHR , ABSOLUTE_PATH , SLASH_CHR , "composer.phar update --with-all-dependencies");
+        if(ERR_snprintf(*expected,MAX_BUFFER_SIZE,error_code)) return -1;
     }else if(response==0){
         *expected = snprintf(cmd,MAX_BUFFER_SIZE,"%s%cphp %s%c%s", PHP_LOCATION, SLASH_CHR , ABSOLUTE_PATH , SLASH_CHR , "composer.phar install");
+        if(ERR_snprintf(*expected,MAX_BUFFER_SIZE,error_code)) return -1;
     }
     else{
-        *error_code = composer_error;
+        *error_code = ERR_COMPOSER_depencity;
         return -1;
     }
     return 0;
@@ -437,13 +473,13 @@ static void install_depencity(int *error_code){
 
     const int fexist_composer_lock = access("composer.lock", F_OK);
     char cmd[MAX_BUFFER_SIZE];
-    int response;
+
     int expected;
 
     //-1 not exist, 0 exist
     if(fexist_composer_lock){
         expected = snprintf(cmd,MAX_BUFFER_SIZE,"%s%cphp %s%c%s", PHP_LOCATION, SLASH_CHR , ABSOLUTE_PATH , SLASH_CHR , "composer.phar update");
-        if(expected >= MAX_BUFFER_SIZE){*error_code = buffer_overflow; return;}        
+        if(ERR_snprintf(expected,MAX_BUFFER_SIZE,error_code))return;      
     }else{
         update_depencity(error_code, &expected, cmd);
         if(*error_code) return;
@@ -451,9 +487,8 @@ static void install_depencity(int *error_code){
 
     if(expected >= MAX_BUFFER_SIZE){*error_code = buffer_overflow; return;}
 
-    response = system(cmd);
-    if(response){
-        *error_code = ssl_cert_error;
+    if(system(cmd)){
+        *error_code = ERR_ssl_cert;
         return;
     }
 }
@@ -472,7 +507,7 @@ void start_program(ENV_CONFIG_field *internal_data,ENV_CONFIG_field *ENV_data,in
     set_warning_flags(internal_data,error_code);
     if(*error_code) return;
 
-    if(!PHP_exists(internal_data,error_code)){*error_code = php_not_found; return;}
+    if(!PHP_exists(internal_data,error_code)){*error_code = ERR_PHP_not_found; return;}
 
     ENV_CONFIG_set_all(internal_data,error_code);
     if(*error_code) return;

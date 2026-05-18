@@ -1,3 +1,5 @@
+
+
 #ifndef general_includes
 #define general_includes
 
@@ -7,6 +9,7 @@
 #include <ctype.h>
 
 #include "ENV_const.h"
-#include "normalize.h"
+#include "error.h"
+#include "ACEX_normalize.h"
 
 #endif

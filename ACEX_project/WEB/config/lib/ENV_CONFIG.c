@@ -1,21 +1,24 @@
 #include "ENV_CONFIG.h"
 
 
-ENV_CONFIG_field* ENV_init_config_struct(char* file_name,int *error_code){
+ENV_CONFIG_field* ENV_init_config_struct(const char* file_name,int *error_code){
     ENV_CONFIG_field* new_node = (ENV_CONFIG_field*) malloc(sizeof(ENV_CONFIG_field));
     if(!new_node) {
         free(new_node);
         new_node = NULL;
 
-        *error_code = malloc_error;
+        *error_code = ERR_malloc;
         return NULL;
     };
 
     FILE *fptr = fopen(file_name,"r");
 
     if(fptr==NULL){
+        free(new_node);
+        new_node = NULL;
+
         printf("Cannot open file %s\n",file_name);
-        *error_code = fopen_error;
+        *error_code = ERR_fopen;
         return NULL;
     }
 
@@ -62,7 +65,7 @@ void ENV_CONFIG_clear(ENV_CONFIG_field *data){
 void ENV_CONFIG_rewind(ENV_CONFIG_field *data){
     data->is_EOF = 0;
     //set current pointer to target
-    long lptr = data->start_offset;
+    const long lptr = data->start_offset;
 
     //reset to init of file if sdhortcut not finded yet else just use it
     if(lptr < 0) rewind(data->fp);

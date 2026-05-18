@@ -83,7 +83,7 @@ typedef struct{
  * 
  * - error: NULL pointer - error_code -> malloc error, fopen error
 */
-ENV_CONFIG_field* ENV_init_config_struct(char *file_name,int *error_code);
+ENV_CONFIG_field* ENV_init_config_struct(const char *file_name,int *error_code);
 
 // free and set all option node to null
 void ENV_CONFIG_clear_option(ENV_CONFIG_field *data);
