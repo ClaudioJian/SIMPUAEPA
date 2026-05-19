@@ -1,11 +1,11 @@
 #include "ENV_write.h"
 
 
-int ENV_CONFIG_write(ENV_CONFIG_field *data,const char *file_name,int *error_code){
+int ENV_CONFIG_write(ENV_CONFIG_field *data,const char *file_name,error_details *err){
     FILE *fptr = fopen(file_name,"w");
 
     if(fptr==NULL){
-        *error_code = ERR_file_creation;
+        err->code = ERR_file_creation;
         return -1;
     }
 
@@ -18,7 +18,8 @@ int ENV_CONFIG_write(ENV_CONFIG_field *data,const char *file_name,int *error_cod
     while(curr_node!=NULL){
         char buffer[buff_size];
         const int expected = snprintf(buffer,buff_size,"%s=%s\n",curr_node->key,curr_node->value);
-        if(ERR_snprintf(expected,buff_size,error_code)) return -1;
+        const int res = catch_err(ERR_snprintf(expected,buff_size,err));
+        if(res) return -1;
 
         fputs(buffer,fptr);
         //advance
@@ -26,7 +27,7 @@ int ENV_CONFIG_write(ENV_CONFIG_field *data,const char *file_name,int *error_cod
     }
 
     if(fclose(fptr)==EOF){
-        *error_code = ERR_fclose;
+        err->code = ERR_fclose;
         return -1;
     }
 

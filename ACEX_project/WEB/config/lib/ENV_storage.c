@@ -68,13 +68,13 @@ int ENV_CONFIG_is_alredy_set(const char *setting, ENV_CONFIG_field *data){
  * 
  * - -1 = error when: malloc/buffer overflow/extension_invalid
 */
-static int track_file(ENV_CONFIG_field *data, int *error_code){
-    const int extension = valid_extension(data->value,error_code);
-    if(*error_code) return -1;
+static int track_file(ENV_CONFIG_field *data, error_details *err){
+    const int extension = catch_err(valid_extension(data->value,err));
+    if(err->code) return -1;
 
     //0 = invalid/not supported file type
     if(!extension) {
-        *error_code = ERR_invalid_extension;
+        err->code = ERR_invalid_extension;
         return -1;
     }
 
@@ -83,7 +83,7 @@ static int track_file(ENV_CONFIG_field *data, int *error_code){
         free(new_node);
         new_node = NULL;
 
-        *error_code = ERR_malloc;
+        err->code = ERR_malloc;
         return -1;
     }
 
@@ -110,10 +110,10 @@ static int track_file(ENV_CONFIG_field *data, int *error_code){
  * 
  * - -1 = error when: malloc error
  */
-static int track_setting(ENV_CONFIG_field *data, int *error_code){
+static int track_setting(ENV_CONFIG_field *data, error_details *err){
     config_node* new_node = (config_node*)malloc(sizeof(config_node));
     if(!new_node) {
-        *error_code = ERR_malloc;
+        err->code = ERR_malloc;
         return -1;
     }
 
@@ -139,15 +139,15 @@ static int track_setting(ENV_CONFIG_field *data, int *error_code){
 
 
 
-int ENV_CONFIG_track_depencity(ENV_CONFIG_field *data, int *error_code){
+int ENV_CONFIG_track_depencity(ENV_CONFIG_field *data, error_details *err){
     // if mode is 2 and value is "null", don't track it, just return
     if(data->mode == 2){
-        char* upper_input = convert_str_to_upper(data->value,error_code);
+        char* upper_input = catch_err(convert_str_to_upper(data->value,err));
 
-        if(*error_code || upper_input == NULL) {
+        if(err->code || upper_input == NULL) {
             free(upper_input);
             upper_input = NULL;
-            *error_code = ERR_malloc;
+            err->code = ERR_malloc;
             return -1;
         }
         
@@ -159,9 +159,9 @@ int ENV_CONFIG_track_depencity(ENV_CONFIG_field *data, int *error_code){
     }
 
 
-    if(data->is_file) {track_file(data,error_code);}
-    else {track_setting(data,error_code);}
+    if(data->is_file) {catch_err(track_file(data,err));}
+    else {catch_err(track_setting(data,err));}
 
-    if(*error_code) return -1;
+    if(err->code) return -1;
     return 0;
 }

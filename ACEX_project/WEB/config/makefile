@@ -122,31 +122,35 @@ HCHECK = -MD -MP -MF $(call FIX_PATH,$(DFILES_FINAL_LOCATION)/)
 
 #====================================LIB==========================================
 # LIB NAME: lib id[x] has name
-LIB_id1_NAME = error
-LIB_id2_NAME = ACEX_normalize
-LIB_id3_NAME = ENV_CONFIG
-LIB_id4_NAME = ENV_read
-LIB_id5_NAME = ENV_storage
-LIB_id6_NAME = ENV_UI
-LIB_id7_NAME = ENV_write
+LIB_id1_NAME = ENV_const
+LIB_id2_NAME = display_info
+LIB_id3_NAME = error
+LIB_id4_NAME = ACEX_normalize
+LIB_id5_NAME = ENV_CONFIG
+LIB_id6_NAME = ENV_read
+LIB_id7_NAME = ENV_storage
+LIB_id8_NAME = ENV_UI
+LIB_id9_NAME = ENV_write
 
 
 
 #-------------------------------LIB depencity--------------------------------------------
 LIB_id1_LIBS_IDS =
 LIB_id2_LIBS_IDS = 1
-LIB_id3_LIBS_IDS = 1
-LIB_id4_LIBS_IDS = 1 2 3
-LIB_id5_LIBS_IDS = 1 2 3
-LIB_id6_LIBS_IDS = 1 2 3 4 5
-LIB_id7_LIBS_IDS = 1 2 3
+LIB_id3_LIBS_IDS = 1 2
+LIB_id4_LIBS_IDS = 1 3
+LIB_id5_LIBS_IDS = 1 3
+LIB_id6_LIBS_IDS = 1 3 4 5
+LIB_id7_LIBS_IDS = 1 3 4 5
+LIB_id8_LIBS_IDS = 1 2 3 4 5 6 7
+LIB_id9_LIBS_IDS = 1 3 4 5
 
 
 #------------------------------OFILE ------------------------------------------
 OFILE_id1_NAME = logic_main
 
 #------------------------------OFILE depencity--------------------------------------------
-OFILE_id1_LIBS_IDS = 1 2 3 4 5 6 7
+OFILE_id1_LIBS_IDS = 1 2 3 4 5 6 7 8
 
 
 #==============================EXE================================================
@@ -165,7 +169,7 @@ EXE_id1_OFILE_IDS = 1
 
 
 # ---------------------------------LIB LIST---------------------------------------
-EXE_id1_LIBS_IDS = 1 2 3 4 5 6 7
+EXE_id1_LIBS_IDS = 1 2 3 4 5 6 7 8 9
 
 
 #------------------------------shortcut-------------------------------------------
@@ -177,7 +181,7 @@ ALL_EXECUTABLES = $(foreach exeid,$(ALL_EXE_IDS),$(EXE_id$(exeid)_NAME))
 ALL_OFILE_IDS = 1
 ALL_OFILES = $(foreach ofileid,$(ALL_OFILE_IDS),$(call FIX_PATH,$(OFILE_FINAL_LOCATION)/$(OFILE_id$(ofileid)_NAME).o))
 
-ALL_LIB_IDS = 1 2 3 4 5 6 7
+ALL_LIB_IDS = 1 2 3 4 5 6 7 8 9
 ALL_LIB = $(foreach libid,$(ALL_LIB_IDS),$(call FIX_PATH,$(TARGETS_DIRS)/$(LIB_id$(libid)_NAME).dll))
 #=================================================================================
 

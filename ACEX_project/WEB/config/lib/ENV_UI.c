@@ -11,13 +11,13 @@
 /// @return positive int=invalid  0=sucess -1 error: 
 ///
 /// - malloc error, buffer overflow, invalid extension
-static int valid_file(const char *target,int *error_code,char *filtered){
+static int valid_file(const char *target,error_details *err,char *filtered){
     int valid = 1;
 
     //normalize default value or inputed value(store in buffer to free after)
-    char* buffer = normalize_path(target,error_code);
+    char* buffer = catch_err(normalize_path(target,err));
 
-    if(*error_code) return -1;
+    if(err->code) return -1;
     strcpy(filtered,buffer);
 
     free(buffer);
@@ -28,8 +28,8 @@ static int valid_file(const char *target,int *error_code,char *filtered){
 
     //if still valid(positive unchanged), check extension
     if(valid>0){
-        valid = valid_extension(filtered,error_code);
-        if(*error_code) return -1;
+        valid = catch_err(valid_extension(filtered,err));
+        if(err->code) return -1;
     }
 
     //check if is valid
@@ -50,7 +50,7 @@ static int valid_file(const char *target,int *error_code,char *filtered){
 
 
 
-int ENV_CONFIG_step_config(ENV_CONFIG_field *data, int *error_code){
+int ENV_CONFIG_step_config(ENV_CONFIG_field *data, error_details *err){
     if(data->is_EOF) return 1;
     int not_EOF = 1;
     // if isn't first time acess data in .env.example, skip to first non comment line
@@ -58,7 +58,7 @@ int ENV_CONFIG_step_config(ENV_CONFIG_field *data, int *error_code){
 
     //loop until find and skip alredy setted value. EOF = 0 = stop
     while(1){
-        not_EOF = ENV_CONFIG_scan_next_data(data,error_code);
+        not_EOF = catch_err(ENV_CONFIG_scan_next_data(data,err));
 
         if(!not_EOF) {
             data->is_EOF = 1;
@@ -66,28 +66,28 @@ int ENV_CONFIG_step_config(ENV_CONFIG_field *data, int *error_code){
             return 1;
         }
 
-        if(*error_code) return -1;
+        if(err->code) return -1;
         // 1 = set 0 = not set = break
         if(!ENV_CONFIG_is_alredy_set(data->is_file ? data->original_value:data->key ,data)) break;
         ENV_CONFIG_clear(data);
     }
 
     //if flag set to skip, don't let user change it
-    if(data->mode >= 0) ENV_CONFIG_ui_prompt(data,error_code);
-    if(*error_code) return -1;
+    if(data->mode >= 0) {catch_err(ENV_CONFIG_ui_prompt(data,err));};
+    if(err->code) return -1;
     
     return 0;
 }
 
 
 
-int ENV_CONFIG_adjust_key(const char *setting, ENV_CONFIG_field *data, int *error_code){
+int ENV_CONFIG_adjust_key(const char *setting, ENV_CONFIG_field *data, error_details *err){
 
     if(ENV_CONFIG_is_alredy_set(setting,data))return 1;
-    const int find = ENV_CONFIG_match(setting,data,error_code);
+    const int find = catch_err(ENV_CONFIG_match(setting,data,err));
     
 
-    if(*error_code) return -1;
+    if(err->code) return -1;
     
 
     if(!find) {
@@ -96,59 +96,14 @@ int ENV_CONFIG_adjust_key(const char *setting, ENV_CONFIG_field *data, int *erro
     }
 
     //skip when is labbered as skip
-    if(data->mode >= 0) ENV_CONFIG_ui_prompt(data,error_code);
+    if(data->mode >= 0) {catch_err(ENV_CONFIG_ui_prompt(data,err));};
     ENV_CONFIG_clear_option(data);
-    if(*error_code) return -1;
+    if(err->code) return -1;
 
     return 1;
 }
 
 
-void display_wrapped_text(const char *label,const char *new_line_prefix,size_t line_chr,const size_t max_line_chr){
-    char word[MAX_TEXT_SIZE];
-    int word_size = 0;
-    const size_t new_lprefix_len = strlen(new_line_prefix);
-
-    for(size_t label_i=0;; label_i++){
-        char curr_chr = label[label_i];
-
-        if(curr_chr == ' '||curr_chr == '\n'||curr_chr == '\0'){
-            word[word_size] = '\0';
-            if(word[0]=='\0') continue;
-            
-            //print new line and set to 6, else print directly
-            //if word size is smaller than remain line char, this loop will be ignored completly.
-            if((size_t)word_size + line_chr >= max_line_chr){
-                printf("\n%s ", new_line_prefix);
-                line_chr = new_lprefix_len + 1;
-            }
-                
-            //loop to prevent word is too long to fit a line.
-            size_t word_i=0;
-            while(word[word_i]!='\0'){
-                // only print newline when hit the word it self too big,else will just skip to next newline, 7 is "|  || " and "-"
-                if(word_i >= (max_line_chr-1)){
-                    printf("-\n%s ", new_line_prefix);
-                    line_chr = new_lprefix_len + 1;
-                }
-                putchar(word[word_i++]);
-                line_chr++;
-            }
-            //if not end, put space
-            if(curr_chr !='\0') {
-                line_chr++;//space
-                putchar(' ');
-            }
-            //reset
-            word_i=0;
-            word_size = 0;
-        }else{
-            word[word_size++] = curr_chr;
-        }
-        //if hit end of label but still have word, continue, after that, will be break because the word size is reset
-        if(curr_chr == '\0' && word_size<=0) break;
-    }
-}
 
 /**
  * display label explain what value do. switch to new line automatically.
@@ -162,10 +117,10 @@ void display_wrapped_text(const char *label,const char *new_line_prefix,size_t l
  * 
  * -error when: buffer overflow
  */
-static void print_label(ENV_CONFIG_field *data,size_t max_line_chr,int *error_code){
+static void print_label(ENV_CONFIG_field *data,size_t max_line_chr,error_details *err){
     if(max_line_chr<17) max_line_chr = 17;
     if(max_line_chr > MAX_LINE_CHR){
-        *error_code = buffer_overflow;
+        err->code = buffer_overflow;
         return;
     }
 
@@ -223,9 +178,9 @@ static char* find_option(const int pos, ENV_CONFIG_field *data){
  *  @return
  * - error when: malloc error, buffer overflow
 */ 
-static void ui_header(ENV_CONFIG_field *data,char **input,int *error_code){
-    print_label(data,MAX_LINE_CHR,error_code);
-    if(*error_code) return;
+static void ui_header(ENV_CONFIG_field *data,char **input,error_details *err){
+    catch_err(print_label(data,MAX_LINE_CHR,err));
+    if(err->code) return;
 
     printf("|  || [default = %s]:\n",data->original_value);
 
@@ -283,7 +238,7 @@ static void ui_footer(ENV_CONFIG_field *data,char *filtered,char *answer){
 
 
 
-void ENV_CONFIG_ui_prompt(ENV_CONFIG_field *data, int *error_code){
+void ENV_CONFIG_ui_prompt(ENV_CONFIG_field *data, error_details *err){
     char *input = malloc(MAX_INPUT_SIZE);
     char filtered[MAX_VALUE_SIZE];
     char *target;
@@ -292,7 +247,7 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field *data, int *error_code){
         free(input);
         input = NULL;
 
-        *error_code = ERR_malloc;
+        err->code = ERR_malloc;
         return;
     }
     char *start_ptr_input = input;
@@ -304,10 +259,10 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field *data, int *error_code){
     printf("|  ||----------------------------------\n");
     //input for data
     do{
-        ui_header(data,&input,error_code);
+        catch_err(ui_header(data,&input,err));
 
-        normalize_value(filtered,&input,MAX_VALUE_SIZE,'\n',error_code);
-        if(*error_code) return;
+        catch_err(normalize_value(filtered,&input,MAX_VALUE_SIZE,'\n',err));
+        if(err->code) return;
             
         // if has nothing, use default value to filter else use input and normalize
         if(filtered[0]=='\0') {
@@ -330,7 +285,7 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field *data, int *error_code){
                 if(res<=0 || res >(data->quant_option)) {msg_outbound_option();continue;}
                 else{
                     char* option = find_option(res,data);
-                    if((int)strlen(option)>=MAX_VALUE_SIZE) {*error_code = buffer_overflow;return;}
+                    if((int)strlen(option)>=MAX_VALUE_SIZE) {err->code = buffer_overflow;return;}
                     strcpy(filtered,option);
                 }
             }
@@ -339,13 +294,14 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field *data, int *error_code){
 
         // if is file, filter both default/input
         if(data->is_file) {
-            if(valid_file(target,error_code,filtered)){
-                if(*error_code) return;
+            const int valid_f = catch_err(valid_file(target,err,filtered));
+            if(valid_f){
+                if(err->code) return;
                 continue;
             }
         }
 
-        if(*error_code) return;
+        if(err->code) return;
     
         //ask user if value is right
         //if answer is nothing, use default value
@@ -365,7 +321,7 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field *data, int *error_code){
             free(start_ptr_input);
             start_ptr_input = NULL;
 
-            *error_code = buffer_overflow;
+            err->code = buffer_overflow;
             return;
         }
 

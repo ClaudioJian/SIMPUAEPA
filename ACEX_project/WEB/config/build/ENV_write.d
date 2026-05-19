@@ -20,8 +20,9 @@ ENV_write.dll: lib\ENV_write.c include/ENV_write.h \
  C:/msys64/ucrt64/include/malloc.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/mm_malloc.h \
  C:/msys64/ucrt64/include/errno.h C:/msys64/ucrt64/include/ctype.h \
- C:/msys64/ucrt64/include/corecrt_wctype.h include/ENV_const.h \
- C:/msys64/ucrt64/include/direct.h C:/msys64/ucrt64/include/io.h \
+ C:/msys64/ucrt64/include/corecrt_wctype.h include/error_type.h \
+ include/ENV_const.h C:/msys64/ucrt64/include/direct.h \
+ C:/msys64/ucrt64/include/io.h \
  C:/msys64/ucrt64/include/processthreadsapi.h \
  C:/msys64/ucrt64/include/apiset.h C:/msys64/ucrt64/include/apisetcconv.h \
  C:/msys64/ucrt64/include/minwindef.h \
@@ -219,7 +220,8 @@ ENV_write.dll: lib\ENV_write.c include/ENV_write.h \
  C:/msys64/ucrt64/include/oleidl.h C:/msys64/ucrt64/include/servprov.h \
  C:/msys64/ucrt64/include/msxml.h C:/msys64/ucrt64/include/oaidl.h \
  C:/msys64/ucrt64/include/propidl.h C:/msys64/ucrt64/include/oleauto.h \
- include/error.h include/ACEX_normalize.h include/ENV_CONFIG.h
+ include/display_info.h include/ACEX_normalize.h include/error.h \
+ include/ENV_CONFIG.h
 include/ENV_write.h:
 include/general_includes.h:
 C:/msys64/ucrt64/include/stdio.h:
@@ -247,6 +249,7 @@ C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/mm_malloc.h:
 C:/msys64/ucrt64/include/errno.h:
 C:/msys64/ucrt64/include/ctype.h:
 C:/msys64/ucrt64/include/corecrt_wctype.h:
+include/error_type.h:
 include/ENV_const.h:
 C:/msys64/ucrt64/include/direct.h:
 C:/msys64/ucrt64/include/io.h:
@@ -481,6 +484,7 @@ C:/msys64/ucrt64/include/msxml.h:
 C:/msys64/ucrt64/include/oaidl.h:
 C:/msys64/ucrt64/include/propidl.h:
 C:/msys64/ucrt64/include/oleauto.h:
-include/error.h:
+include/display_info.h:
 include/ACEX_normalize.h:
+include/error.h:
 include/ENV_CONFIG.h:

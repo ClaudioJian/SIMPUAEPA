@@ -8,18 +8,6 @@
 
 //-----------------function----------------------
 
-/**
- * If the words are too long, add "-" at end of word and print rest of it in new line.
- * otherwise, if it just hit max_line_chr, switch to new line and print all of it in new line.
- * 
- * The new line at end of text is missed, please add new line at end manually.
- * 
- * @param label the text to be printed
- * @param new_line_prefix the prefix for new line, for example: "|  || "
- * @param line_chr initial number of char in current line
- */
-void display_wrapped_text(const char *label,const char *new_line_prefix,size_t line_chr,const size_t max_line_chr);
-
 /**  
  * start from the latest posision to grab value. if alredy set, skip that value. stop only when find new value that isn't set.
  * 
@@ -31,7 +19,7 @@ void display_wrapped_text(const char *label,const char *new_line_prefix,size_t l
  * display label to explain what this value does.
  * @return 1=fail(EOF) 0=sucess -1 error = buffer overflow/malloc error
  */
-int ENV_CONFIG_step_config(ENV_CONFIG_field *data, int *error_code);
+int ENV_CONFIG_step_config(ENV_CONFIG_field *data, error_details *err);
 
 
 /**  
@@ -47,7 +35,7 @@ int ENV_CONFIG_step_config(ENV_CONFIG_field *data, int *error_code);
  * @return
  * - error when: malloc error, buffer overflow
 */
-void ENV_CONFIG_ui_prompt(ENV_CONFIG_field* data, int *error_code);
+void ENV_CONFIG_ui_prompt(ENV_CONFIG_field* data, error_details *err);
 
 /**
  * Set key indicated to data.
@@ -63,7 +51,7 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field* data, int *error_code);
  * 
  * - -1 = buffer overflow, fseek error
  */
-int ENV_CONFIG_adjust_key(const char *setting, ENV_CONFIG_field *data, int *error_code);
+int ENV_CONFIG_adjust_key(const char *setting, ENV_CONFIG_field *data, error_details *err);
 
 #endif
 

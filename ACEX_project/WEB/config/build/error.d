@@ -1,27 +1,13 @@
-error.dll: lib\error.c include/error.h include/general_includes.h \
- C:/msys64/ucrt64/include/stdio.h \
- C:/msys64/ucrt64/include/corecrt_stdio_config.h \
+error.dll: lib\error.c include/error.h include/ENV_const.h \
+ C:/msys64/ucrt64/include/direct.h C:/msys64/ucrt64/include/crtdefs.h \
  C:/msys64/ucrt64/include/corecrt.h C:/msys64/ucrt64/include/_mingw.h \
  C:/msys64/ucrt64/include/_mingw_mac.h \
  C:/msys64/ucrt64/include/_mingw_secapi.h \
  C:/msys64/ucrt64/include/vadefs.h \
- C:/msys64/ucrt64/include/sdks/_mingw_ddk.h \
- C:/msys64/ucrt64/include/_mingw_off_t.h \
- C:/msys64/ucrt64/include/swprintf.inl \
- C:/msys64/ucrt64/include/sec_api/stdio_s.h \
- C:/msys64/ucrt64/include/string.h C:/msys64/ucrt64/include/crtdefs.h \
+ C:/msys64/ucrt64/include/sdks/_mingw_ddk.h C:/msys64/ucrt64/include/io.h \
+ C:/msys64/ucrt64/include/string.h \
  C:/msys64/ucrt64/include/sec_api/string_s.h \
- C:/msys64/ucrt64/include/stdlib.h \
- C:/msys64/ucrt64/include/corecrt_wstdlib.h \
- C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/limits.h \
- C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/syslimits.h \
- C:/msys64/ucrt64/include/limits.h \
- C:/msys64/ucrt64/include/sec_api/stdlib_s.h \
- C:/msys64/ucrt64/include/malloc.h \
- C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/mm_malloc.h \
- C:/msys64/ucrt64/include/errno.h C:/msys64/ucrt64/include/ctype.h \
- C:/msys64/ucrt64/include/corecrt_wctype.h include/ENV_const.h \
- C:/msys64/ucrt64/include/direct.h C:/msys64/ucrt64/include/io.h \
+ C:/msys64/ucrt64/include/_mingw_off_t.h \
  C:/msys64/ucrt64/include/processthreadsapi.h \
  C:/msys64/ucrt64/include/apiset.h C:/msys64/ucrt64/include/apisetcconv.h \
  C:/msys64/ucrt64/include/minwindef.h \
@@ -30,6 +16,8 @@ error.dll: lib\error.c include/error.h include/general_includes.h \
  C:/msys64/ucrt64/include/concurrencysal.h \
  C:/msys64/ucrt64/include/driverspecs.h C:/msys64/ucrt64/include/winnt.h \
  C:/msys64/ucrt64/include/_mingw_unicode.h \
+ C:/msys64/ucrt64/include/ctype.h \
+ C:/msys64/ucrt64/include/corecrt_wctype.h \
  C:/msys64/ucrt64/include/excpt.h \
  C:/msys64/ucrt64/include/psdk_inc/intrin-impl.h \
  C:/msys64/ucrt64/include/sdkddkver.h C:/msys64/ucrt64/include/basetsd.h \
@@ -79,6 +67,14 @@ error.dll: lib\error.c include/error.h include/general_includes.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/immintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/mmintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/xmmintrin.h \
+ C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/mm_malloc.h \
+ C:/msys64/ucrt64/include/stdlib.h \
+ C:/msys64/ucrt64/include/corecrt_wstdlib.h \
+ C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/limits.h \
+ C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/syslimits.h \
+ C:/msys64/ucrt64/include/limits.h \
+ C:/msys64/ucrt64/include/sec_api/stdlib_s.h \
+ C:/msys64/ucrt64/include/malloc.h C:/msys64/ucrt64/include/errno.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/emmintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/pmmintrin.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/tmmintrin.h \
@@ -219,37 +215,26 @@ error.dll: lib\error.c include/error.h include/general_includes.h \
  C:/msys64/ucrt64/include/oleidl.h C:/msys64/ucrt64/include/servprov.h \
  C:/msys64/ucrt64/include/msxml.h C:/msys64/ucrt64/include/oaidl.h \
  C:/msys64/ucrt64/include/propidl.h C:/msys64/ucrt64/include/oleauto.h \
- include/error.h include/ACEX_normalize.h include/ENV_const.h
+ include/display_info.h include/general_includes.h \
+ C:/msys64/ucrt64/include/stdio.h \
+ C:/msys64/ucrt64/include/corecrt_stdio_config.h \
+ C:/msys64/ucrt64/include/swprintf.inl \
+ C:/msys64/ucrt64/include/sec_api/stdio_s.h include/error_type.h \
+ include/ACEX_normalize.h include/error.h include/error_type.h
 include/error.h:
-include/general_includes.h:
-C:/msys64/ucrt64/include/stdio.h:
-C:/msys64/ucrt64/include/corecrt_stdio_config.h:
+include/ENV_const.h:
+C:/msys64/ucrt64/include/direct.h:
+C:/msys64/ucrt64/include/crtdefs.h:
 C:/msys64/ucrt64/include/corecrt.h:
 C:/msys64/ucrt64/include/_mingw.h:
 C:/msys64/ucrt64/include/_mingw_mac.h:
 C:/msys64/ucrt64/include/_mingw_secapi.h:
 C:/msys64/ucrt64/include/vadefs.h:
 C:/msys64/ucrt64/include/sdks/_mingw_ddk.h:
-C:/msys64/ucrt64/include/_mingw_off_t.h:
-C:/msys64/ucrt64/include/swprintf.inl:
-C:/msys64/ucrt64/include/sec_api/stdio_s.h:
-C:/msys64/ucrt64/include/string.h:
-C:/msys64/ucrt64/include/crtdefs.h:
-C:/msys64/ucrt64/include/sec_api/string_s.h:
-C:/msys64/ucrt64/include/stdlib.h:
-C:/msys64/ucrt64/include/corecrt_wstdlib.h:
-C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/limits.h:
-C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/syslimits.h:
-C:/msys64/ucrt64/include/limits.h:
-C:/msys64/ucrt64/include/sec_api/stdlib_s.h:
-C:/msys64/ucrt64/include/malloc.h:
-C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/mm_malloc.h:
-C:/msys64/ucrt64/include/errno.h:
-C:/msys64/ucrt64/include/ctype.h:
-C:/msys64/ucrt64/include/corecrt_wctype.h:
-include/ENV_const.h:
-C:/msys64/ucrt64/include/direct.h:
 C:/msys64/ucrt64/include/io.h:
+C:/msys64/ucrt64/include/string.h:
+C:/msys64/ucrt64/include/sec_api/string_s.h:
+C:/msys64/ucrt64/include/_mingw_off_t.h:
 C:/msys64/ucrt64/include/processthreadsapi.h:
 C:/msys64/ucrt64/include/apiset.h:
 C:/msys64/ucrt64/include/apisetcconv.h:
@@ -261,6 +246,8 @@ C:/msys64/ucrt64/include/concurrencysal.h:
 C:/msys64/ucrt64/include/driverspecs.h:
 C:/msys64/ucrt64/include/winnt.h:
 C:/msys64/ucrt64/include/_mingw_unicode.h:
+C:/msys64/ucrt64/include/ctype.h:
+C:/msys64/ucrt64/include/corecrt_wctype.h:
 C:/msys64/ucrt64/include/excpt.h:
 C:/msys64/ucrt64/include/psdk_inc/intrin-impl.h:
 C:/msys64/ucrt64/include/sdkddkver.h:
@@ -311,6 +298,15 @@ C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/usermsrintrin.h:
 C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/immintrin.h:
 C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/mmintrin.h:
 C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/xmmintrin.h:
+C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/mm_malloc.h:
+C:/msys64/ucrt64/include/stdlib.h:
+C:/msys64/ucrt64/include/corecrt_wstdlib.h:
+C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/limits.h:
+C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/syslimits.h:
+C:/msys64/ucrt64/include/limits.h:
+C:/msys64/ucrt64/include/sec_api/stdlib_s.h:
+C:/msys64/ucrt64/include/malloc.h:
+C:/msys64/ucrt64/include/errno.h:
 C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/emmintrin.h:
 C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/pmmintrin.h:
 C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/15.2.0/include/tmmintrin.h:
@@ -481,6 +477,13 @@ C:/msys64/ucrt64/include/msxml.h:
 C:/msys64/ucrt64/include/oaidl.h:
 C:/msys64/ucrt64/include/propidl.h:
 C:/msys64/ucrt64/include/oleauto.h:
-include/error.h:
+include/display_info.h:
+include/general_includes.h:
+C:/msys64/ucrt64/include/stdio.h:
+C:/msys64/ucrt64/include/corecrt_stdio_config.h:
+C:/msys64/ucrt64/include/swprintf.inl:
+C:/msys64/ucrt64/include/sec_api/stdio_s.h:
+include/error_type.h:
 include/ACEX_normalize.h:
-include/ENV_const.h:
+include/error.h:
+include/error_type.h:

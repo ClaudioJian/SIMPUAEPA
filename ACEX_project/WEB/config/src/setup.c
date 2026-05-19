@@ -9,11 +9,6 @@ this files is to:
 //-----------------------custom includes----------------------------
 #include "logic_main.h"
 
-//------------------------------------global variable--------------------------------------------
-char *PHP_LOCATION;
-int WARNING_FLAGS = 1;
-char* ABSOLUTE_PATH;
-
 
 //-------------------------------------function----------------------------------------------------
 
@@ -46,22 +41,30 @@ int main(){
 
     printf("\n\n");
 
-    //----------------------variable--------------------------------
-    int error_code = 0;
-
     //----------------------start program---------------------------
-    set_abs_path(&error_code);
-    if(error_code){
-        print_error(error_code);
-        putchar('\n');
+    error_details *err = (error_details*) malloc(sizeof(error_details));
+    if(!err){
+        err->code = ERR_malloc;
+        snprintf(err->description,sizeof(err->description),"Out of memory!");
+        print_error(err);
+    }
+    err->description[0] = '\0';
+    err->code = 0;
+    err->err_trace = NULL;
+    err->last_error = NULL;
+
+    catch_err(set_abs_path(err));
+    if(err->code){
+        print_error(err);
+        printf("|\n");
         stop();
         return 1;        
     }
 
-    ENV_CONFIG_field *internal_data = ENV_init_config_struct(CONFIG_FILE,&error_code);
-    ENV_CONFIG_field *ENV_data = ENV_init_config_struct(ENV_EXAMPLE,&error_code);
+    ENV_CONFIG_field *internal_data = catch_err(ENV_init_config_struct(CONFIG_FILE,err));
+    ENV_CONFIG_field *ENV_data = catch_err(ENV_init_config_struct(ENV_EXAMPLE,err));
 
-    if(!error_code) start_program(internal_data,ENV_data,&error_code);
+    if(!err->code){catch_err(start_program(internal_data,ENV_data,err));};
 
     printf("===================Result===================\n");
     printf("|\n");
@@ -72,18 +75,19 @@ int main(){
     ENV_CONFIG_destroy(&internal_data);
     ENV_CONFIG_destroy(&ENV_data);
 
+
     printf("| All data have been cleaned!\n");
     printf("|\n");
 
 
     //error handle
-    if(error_code) {
-        print_error(error_code);
-        putchar('\n');
+    if(err->code) {
+        print_error(err);
     }
     else{
         printf("| All files have been executed!\n");
     }
+    ERR_details_destroy(&err);
 
     printf("|______________________________________\n");
     putchar('\n');

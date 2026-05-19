@@ -45,6 +45,9 @@ Please also change in section below: IMPORTANT CONST
 //max chr can one line hold before switch to new line in UI
 #define MAX_LINE_CHR 90
 
+#define on_keyword "ON","TRUE"
+#define off_keyword "OFF","FALSE"
+
 
 //certificate location to ssl works
 #define CERTIFICATES_DIR "config" SLASH "certificates"
@@ -61,10 +64,12 @@ Please also change in section below: IMPORTANT CONST
 //location of internal use config file
 #define CONFIG_FILE "." SLASH "config" SLASH "setting" SLASH "internal.cfg"
 
-
+//name defined in internal.cfg
 #define WARNING_FLAG_NAME "WARNING_FLAGS"
 #define ENVIROMENT_KEY_NAME "ENVIROMENT"
 #define PHP_path_envKeyName "PHP_PATH"
+#define show_debug_KeyName "SHOW_DEBUG_INFO"
+#define show_ERR_location "DISPLAY_ERROR_LINE"
 
 
 
@@ -116,43 +121,13 @@ Please also change in section below: IMPORTANT CONST
     #define NULL_REDIRECT ">dev/null 2>&1"
 #endif
 
-#include "general_includes.h"
-
 //global values
 extern char* ABSOLUTE_PATH;
 extern char* PHP_LOCATION;
+//flags
 extern int WARNING_FLAGS;
-
-typedef enum{
-    buffer_overflow = 100,
-    // standart function error
-    ERR_fopen,
-    ERR_fclose,
-    ERR_pclose,
-    ERR_fseek,
-    ERR_encoding,
-    ERR_malloc,
-    ERR_file_creation,
-    ERR_WinCreateProcess,
-    ERR_set_EnvVal,
-    // php and composer related
-    ERR_PHP_not_found,
-    ERR_COMPOSER_not_found,
-    ERR_ssl_cert,
-    ERR_COMPOSER_depencity,
-    //path related
-    ERR_PATH_invalid,
-    ERR_PATH_get_curr_abs,
-    //custom err
-    ERR_ENV_invalid_format,
-    ERR_ENV_empty_value,
-    ERR_variable_start_digit,
-    ERR_variable_start_special_char,    
-    ERR_invalid_extension,
-    ERR_too_many_options,
-    ERR_permition_denied,
-    ERR_invalid_boolean,
-    test_sucess,
-}error_code_list;
+extern int SHOW_DEBUG_INFO;
+extern int SHOW_ERR_LINE;
+extern int emergency_in_use;
 
 #endif

@@ -16,12 +16,12 @@ int ENV_CONFIG_is_alredy_set(const char *setting, ENV_CONFIG_field *data);
  * 
  * - If is file, check if extension valid and throw error if invalid. set to data->file_list.
  * - If flag is e (mode=2) and data->value is also "null", don't track it
- * @param error_code change address of it, check content
+ * @param err change address of it, check content
  * @return
  * - 0 sucess
  * 
  * - -1 = if error occurs: extension_invalid, malloc error
  */
-int ENV_CONFIG_track_depencity(ENV_CONFIG_field *data, int *error_code);
+int ENV_CONFIG_track_depencity(ENV_CONFIG_field *data, error_details *err);
 
 #endif

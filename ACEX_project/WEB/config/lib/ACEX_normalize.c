@@ -1,5 +1,15 @@
 #include "ACEX_normalize.h"
 
+int ERR_snprintf(const int expected,const size_t max_size,error_details *err){
+    if(expected<0){
+        err->code = ERR_encoding;
+        return -1;
+    }else if((size_t)expected >= max_size){
+        err->code = buffer_overflow;
+        return -1;
+    }
+    return 0;
+}
 
 int convert_str_to_int(const char* string){
     int is_int=1;
@@ -20,13 +30,16 @@ int convert_str_to_int(const char* string){
 }
 
 
-char *convert_str_to_upper(const char *string,int *error_code){
+
+
+
+char *convert_str_to_upper(const char *string,error_details *err){
     char *buffer = malloc(strlen(string)+1);
     if(!buffer){ 
         free(buffer);
         buffer = NULL;
 
-        *error_code = ERR_malloc;
+        err->code = ERR_malloc;
         return NULL;
     }
 
@@ -63,14 +76,14 @@ int valid_path_chr(const char chr){
 
 
 int is_ignorable_chr(const char chr){
-    if(chr>=0 && chr<=31 && chr !='\n' && chr !='\0') return 1;
+    if(chr>=0 && chr<=31 && chr !='\n' && chr !='\0' && chr != '#') return 1;
     if(chr == '\r' || chr == '\t') return 1;
     return 0;
 }
 
 
 
-char* normalize_value(char *dst,char **src_ptr,const int max_size,const char delimiter,int *error_code){
+char* normalize_value(char *dst,char **src_ptr,const int max_size,const char delimiter,error_details *err){
     char *start = dst;
     int count = 0;
     
@@ -89,7 +102,7 @@ char* normalize_value(char *dst,char **src_ptr,const int max_size,const char del
 
         count++;
         if(count >= max_size) {
-            *error_code = buffer_overflow;
+            err->code = buffer_overflow;
             return NULL;
         }
     }
@@ -109,12 +122,16 @@ char* normalize_value(char *dst,char **src_ptr,const int max_size,const char del
 
 
 
-char* normalize_path(const char* path,int *error_code){
+char* normalize_path(const char* path,error_details *err){
     if(!path) return NULL;
 
     if(strstr(path,".." SLASH) != NULL){
-        printf("%p\n",strstr(path,".." SLASH));
-        *error_code = ERR_PATH_invalid;
+        err->code = ERR_PATH_invalid;
+
+        const int expected = snprintf(err->description,sizeof(err->description),"invalid string finded in [%s]: ..%c",path,SLASH_CHR);
+        const int res = catch_err(ERR_snprintf(expected,MAX_BUFFER_SIZE,err));
+        if(res) return NULL;
+        
         return NULL;
     }
 
@@ -124,7 +141,7 @@ char* normalize_path(const char* path,int *error_code){
         free(buffer);
         buffer = NULL;
 
-        *error_code = ERR_malloc;
+        err->code = ERR_malloc;
         return NULL;
     }
 
@@ -135,9 +152,7 @@ char* normalize_path(const char* path,int *error_code){
     while(path[i]== ' '||is_ignorable_chr(path[i])) i++;
 
     for(; i<MAX_INPUT_SIZE && path[i] != '\n' && path[i] != '\0';i++){
-
         if(valid_path_chr(path[i])) return NULL;
-        //avoid escaping root dir
 
 
         if(path[i]=='\\' || path[i]=='/') *buf_ptr = SLASH_CHR;
@@ -149,7 +164,7 @@ char* normalize_path(const char* path,int *error_code){
         free(buffer);
         buffer = NULL;
 
-        *error_code = buffer_overflow;
+        err->code = buffer_overflow;
         return NULL;
     };
 
@@ -158,14 +173,14 @@ char* normalize_path(const char* path,int *error_code){
 }
 
 
-int valid_extension(char *extension,int *error_code){
+int valid_extension(char *extension,error_details *err){
     char buffer[MAX_VALUE_SIZE];
     int start_extension = 0;
     int j=0;
 
     // normalize the path
-    char *right_path = normalize_path(extension,error_code);
-    if(right_path==NULL||*error_code) return -1;
+    char *right_path = catch_err(normalize_path(extension,err));
+    if(right_path==NULL||err->code) return -1;
 
     strcpy(extension,right_path);
 

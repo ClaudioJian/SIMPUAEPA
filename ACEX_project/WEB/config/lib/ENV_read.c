@@ -8,12 +8,17 @@
  * 
  * - 0 sucess
  */
-static int ENV_CONFIG_validate_first_char(const char first, int *error_code){
+static int ENV_CONFIG_validate_first_char(const char first, error_details *err){
     //mean first finded should not be number
     if(!isalpha(first)){
         // enconter special char or digit: error if is not file else mean is file and allow first char be .  
-        if(isdigit(first)) *error_code = ERR_variable_start_digit;
-        else *error_code = ERR_variable_start_special_char;
+        if(isdigit(first)) err->code = ERR_variable_start_digit;
+        else err->code = ERR_variable_start_special_char;
+        
+        //description of err
+        const int expected = snprintf(err->description,sizeof(err->description),"invalid char :[%c]",first);
+        const int res = catch_err(ERR_snprintf(expected,sizeof(err->description),err));
+        if(res) return -1;
 
         return -1;
     }
@@ -32,25 +37,25 @@ static int ENV_CONFIG_validate_first_char(const char first, int *error_code){
  * @return
  * - error when: buffer overflow, empty value when flag skip is set, malloc error, first char of variable is invalid
 */ 
-static void ENV_CONFIG_parse_line(char **curr_ptr, ENV_CONFIG_field *data, int *error_code){
-    if(*error_code) return;
+static void ENV_CONFIG_parse_line(char **curr_ptr, ENV_CONFIG_field *data, error_details *err){
+    if(err->code) return;
 
     // change key to "[FILE]" if is file
     if(!(data->is_file)) {
-        ENV_CONFIG_validate_first_char(**curr_ptr,error_code);
-        if(*error_code) return;
-        normalize_value(data->key,curr_ptr,MAX_KEY_SIZE,'=',error_code);
-        if(*error_code) return;
+        catch_err(ENV_CONFIG_validate_first_char(**curr_ptr,err));
+        if(err->code) return;
+        catch_err(normalize_value(data->key,curr_ptr,MAX_KEY_SIZE,'=',err));
+        if(err->code) return;
     }else{
         strcpy(data->key,"[FILE]");
     }
 
 
-    normalize_value(data->value,curr_ptr,MAX_VALUE_SIZE,'\0',error_code);
+    catch_err(normalize_value(data->value,curr_ptr,MAX_VALUE_SIZE,'\0',err));
 
-    if(*error_code) return;
+    if(err->code) return;
     if(data->mode==-1 && data->value[0]=='\0'){
-        *error_code = ERR_ENV_empty_value;
+        err->code = ERR_ENV_empty_value;
         return;
     }
     memcpy(data->original_value,data->value,MAX_VALUE_SIZE);
@@ -81,21 +86,21 @@ static int is_option(const char op){
  * 
  * - Error when: malloc error, buffer overflow.
  */ 
-static void store_option(char **curr_chr,ENV_CONFIG_field *data,const char delimiter,int *error_code){
+static void store_option(char **curr_chr,ENV_CONFIG_field *data,const char delimiter,error_details *err){
     option_node* new_node = (option_node*)malloc(sizeof(option_node));
     if(!new_node) {
         free(new_node);
         new_node = NULL;
 
-        *error_code = ERR_malloc;
+        err->code = ERR_malloc;
         return;
     }
 
 
-    normalize_value(new_node->option,curr_chr,MAX_OPTION_SIZE,delimiter,error_code);
+    catch_err(normalize_value(new_node->option,curr_chr,MAX_OPTION_SIZE,delimiter,err));
     
 
-    if(*error_code || new_node->option[0]=='\0') {
+    if(err->code || new_node->option[0]=='\0') {
         free(new_node);
         new_node = NULL;
         return;
@@ -122,15 +127,15 @@ static void store_option(char **curr_chr,ENV_CONFIG_field *data,const char delim
  * 
  * The max quantity of option cannot exceed MAX_OPTIONS(defined in ENV_const.h). Return error if exceed.
 */
-static void option_logic(char **curr_chr,ENV_CONFIG_field *data,int *error_code){
+static void option_logic(char **curr_chr,ENV_CONFIG_field *data,error_details *err){
     int n_option=0;   
 
     
     while(**curr_chr!='\n' && **curr_chr!='\0'){  
-        store_option(curr_chr,data,OPTIONS_DELIMITERS_CHR,error_code);
+        catch_err(store_option(curr_chr,data,OPTIONS_DELIMITERS_CHR,err));
         n_option++;
         if(n_option>MAX_OPTIONS){
-            *error_code = ERR_too_many_options;
+            err->code = ERR_too_many_options;
             return;
         }
     }
@@ -149,7 +154,7 @@ static void option_logic(char **curr_chr,ENV_CONFIG_field *data,int *error_code)
  * 
  * - error when: buffer overflow, malloc error, too many options
 */
-static void ENV_CONFIG_mode_logic(char **curr_chr, ENV_CONFIG_field *data,int *error_code){
+static void ENV_CONFIG_mode_logic(char **curr_chr, ENV_CONFIG_field *data,error_details *err){
     const char type = **curr_chr; //store l or r or s
 
     (*curr_chr)++; //skip l or r or s
@@ -161,16 +166,16 @@ static void ENV_CONFIG_mode_logic(char **curr_chr, ENV_CONFIG_field *data,int *e
         case 's': data->mode = -1; break;
         case 'e': data->mode = 2; break;        
         case 'f': data->is_file = 1; break;
-        case 'l': normalize_value(data->label,curr_chr,MAX_TEXT_SIZE,'\0',error_code); break;
-        case 'o': option_logic(curr_chr,data,error_code); break;
+        case 'l': catch_err(normalize_value(data->label,curr_chr,MAX_TEXT_SIZE,'\0',err)); break;
+        case 'o': catch_err(option_logic(curr_chr,data,err)); break;
     }
-    if(*error_code) return;
+    if(err->code) return;
     
     return;
 }
 
 
-int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, int *error_code){
+int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, error_details *err){
     if(data->is_EOF) return 0;
     char line[MAX_BUFFER_SIZE];
     
@@ -186,13 +191,19 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, int *error_code){
         while(*curr_chr==' '||is_ignorable_chr(*curr_chr)) curr_chr++;
         
         
-        if(*curr_chr == '\n' || *curr_chr == '\0') continue; //this line is over
+        if(*curr_chr == '\n' || *curr_chr == '\0'|| *curr_chr == '\r') continue; //this line is over
 
         
         //if find it is not # return immedially and grab data
         if(*curr_chr!='#'){
-            ENV_CONFIG_parse_line(&curr_chr, data, error_code);
-            if(*error_code) return -1;
+            catch_err(ENV_CONFIG_parse_line(&curr_chr, data, err));
+            if(err->code) {
+                //description of err
+                const int expected = snprintf(err->description,sizeof(err->description),"invalid char found in line:[%s]",line);
+                catch_err(ERR_snprintf(expected,sizeof(err->description),err));
+
+                return -1;
+            }
             return 1;
         }else{
             curr_chr++; // skip #
@@ -203,8 +214,8 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, int *error_code){
                 // only assign it when is not initialized(-1)
                 if(data->start_offset < 0) data->start_offset = old_fp;
                 
-                ENV_CONFIG_mode_logic(&curr_chr, data, error_code); 
-                if(*error_code) return -1;
+                catch_err(ENV_CONFIG_mode_logic(&curr_chr, data, err)); 
+                if(err->code) return -1;
                 continue;
             }
         }
@@ -218,7 +229,7 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, int *error_code){
             return 0;
         }
         if(strchr(line,'\n') == NULL) {
-            *error_code = buffer_overflow;
+            err->code = buffer_overflow;
             return -1;
         }
     }
@@ -226,10 +237,10 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, int *error_code){
 }
 
 
-int ENV_CONFIG_match(const char *setting, ENV_CONFIG_field *data, int *error_code){
+int ENV_CONFIG_match(const char *setting, ENV_CONFIG_field *data, error_details *err){
     int find = 1;
     if(!setting || strlen(setting) > MAX_KEY_SIZE) {
-        *error_code = buffer_overflow;
+        err->code = buffer_overflow;
         return -1;
     }
 
@@ -244,11 +255,11 @@ int ENV_CONFIG_match(const char *setting, ENV_CONFIG_field *data, int *error_cod
     // loop every time ENV_CONFIG_scan_next_data. if sucess, compare to setting passed and set find if finded.
     do{
         ENV_CONFIG_clear(data);
-        find = ENV_CONFIG_scan_next_data(data,error_code);
+        find = catch_err(ENV_CONFIG_scan_next_data(data,err));
 
         //eof and find stay 0
         if(!find) break;
-        if(*error_code) return -1;
+        if(err->code) return -1;
     }while(strcmp(data->key,setting) != 0);
     
 
@@ -256,7 +267,7 @@ int ENV_CONFIG_match(const char *setting, ENV_CONFIG_field *data, int *error_cod
     // jmp to shortcut if previous has find
     if(data->start_offset && curr_ptr < data->start_offset) fseek(data->fp,data->start_offset,SEEK_SET);
     if(fseek(data->fp,curr_ptr,SEEK_SET)) {
-        *error_code = ERR_fseek;
+        err->code = ERR_fseek;
         return -1;
     }    
     

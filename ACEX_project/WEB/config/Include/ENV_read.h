@@ -19,7 +19,7 @@
  * 
  * - -1 = buffer overflow
 */
-int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, int *error_code);
+int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, error_details *err);
 
 /**  
  * find the setting with same name passed(setting), trying to compare the variable name in .env.example to string passed. 
@@ -33,7 +33,7 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, int *error_code);
  * 
  * - -1 = buffer_overflow, fseek_error
 */
-int ENV_CONFIG_match(const char *setting, ENV_CONFIG_field *data, int *error_code);
+int ENV_CONFIG_match(const char *setting, ENV_CONFIG_field *data, error_details *err);
 
 
 #endif

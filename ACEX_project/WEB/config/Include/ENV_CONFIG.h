@@ -2,6 +2,7 @@
 #define ENV_CONFIG
 
 #include "general_includes.h"
+#include "error.h"
 
 /**
  * structure set files to run when setting
@@ -83,7 +84,7 @@ typedef struct{
  * 
  * - error: NULL pointer - error_code -> malloc error, fopen error
 */
-ENV_CONFIG_field* ENV_init_config_struct(const char *file_name,int *error_code);
+ENV_CONFIG_field *ENV_init_config_struct(const char* file_name,error_details *err);
 
 // free and set all option node to null
 void ENV_CONFIG_clear_option(ENV_CONFIG_field *data);

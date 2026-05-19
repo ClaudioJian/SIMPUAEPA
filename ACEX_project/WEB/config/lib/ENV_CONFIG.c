@@ -1,13 +1,13 @@
 #include "ENV_CONFIG.h"
 
 
-ENV_CONFIG_field* ENV_init_config_struct(const char* file_name,int *error_code){
+ENV_CONFIG_field *ENV_init_config_struct(const char* file_name,error_details *err){
     ENV_CONFIG_field* new_node = (ENV_CONFIG_field*) malloc(sizeof(ENV_CONFIG_field));
     if(!new_node) {
         free(new_node);
         new_node = NULL;
 
-        *error_code = ERR_malloc;
+        err->code = ERR_malloc;
         return NULL;
     };
 
@@ -17,8 +17,13 @@ ENV_CONFIG_field* ENV_init_config_struct(const char* file_name,int *error_code){
         free(new_node);
         new_node = NULL;
 
-        printf("Cannot open file %s\n",file_name);
-        *error_code = ERR_fopen;
+        char buffer[MAX_TEXT_SIZE];
+
+        catch_err(ERR_snprintf(snprintf(buffer,MAX_TEXT_SIZE,"Cannot open file %s\n",file_name),MAX_TEXT_SIZE,err));
+        if(err->code) return NULL;
+
+        err->code = ERR_fopen;
+        strcpy(err->description,buffer);
         return NULL;
     }
 
@@ -159,7 +164,7 @@ void print_data(ENV_CONFIG_field *data){
     config_node *curr_node = data->depencity_list;
     while(curr_node!=NULL){
         printf("-------NODE-----\n");
-        printf("key:%s\n value:%s\n",curr_node->key,curr_node->value);
+        printf("key:%s\n value:%s ptr next:%p\n",curr_node->key,curr_node->value,(void*)curr_node->next);
         curr_node = curr_node->next;
     }
     printf("\n");

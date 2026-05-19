@@ -1,18 +1,22 @@
 #ifndef error
 #define error
 
-#include "general_includes.h"
+
+#include "ENV_const.h"
+#include "display_info.h"
+#include "error_type.h"
 
 //===============================Function==============================
 
-/**
- * check if snprintf has error and change error code
- * @return
- * - 0 = sucess
- * 
- * - -1 = error: encoding_error, buffer overflow
- */
-int ERR_snprintf(const int expected,const size_t max_size,int *error_code);
-void print_error(const int error_code);
+int ERR_snprintf(const int expected,const size_t max_size,error_details *err);
+void print_error(error_details *err);
+
+int track_error(error_details *err, const char *file,const char *funct_name, const unsigned int line);
+void ERR_details_destroy(error_details **err);
+
+extern trace_error emergency_node;
+//===============================Function==============================
+
+
 
 #endif
