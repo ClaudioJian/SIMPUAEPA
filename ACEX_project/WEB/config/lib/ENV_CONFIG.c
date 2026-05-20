@@ -1,5 +1,20 @@
 #include "ENV_CONFIG.h"
 
+//initialize by setting value to 0 or null
+static void ENV_CONFIG_init_values(ENV_CONFIG_field *new_node){
+    new_node->mode = 0;
+    new_node->is_file = 0;
+    new_node->is_EOF = 0;
+    new_node->quant_option = 0;
+    new_node->start_offset = -1;
+    new_node->depencity_list = NULL;
+    new_node->last_depencity_node = NULL;
+    new_node->file_list = NULL;
+    new_node->last_file_list = NULL;
+    new_node->option_list = NULL;
+    new_node->last_option = NULL;
+}
+
 
 ENV_CONFIG_field *ENV_init_config_struct(const char* file_name,error_details *err){
     ENV_CONFIG_field* new_node = (ENV_CONFIG_field*) malloc(sizeof(ENV_CONFIG_field));
@@ -11,7 +26,7 @@ ENV_CONFIG_field *ENV_init_config_struct(const char* file_name,error_details *er
         return NULL;
     };
 
-    FILE *fptr = fopen(file_name,"r");
+    FILE *fptr = fopen(file_name,"rb");
 
     if(fptr==NULL){
         free(new_node);
@@ -28,17 +43,7 @@ ENV_CONFIG_field *ENV_init_config_struct(const char* file_name,error_details *er
     }
 
     //values
-    new_node->mode = 0;
-    new_node->is_file = 0;
-    new_node->is_EOF = 0;
-    new_node->quant_option = 0;
-    new_node->start_offset = -1;
-    new_node->depencity_list = NULL;
-    new_node->last_depencity_node = NULL;
-    new_node->file_list = NULL;
-    new_node->last_file_list = NULL;
-    new_node->option_list = NULL;
-    new_node->last_option = NULL;
+    ENV_CONFIG_init_values(new_node);
 
     //set pointer
     new_node->fp = fptr;
@@ -83,6 +88,7 @@ void ENV_CONFIG_rewind(ENV_CONFIG_field *data){
 
 void ENV_CONFIG_clear_option(ENV_CONFIG_field *data){
     option_node *curr_node = data->option_list;
+
     while(curr_node!=NULL){
         option_node *prev_node = curr_node;
         curr_node = curr_node->next;
@@ -90,9 +96,10 @@ void ENV_CONFIG_clear_option(ENV_CONFIG_field *data){
         free(prev_node);
         prev_node = NULL;
     }
+
     data->option_list = NULL;
     data->last_option = NULL;
-    data->quant_option=0;
+    data->quant_option = 0;
 }
 
 static void ENV_CONFIG_clear_depencity_list(ENV_CONFIG_field *data){
@@ -112,14 +119,14 @@ static void ENV_CONFIG_clear_depencity_list(ENV_CONFIG_field *data){
 
 
 static void ENV_CONFIG_clear_file_node(ENV_CONFIG_field *data){
-    file_node *curr_fnode = data->file_list;
+    file_node *curr_node = data->file_list;
     //clear file list
-    while(curr_fnode != NULL){
-        file_node *prev_fnode = curr_fnode;
-        curr_fnode = curr_fnode->next;
+    while(curr_node != NULL){
+        file_node *prev_node = curr_node;
+        curr_node = curr_node->next;
 
-        free(prev_fnode);
-        prev_fnode = NULL;
+        free(prev_node);
+        prev_node = NULL;
     }
 
     data->file_list = NULL;

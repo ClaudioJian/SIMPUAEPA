@@ -44,8 +44,10 @@ static void ENV_CONFIG_parse_line(char **curr_ptr, ENV_CONFIG_field *data, error
     if(!(data->is_file)) {
         catch_err(ENV_CONFIG_validate_first_char(**curr_ptr,err));
         if(err->code) return;
+
         catch_err(normalize_value(data->key,curr_ptr,MAX_KEY_SIZE,'=',err));
         if(err->code) return;
+
     }else{
         strcpy(data->key,"[FILE]");
     }
@@ -183,15 +185,17 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, error_details *err){
     
 
     //read line, if fail it will return NULL
-    while(fgets(line,sizeof(line),data->fp) != NULL){
+    while(1){
+        //if non comment line(shortcut) is not set yet, track it to start of line, the next loop fp will go to end of line(e.g start of new line)
+        if(data->start_offset < 0) old_fp = ftell(data->fp);
+        if(fgets(line,sizeof(line),data->fp) == NULL) break;
+        
         //start at first char by set pointer to line
         char *curr_chr = line;
-        printf("| || line: %s\n",line);      
-          
+
         //skip leading space
         while(*curr_chr==' '||is_ignorable_chr(*curr_chr)) curr_chr++;
 
-        
         if(*curr_chr == '\n' || *curr_chr == '\0'|| *curr_chr == '\r') continue; //this line is over
 
         
@@ -203,7 +207,6 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, error_details *err){
                 //description of err
                 const int expected = snprintf(err->description,sizeof(err->description),"invalid char found in line:[%s]",line);
                 catch_err(ERR_snprintf(expected,sizeof(err->description),err));
-
                 return -1;
             }
             return 1;
@@ -212,14 +215,9 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, error_details *err){
             while(*curr_chr==' '|| is_ignorable_chr(*curr_chr)) curr_chr++; //skip space after #
             //find label l:, required r: or s: skip and continue until find real key=value
             if(is_option(*curr_chr)){
-;
                 //make it skip to label/r/s when start from top
                 // only assign it when is not initialized(-1)
-                if(data->start_offset < 0) data->start_offset = old_fp;
-
-                printf("curr option:%c \n",*curr_chr);
-
-                printf("| || curr offset: %ld\n",data->start_offset);             
+                if(data->start_offset < 0) data->start_offset = old_fp;         
                 
                 catch_err(ENV_CONFIG_mode_logic(&curr_chr, data, err)); 
                 if(err->code) return -1;
@@ -228,8 +226,8 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, error_details *err){
         }
         curr_chr++;
 
-        //if non comment line(shortcut) is not set yet, track it to start of line, the next loop fp will go to end of line(e.g start of new line)
-        if(data->start_offset < 0) old_fp = ftell(data->fp);
+        
+
         //check EOF or is bufdfer overflow
         if(feof(data->fp)) {
             data->is_EOF = 1;

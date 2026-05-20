@@ -1,8 +1,16 @@
 #include "ENV_UI.h"
 
 
-
-
+//print msg when invalid_file
+static void msg_invalid_file(const int valid){
+    printf("|  ||--------------ERROR---------------\n");
+    if(valid==0) printf("|  || invalid extension!\n");
+    else if(valid == -1) printf("|  || invalid path!\n");
+            
+    printf("|  || Try again!\n");
+    printf("|  ||----------------------------------\n");
+    printf("|  ||\n");
+}
 
 
 
@@ -12,8 +20,6 @@
 ///
 /// - malloc error, buffer overflow, invalid extension
 static int valid_file(const char *target,error_details *err,char *filtered){
-    int valid = 1;
-
     //normalize default value or inputed value(store in buffer to free after)
     char* buffer = catch_err(normalize_path(target,err));
 
@@ -23,8 +29,9 @@ static int valid_file(const char *target,error_details *err,char *filtered){
     free(buffer);
     buffer = NULL;
 
+    int valid = 1;
     // if path invalid, set to -1
-    if(filtered==NULL) valid = -1;
+    if(filtered==NULL) valid = -1;    
 
     //if still valid(positive unchanged), check extension
     if(valid>0){
@@ -34,13 +41,7 @@ static int valid_file(const char *target,error_details *err,char *filtered){
 
     //check if is valid
     if(valid<=0){
-        printf("|  ||--------------ERROR---------------\n");
-        if(valid==0) printf("|  || invalid extension!\n");
-        else if(valid == -1) printf("|  || invalid path!\n");
-            
-        printf("|  || Try again!\n");
-        printf("|  ||----------------------------------\n");
-        printf("|  ||\n");
+        msg_invalid_file(valid);
         return 1;
     }      
     return 0;
@@ -52,6 +53,7 @@ static int valid_file(const char *target,error_details *err,char *filtered){
 
 int ENV_CONFIG_step_config(ENV_CONFIG_field *data, error_details *err){
     if(data->is_EOF) return 1;
+    
     int not_EOF = 1;
     // if isn't first time acess data in .env.example, skip to first non comment line
     if(ftell(data->fp) < data->start_offset) fseek(data->fp,data->start_offset,SEEK_SET);
@@ -73,7 +75,7 @@ int ENV_CONFIG_step_config(ENV_CONFIG_field *data, error_details *err){
     }
 
     //if flag set to skip, don't let user change it
-    if(data->mode >= 0) {catch_err(ENV_CONFIG_ui_prompt(data,err));};
+    if(data->mode >= 0) {catch_err(ENV_CONFIG_ui_prompt(data,err));}
     if(err->code) return -1;
     
     return 0;
@@ -82,13 +84,10 @@ int ENV_CONFIG_step_config(ENV_CONFIG_field *data, error_details *err){
 
 
 int ENV_CONFIG_adjust_key(const char *setting, ENV_CONFIG_field *data, error_details *err){
-
     if(ENV_CONFIG_is_alredy_set(setting,data))return 1;
     const int find = catch_err(ENV_CONFIG_match(setting,data,err));
     
-
     if(err->code) return -1;
-    
 
     if(!find) {
         printf("| cannot find setting: %s\n", setting);
@@ -96,8 +95,7 @@ int ENV_CONFIG_adjust_key(const char *setting, ENV_CONFIG_field *data, error_det
     }
 
     //skip when is labbered as skip
-    if(data->mode >= 0) {catch_err(ENV_CONFIG_ui_prompt(data,err));};
-    ENV_CONFIG_clear_option(data);
+    if(data->mode >= 0) {catch_err(ENV_CONFIG_ui_prompt(data,err));}
     if(err->code) return -1;
 
     return 1;
@@ -146,19 +144,18 @@ static void print_label(ENV_CONFIG_field *data,size_t max_line_chr,error_details
 
 //loop throught list and print all option
 static void print_option(ENV_CONFIG_field *data){
-    int count=1;
     option_node *curr_node = data->option_list;
+    int count = 1;
 
     printf("|  ||  `--[");
     //skip last one
     while(curr_node->next!=NULL){
         printf("%i. %s | ",count,curr_node->option);
-        count++;
         curr_node = curr_node->next;
+        count++;
     }
 
     printf("%i. %s",count,curr_node->option);
-
     printf("]: ");
 }
 
@@ -166,9 +163,7 @@ static void print_option(ENV_CONFIG_field *data){
 //return string for option in position pos, the first option is 1.
 static char* find_option(const int pos, ENV_CONFIG_field *data){
     option_node *curr_node = data->option_list;
-    for(int i=0;i<pos-1;i++){
-        curr_node = curr_node->next;
-    }
+    for(int i=0;i<pos-1;i++){ curr_node = curr_node->next;}
     return curr_node->option;
 }
 
@@ -183,10 +178,8 @@ static void ui_header(ENV_CONFIG_field *data,char **input,error_details *err){
     if(err->code) return;
 
     printf("|  || [default = %s]:\n",data->original_value);
-
-    if(data->option_list!=NULL) print_option(data);
-    else printf("|  ||   `--[New value]: "); 
-
+    if(data->option_list==NULL) printf("|  ||   `--[New value]: ");
+    else print_option(data);
 
     fgets(*input, MAX_INPUT_SIZE, stdin);
     printf("|  ||\n");
@@ -244,12 +237,12 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field *data, error_details *err){
     char *target;
 
     if(!input){
+        err->code = ERR_malloc;
         free(input);
         input = NULL;
-
-        err->code = ERR_malloc;
         return;
     }
+
     char *start_ptr_input = input;
 
     char answer[MAX_INPUT_SIZE];

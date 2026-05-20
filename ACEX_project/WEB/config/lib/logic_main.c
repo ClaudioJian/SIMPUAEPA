@@ -10,13 +10,18 @@ void free_global_value(){
 }
 
 
+static int Win_getcwd(){
+    
+}
+
+
 
 int set_abs_path(error_details *err){
     ABSOLUTE_PATH = malloc(MAX_PATH_LEN);
 
     if(!ABSOLUTE_PATH){
         err->code = ERR_malloc;
-        strcpy(err->description, "fail to set global value for current directory");
+        strcpy(err->description, "Out of memory! fail to set global value for current directory");
         return -1;
     }
 
@@ -60,6 +65,7 @@ static int set_certificate_enviroment(error_details *err){
     int sucess = 0;
     int expected;
     int res;
+
     expected = snprintf(abs_path,MAX_PATH_LEN,"%s%c%s%c%s", ABSOLUTE_PATH, SLASH_CHR , CERTIFICATES_DIR, SLASH_CHR , CERTIFICATES_FILE_NAME);
     res = catch_err(ERR_snprintf(expected,MAX_PATH_LEN,err));
     if(res) return -1;
@@ -143,15 +149,16 @@ static int PHP_exists(ENV_CONFIG_field *data, error_details *err){
     do{
         //find where is php path
         const int find = catch_err(ENV_CONFIG_adjust_key(PHP_path_envKeyName,data,err));
+        if(err->code) return -1;
+        // 0 mean key name error and negative mean error like malloc
         if(find){
-            // 0 mean key name error and negative mean error like malloc
-            if(err->code) return -1;
-
             char *right_path = catch_err(normalize_path(data->value,err));
             if(err->code) return -1;
 
-            if(right_path==NULL) err->code = ERR_PATH_invalid;
-            if(err->code) return -1;
+            if(right_path==NULL) {
+                err->code = ERR_PATH_invalid;
+                return -1;
+            }
 
             
             strcpy(data->value,right_path);
@@ -376,6 +383,38 @@ static char* set_enviroment(ENV_CONFIG_field *ENV_data,error_details *err){
     return ENV_FILE_name;
 }
 
+//-1 if not else 1
+static int is_on(const char *string){
+    char *ON[] = {on_keyword};
+    int str_int = convert_str_to_int(string);
+
+    const int ON_count = sizeof(ON)/ sizeof(ON[0]);
+    if(str_int > 0) return 1;
+    for(int i=0; i < ON_count; i++){
+        if(strcmp(string,ON[i]) == 0){
+            return 1;
+        }
+    }
+    
+    return -1;
+}
+
+// -1 if not else 0
+static int is_off(const char *string){
+    char *OFF[] = {off_keyword};
+    int str_int = convert_str_to_int(string);
+
+    const int OFF_count = sizeof(OFF)/ sizeof(OFF[0]);
+    for(int i=0; i< OFF_count; i++){
+        if(strcmp(string,OFF[i]) == 0){
+            return 0;
+        }
+    }
+    if(str_int == 0 ) return 0;
+
+    return -1;
+}
+
 
 /**
  * find if string matches:
@@ -388,7 +427,7 @@ static char* set_enviroment(ENV_CONFIG_field *ENV_data,error_details *err){
  * 
  * @return 0 false | 1 true
  */
-static int is_on(const char *string,error_details *err){
+static int find_bool(const char *string,error_details *err){
     char* upper_str = catch_err(convert_str_to_upper(string,err));
 
     if(upper_str==NULL||err->code){
@@ -402,26 +441,8 @@ static int is_on(const char *string,error_details *err){
     int on = -1;
     int str_int = convert_str_to_int(upper_str);
 
-    char *ON[] = {on_keyword};
-    char *OFF[] = {off_keyword};
-
-    const int ON_count = sizeof(ON)/ sizeof(ON[0]);
-    for(int i=0; i < ON_count; i++){
-        if(strcmp(upper_str,ON[i]) == 0){
-            on = 1;
-            break;
-        }
-    }
-    if(str_int > 0 ) on = 1;
-
-    const int OFF_count = sizeof(OFF)/ sizeof(OFF[0]);
-    for(int i=0; i< OFF_count; i++){
-        if(strcmp(upper_str,OFF[i]) == 0){
-            on = 0;
-            break;
-        }
-    }
-    if(str_int == 0 ) on = 0;
+    on = is_on(string);
+    if(on<0) on = is_off(string);
 
     if(on<0){
         err->code = ERR_invalid_boolean;
@@ -434,38 +455,17 @@ static int is_on(const char *string,error_details *err){
     return on;
 }
 
-//set global value WARNING_FLAGS as int(0 false else 1 true), this flag is used to determine if show warning msg for some setting
-static void set_warning_flags(ENV_CONFIG_field *data,error_details *err){
-    catch_err(ENV_CONFIG_adjust_key(WARNING_FLAG_NAME,data,err));
+//set global values(int)
+static void set_global_flags(ENV_CONFIG_field *data,char *key_name,int *flag_ptr ,error_details *err){
+    catch_err(ENV_CONFIG_adjust_key(key_name,data,err));
     if(err->code) return;
 
-    WARNING_FLAGS = catch_err(is_on(data->value,err));
-    if(err->code) return;
-
-    ENV_CONFIG_clear(data);
-}
-
-
-static void set_show_debuginfo(ENV_CONFIG_field *data,error_details *err){
-    catch_err(ENV_CONFIG_adjust_key(show_debug_KeyName,data,err));
-    if(err->code) return;
-
-    SHOW_DEBUG_INFO = catch_err(is_on(data->value,err));
+    *flag_ptr = catch_err(find_bool(data->value,err));
     if(err->code) return;
 
     ENV_CONFIG_clear(data);
 }
 
-
-static void set_show_ERRlocation(ENV_CONFIG_field *data,error_details *err){
-    catch_err(ENV_CONFIG_adjust_key(show_ERR_location,data,err));
-    if(err->code) return;
-
-    SHOW_ERR_LINE = catch_err(is_on(data->value,err));
-    if(err->code) return;
-
-    ENV_CONFIG_clear(data);
-}
 
 
 
@@ -568,14 +568,11 @@ void start_program(ENV_CONFIG_field *internal_data,ENV_CONFIG_field *ENV_data,er
     printf("|\n");
 
     
-    printf("| set_warning_flags\n");
-    catch_err(set_warning_flags(internal_data,err));
+    catch_err(set_global_flags(internal_data,WARNING_FLAG_NAME,WARNING_FLAGS,err));
     if(err->code) return;
-    printf("| set_show_debuginfo\n");
-    catch_err(set_show_debuginfo(internal_data,err));
+    catch_err(set_global_flag(internal_data,show_debug_KeyName,SHOW_DEBUG_INFO,err));
     if(err->code) return;
-    printf("| set_show_ERRlocation\n");
-    catch_err(set_show_ERRlocation(internal_data,err));
+    catch_err(set_global_flags(internal_data,show_ERR_location,SHOW_ERR_LINE,err));
     if(err->code) return;
 
     const int php_exists = catch_err(PHP_exists(internal_data,err));

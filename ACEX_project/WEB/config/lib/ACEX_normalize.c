@@ -119,21 +119,24 @@ char* normalize_value(char *dst,char **src_ptr,const int max_size,const char del
     return start;
 }
 
-
-
-
-char* normalize_path(const char* path,error_details *err){
-    if(!path) return NULL;
-
+//throw error if the string contain ../
+static void reject_travesal(const char* path,error_details *err){
     if(strstr(path,".." SLASH) != NULL){
         err->code = ERR_PATH_invalid;
 
         const int expected = snprintf(err->description,sizeof(err->description),"invalid string finded in [%s]: ..%c",path,SLASH_CHR);
-        const int res = catch_err(ERR_snprintf(expected,MAX_BUFFER_SIZE,err));
-        if(res) return NULL;
+        catch_err(ERR_snprintf(expected,MAX_BUFFER_SIZE,err));
         
-        return NULL;
+        return;
     }
+}
+
+
+
+char* normalize_path(const char *path,error_details *err){
+    if(!path) return NULL;
+
+    reject_travesal(path,err);
 
     char *buffer = malloc(MAX_INPUT_SIZE);
 
