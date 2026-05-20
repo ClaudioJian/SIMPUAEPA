@@ -186,10 +186,11 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, error_details *err){
     while(fgets(line,sizeof(line),data->fp) != NULL){
         //start at first char by set pointer to line
         char *curr_chr = line;
-        
+        printf("| || line: %s\n",line);      
+          
         //skip leading space
         while(*curr_chr==' '||is_ignorable_chr(*curr_chr)) curr_chr++;
-        
+
         
         if(*curr_chr == '\n' || *curr_chr == '\0'|| *curr_chr == '\r') continue; //this line is over
 
@@ -197,6 +198,7 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, error_details *err){
         //if find it is not # return immedially and grab data
         if(*curr_chr!='#'){
             catch_err(ENV_CONFIG_parse_line(&curr_chr, data, err));
+            if(data->start_offset < 0) data->start_offset = old_fp;
             if(err->code) {
                 //description of err
                 const int expected = snprintf(err->description,sizeof(err->description),"invalid char found in line:[%s]",line);
@@ -210,9 +212,14 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, error_details *err){
             while(*curr_chr==' '|| is_ignorable_chr(*curr_chr)) curr_chr++; //skip space after #
             //find label l:, required r: or s: skip and continue until find real key=value
             if(is_option(*curr_chr)){
+;
                 //make it skip to label/r/s when start from top
                 // only assign it when is not initialized(-1)
                 if(data->start_offset < 0) data->start_offset = old_fp;
+
+                printf("curr option:%c \n",*curr_chr);
+
+                printf("| || curr offset: %ld\n",data->start_offset);             
                 
                 catch_err(ENV_CONFIG_mode_logic(&curr_chr, data, err)); 
                 if(err->code) return -1;

@@ -568,11 +568,13 @@ void start_program(ENV_CONFIG_field *internal_data,ENV_CONFIG_field *ENV_data,er
     printf("|\n");
 
     
-
+    printf("| set_warning_flags\n");
     catch_err(set_warning_flags(internal_data,err));
     if(err->code) return;
+    printf("| set_show_debuginfo\n");
     catch_err(set_show_debuginfo(internal_data,err));
     if(err->code) return;
+    printf("| set_show_ERRlocation\n");
     catch_err(set_show_ERRlocation(internal_data,err));
     if(err->code) return;
 
