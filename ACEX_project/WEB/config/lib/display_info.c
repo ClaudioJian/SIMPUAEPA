@@ -5,7 +5,7 @@ static size_t hyphenate_word(const char *word, size_t line_chr, const size_t new
     size_t word_i=0;
     while(word[word_i]!='\0'){
         // only print newline when hit the word it self too big,else will just skip to next newline
-        if(word_i >= (max_line_chr-1)){
+        if(line_chr >= (max_line_chr-1)){
             printf("-\n%s ", new_line_prefix);
             line_chr = new_lprefix_len + 1;
         }
@@ -18,17 +18,23 @@ static size_t hyphenate_word(const char *word, size_t line_chr, const size_t new
 
 
 size_t display_wrapped_text(const char *label,const char *new_line_prefix,size_t line_chr,const size_t max_line_chr){
-    char word[MAX_TEXT_SIZE];
+    char word[MAX_TEXT_SIZE] = {0};
+
     int word_size = 0;
     const size_t new_lprefix_len = strlen(new_line_prefix);
 
     for(size_t label_i=0;; label_i++){
         char curr_chr = label[label_i];
 
+
         //if word end, store it
         if(curr_chr == ' '||curr_chr == '\n'||curr_chr == '\0'){
             word[word_size] = '\0';
-            if(word[0]=='\0') continue;
+            if(word_size==0) {
+                if(curr_chr==' ') putchar(' ');
+                if(curr_chr == '\0' && word_size<=0) break;
+                continue;
+            }
             
             //print new line when total text in char is too big, else print directly
             if((size_t)word_size + line_chr >= max_line_chr){

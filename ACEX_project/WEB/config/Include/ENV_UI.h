@@ -11,15 +11,19 @@
 /**  
  * start from the latest posision to grab value. if alredy set, skip that value. stop only when find new value that isn't set.
  * 
+ * @param mode (r_mode)0 = read mode else (w_mode)1 will ask to set
+ * 
  * REMEMBER to clear data by using ENV_CONFIG_clear(data)!!!
  * if the file alredy eof, don't run this unless has used ENV_CONFIG_rewind or manually set flag to 0. 
+ * 
+ * if previous data is passed(not null), then it will try to write same data in new file
  * 
  * Set value depedends what user inputed(or use default value if nothing inputed finded) in env_data.
  * 
  * display label to explain what this value does.
  * @return 1=fail(EOF) 0=sucess -1 error = buffer overflow/malloc error
  */
-int ENV_CONFIG_step_config(ENV_CONFIG_field *data, error_details *err);
+int ENV_CONFIG_step_config(ENV_CONFIG_field *data,ENV_CONFIG_field *prev_data,const int mode, error_details *err);
 
 
 /**  
@@ -42,6 +46,8 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field* data, error_details *err);
  * 
  * REMEMBER to clear data by using ENV_CONFIG_clear(data)!!!
  * 
+ * if previous data is passed(not null), then it will try to write same data in new file
+ * 
  * Try to find in all .env.example the key contain exactly same name passed in argument.
  * Cannot be used to set file.
  * @returns int
@@ -51,7 +57,7 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field* data, error_details *err);
  * 
  * - -1 = buffer overflow, fseek error
  */
-int ENV_CONFIG_adjust_key(const char *setting, ENV_CONFIG_field *data, error_details *err);
+int ENV_CONFIG_adjust_key(const char *setting,ENV_CONFIG_field *data, ENV_CONFIG_field *prev_data, error_details *err);
 
 #endif
 

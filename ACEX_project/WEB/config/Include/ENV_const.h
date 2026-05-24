@@ -58,15 +58,19 @@ Please also change in section below: IMPORTANT CONST
 //name of folder contain setup.exe
 #define SETUP_FOLDER "config"
 
+#define ENV_EXAMPLE_FILE_NAME ".env.example"
+
 //location of .env.example
-#define ENV_EXAMPLE "." SLASH "config" SLASH "setting" SLASH ".env.example"
+#define ENV_EXAMPLE "." SLASH "config" SLASH "setting" SLASH ENV_EXAMPLE_FILE_NAME
+
+#define INTERNAL_CONFIG_FILE_NAME "internal.cfg"
 
 //location of internal use config file
-#define CONFIG_FILE "." SLASH "config" SLASH "setting" SLASH "internal.cfg"
+#define CONFIG_FILE "." SLASH "config" SLASH "setting" SLASH INTERNAL_CONFIG_FILE_NAME
 
 //name defined in internal.cfg
 #define WARNING_FLAG_NAME "WARNING_FLAGS"
-#define ENVIROMENT_KEY_NAME "ENVIROMENT"
+#define ENVIRONMENT_KEY_NAME "ENVIRONMENT"
 #define PHP_path_envKeyName "PHP_PATH"
 #define show_debug_KeyName "SHOW_DEBUG_INFO"
 #define show_ERR_location "DISPLAY_ERROR_LINE"
@@ -129,5 +133,8 @@ extern int WARNING_FLAGS;
 extern int SHOW_DEBUG_INFO;
 extern int SHOW_ERR_LINE;
 extern int emergency_in_use;
+
+#define r_mode 0
+#define w_mode 1
 
 #endif

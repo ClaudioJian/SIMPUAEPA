@@ -9,7 +9,7 @@
 /**
  * write .env file(new or override).
  * 
- * The file name is .env.enviroment or pure .env depedent user setting.
+ * The file name is .env.environment or pure .env depedent user setting.
  * 
  * Loop throught data->depencity list and use its key=value\n to write.
  * @return

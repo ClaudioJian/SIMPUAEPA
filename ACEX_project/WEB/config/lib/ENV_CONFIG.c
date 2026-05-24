@@ -32,13 +32,14 @@ ENV_CONFIG_field *ENV_init_config_struct(const char* file_name,error_details *er
         free(new_node);
         new_node = NULL;
 
-        char buffer[MAX_TEXT_SIZE];
+        char err_msg[MAX_TEXT_SIZE];
 
-        catch_err(ERR_snprintf(snprintf(buffer,MAX_TEXT_SIZE,"Cannot open file %s\n",file_name),MAX_TEXT_SIZE,err));
+
+        catch_err(ERR_snprintf(snprintf(err_msg,MAX_TEXT_SIZE,"Cannot open file %s\n",file_name),MAX_TEXT_SIZE,err));
         if(err->code) return NULL;
 
         err->code = ERR_fopen;
-        strcpy(err->description,buffer);
+        strcpy(err->description,err_msg);
         return NULL;
     }
 
@@ -51,7 +52,29 @@ ENV_CONFIG_field *ENV_init_config_struct(const char* file_name,error_details *er
 }
 
 
+void ENV_CONFIG_delete_node(ENV_CONFIG_field *data,config_node *curr_node,config_node *prev_node){
+    config_node *next_node = NULL;
+    if(curr_node == data->depencity_list && data->depencity_list->next !=NULL) {
+        //replace next value to initial pointer without releasing start pointer. release only the next value(used data) and don't move since it has alredy replaced with next node.
+        memcpy(curr_node->value,curr_node->next->value,sizeof(curr_node->value));
+        memcpy(curr_node->key,curr_node->next->key,sizeof(curr_node->key));
 
+        next_node = curr_node->next->next;
+        free(curr_node->next);
+
+        curr_node->next = next_node;
+
+        return;
+    }
+    prev_node->next = curr_node->next;
+
+    if(curr_node == data->depencity_list) data->depencity_list = NULL;
+    //delete current node
+    free(curr_node);
+    curr_node = NULL;
+
+    return;
+}
 
 
 

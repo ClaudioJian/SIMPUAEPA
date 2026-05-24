@@ -51,8 +51,12 @@ static int valid_file(const char *target,error_details *err,char *filtered){
 
 
 
-int ENV_CONFIG_step_config(ENV_CONFIG_field *data, error_details *err){
+int ENV_CONFIG_step_config(ENV_CONFIG_field *data,ENV_CONFIG_field *prev_data,const int mode, error_details *err){
     if(data->is_EOF) return 1;
+    if(mode != w_mode && mode != r_mode){
+        err->code = ERR_invalid_mode;
+        return -1;
+    }
     
     int not_EOF = 1;
     // if isn't first time acess data in .env.example, skip to first non comment line
@@ -74,30 +78,35 @@ int ENV_CONFIG_step_config(ENV_CONFIG_field *data, error_details *err){
         ENV_CONFIG_clear(data);
     }
 
+    //if prev data isn't null, change value to alredy registered data
+    // previous data will never have file registered, so skip if is file
     //if flag set to skip, don't let user change it
-    if(data->mode >= 0) {catch_err(ENV_CONFIG_ui_prompt(data,err));}
+    const int has_prev_data = catch_err(ENV_CONFIG_cpy_prev_data(data,prev_data,err));
     if(err->code) return -1;
-    
+    if(!has_prev_data && data->mode >= 0 && mode == w_mode) {catch_err(ENV_CONFIG_ui_prompt(data,err));}
+
+    if(err->code) return -1;
     return 0;
 }
 
 
 
-int ENV_CONFIG_adjust_key(const char *setting, ENV_CONFIG_field *data, error_details *err){
+int ENV_CONFIG_adjust_key(const char *setting, ENV_CONFIG_field *data,ENV_CONFIG_field *prev_data, error_details *err){
     if(ENV_CONFIG_is_alredy_set(setting,data))return 1;
     const int find = catch_err(ENV_CONFIG_match(setting,data,err));
     
     if(err->code) return -1;
 
     if(!find) {
-        printf("| cannot find setting: %s\n", setting);
+        printf("| cannot find setting: [%s]\n", setting);
         return 0;
     }
 
-    //skip when is labbered as skip
-    if(data->mode >= 0) {catch_err(ENV_CONFIG_ui_prompt(data,err));}
+    const int has_prev_data = catch_err(ENV_CONFIG_cpy_prev_data(data,prev_data,err));
     if(err->code) return -1;
+    if(!has_prev_data && data->mode >= 0) {catch_err(ENV_CONFIG_ui_prompt(data,err));}
 
+    if(err->code) return -1;
     return 1;
 }
 
@@ -123,18 +132,18 @@ static void print_label(ENV_CONFIG_field *data,size_t max_line_chr,error_details
     }
 
     //initial chr is 17 because of "|  ||  Please set "
-    const size_t line_chr = 17;
+    size_t line_chr = 17;
     printf("|  || Please set ");
 
-    display_wrapped_text(data->label,"|  || ",line_chr,max_line_chr);
+    line_chr = display_wrapped_text(data->label,"|  || ",line_chr,max_line_chr);
 
     switch (data->mode)
     {
     case 1:
-        printf("(required)!");
+        display_wrapped_text("(required)!","|  || ",line_chr,max_line_chr);
         break;
     case 2:
-        printf("(opticional, enter \"null\" to ignore this value)!");
+        display_wrapped_text("(optional, type \"null\" to skip)!","|  || ",line_chr,max_line_chr);
         break;
     }
     putchar('\n');
@@ -143,20 +152,35 @@ static void print_label(ENV_CONFIG_field *data,size_t max_line_chr,error_details
 
 
 //loop throught list and print all option
-static void print_option(ENV_CONFIG_field *data){
+static void print_option(ENV_CONFIG_field *data,error_details *err){
     option_node *curr_node = data->option_list;
     int count = 1;
 
-    printf("|  ||  `--[");
+    size_t line_chr = 0;
+    char op[MAX_OPTION_SIZE];
+    int res;
+
+    line_chr = display_wrapped_text("|  ||  `--[","|  || ",line_chr,MAX_LINE_CHR);
     //skip last one
     while(curr_node->next!=NULL){
-        printf("%i. %s | ",count,curr_node->option);
+        res = catch_err(ERR_snprintf(
+            snprintf(op,sizeof(op),"%i. %s | ",count,curr_node->option),
+            sizeof(op),err)
+        );
+        if(res) return;
+
+        line_chr = display_wrapped_text(op,"|  ||     ",line_chr,MAX_LINE_CHR);
         curr_node = curr_node->next;
         count++;
     }
 
-    printf("%i. %s",count,curr_node->option);
-    printf("]: ");
+    res = catch_err(ERR_snprintf(
+        snprintf(op,sizeof(op),"%i. %s]:",count,curr_node->option),
+        sizeof(op),err)
+    );
+    if(res) return;
+
+    display_wrapped_text(op,"|  ||      ",line_chr,MAX_LINE_CHR);
 }
 
 
@@ -177,9 +201,18 @@ static void ui_header(ENV_CONFIG_field *data,char **input,error_details *err){
     catch_err(print_label(data,MAX_LINE_CHR,err));
     if(err->code) return;
 
-    printf("|  || [default = %s]:\n",data->original_value);
-    if(data->option_list==NULL) printf("|  ||   `--[New value]: ");
-    else print_option(data);
+    char msg[MAX_TEXT_SIZE];
+    const int res = catch_err(ERR_snprintf(
+        snprintf(msg,sizeof(msg),"|  || [default = %s]:",data->original_value),
+        sizeof(msg),err)
+    );
+    if(res) return;
+
+    
+
+    display_wrapped_text(msg,"|  || ",0,MAX_LINE_CHR); putchar('\n');
+    if(data->option_list==NULL) display_wrapped_text("|  ||   `--[New value]: ","|  || ",0,MAX_LINE_CHR);
+    else print_option(data,err);
 
     fgets(*input, MAX_INPUT_SIZE, stdin);
     printf("|  ||\n");

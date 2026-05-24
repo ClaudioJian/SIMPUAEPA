@@ -124,7 +124,7 @@ static void reject_travesal(const char* path,error_details *err){
     if(strstr(path,".." SLASH) != NULL){
         err->code = ERR_PATH_invalid;
 
-        const int expected = snprintf(err->description,sizeof(err->description),"invalid string finded in [%s]: ..%c",path,SLASH_CHR);
+        const int expected = snprintf(err->description,sizeof(err->description),"invalid string found in path [%s]: Relative directory traversal [..%c]",path,SLASH_CHR);
         catch_err(ERR_snprintf(expected,MAX_BUFFER_SIZE,err));
         
         return;

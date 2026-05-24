@@ -16,7 +16,7 @@ static int ENV_CONFIG_validate_first_char(const char first, error_details *err){
         else err->code = ERR_variable_start_special_char;
         
         //description of err
-        const int expected = snprintf(err->description,sizeof(err->description),"invalid char :[%c]",first);
+        const int expected = snprintf(err->description,sizeof(err->description),"Syntax error: First invalid character detected[%c]",first);
         const int res = catch_err(ERR_snprintf(expected,sizeof(err->description),err));
         if(res) return -1;
 
@@ -205,7 +205,7 @@ int ENV_CONFIG_scan_next_data(ENV_CONFIG_field *data, error_details *err){
             if(data->start_offset < 0) data->start_offset = old_fp;
             if(err->code) {
                 //description of err
-                const int expected = snprintf(err->description,sizeof(err->description),"invalid char found in line:[%s]",line);
+                const int expected = snprintf(err->description,sizeof(err->description),"Syntax error: found in line[%s]",line);
                 catch_err(ERR_snprintf(expected,sizeof(err->description),err));
                 return -1;
             }

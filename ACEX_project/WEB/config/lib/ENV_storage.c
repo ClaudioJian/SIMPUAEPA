@@ -44,6 +44,115 @@ static int ENV_scan_file_list(const char *file, file_node *node){
 
 
 
+int delete_alredy_set(ENV_CONFIG_field *data, ENV_CONFIG_field *prev_data){
+    if(prev_data == NULL) return 0;
+    if(data->depencity_list==NULL) return 0;
+
+    //check storage
+    config_node *curr_node = prev_data->depencity_list;
+    config_node *prev_node = curr_node;
+    
+    
+    while(curr_node!=NULL){
+        if(ENV_CONFIG_is_alredy_set(curr_node->key,data)) {
+            ENV_CONFIG_delete_node(prev_data,curr_node,prev_node);
+            continue;
+        }
+
+        prev_node = curr_node;
+        curr_node = curr_node->next; //move forward
+    }
+
+    return 1;
+}
+
+
+
+
+/// ask to user to choise previous value or new value in .env.example when has conflict
+/// @return
+/// 
+/// - 1 if use previous data
+///
+/// - 2 if use new value in .env.example
+///
+/// - -1 if error
+static int resolve_config_value_conflict(config_node *curr_node,ENV_CONFIG_field *data,error_details *err){
+    int res;
+    char prev_data_msg[MAX_TEXT_SIZE];
+
+    res = catch_err(ERR_snprintf(
+        snprintf(prev_data_msg,sizeof(prev_data_msg),"|  `--< 1. OLD value[%s]:[%s]>",curr_node->key,curr_node->value),
+        sizeof(prev_data_msg),err)
+    );
+
+    if(res) return -1;
+
+    char curr_data_msg[MAX_TEXT_SIZE];
+
+    res = catch_err(ERR_snprintf(
+        snprintf(curr_data_msg,sizeof(curr_data_msg),"|  `--< 2. in (%s) - NEW value[%s]:[%s] >",data->key,data->value,ENV_EXAMPLE_FILE_NAME),
+        sizeof(curr_data_msg),err)
+    );
+
+    if(res) return -1;
+
+    char answer[2];
+
+    display_wrapped_text("| Configuration conflict detected:","| ",0,MAX_LINE_CHR); putchar('\n');
+    display_wrapped_text("| Please choose which value to keep!","| ",0,MAX_LINE_CHR); putchar('\n');
+    display_wrapped_text(prev_data_msg,"| ",0,MAX_LINE_CHR); putchar('\n');
+    display_wrapped_text(curr_data_msg,"| ",0,MAX_LINE_CHR); putchar('\n');
+    do{
+        printf("| "); scanf("%1s",answer);
+    }
+    while(answer[0]!= '1' && answer[0] != '2');
+    return answer[0] - '0';
+}
+
+
+
+
+
+
+int ENV_CONFIG_cpy_prev_data(ENV_CONFIG_field *data, ENV_CONFIG_field *prev_data,error_details *err){
+    if(prev_data == NULL) return 0;
+    if(data->depencity_list==NULL) return 0;
+
+    static int deleted = 0;
+    if(!deleted) deleted = delete_alredy_set(data,prev_data);
+
+
+
+    //check storage
+    config_node *curr_node = prev_data->depencity_list;
+    config_node *prev_node = curr_node;
+    int selected = 1;
+
+    while(curr_node!=NULL){
+        if(strcmp(curr_node->key,data->key) == 0) {
+            //copy prev data to new data
+            //if the value cannot be set by user and have conflict between previous data and curr data
+            if(data->mode<0 && strcmp(curr_node->value,data->value)!=0){
+                selected = catch_err(resolve_config_value_conflict(curr_node,data,err));
+                if(err->code) return -1;
+            }
+            if(selected == 1) memcpy(data->value,curr_node->value,sizeof(data->value));
+
+            ENV_CONFIG_delete_node(prev_data,curr_node,prev_node);
+            
+            return 1;
+        }
+        prev_node = curr_node;
+        curr_node = curr_node->next; //move forward
+    }
+
+    return 0;
+}
+
+
+
+
 int ENV_CONFIG_is_alredy_set(const char *setting, ENV_CONFIG_field *data){
     if(!setting) return 0;
 

@@ -57,6 +57,7 @@ typedef enum{
     ERR_too_many_options,
     ERR_permition_denied,
     ERR_invalid_boolean,
+    ERR_invalid_mode,
     test_sucess,
 }error_code_list;
 

@@ -10,6 +10,17 @@
 int ENV_CONFIG_is_alredy_set(const char *setting, ENV_CONFIG_field *data);
 
 /**
+ * find the setting passed in previous data. if previous data has alredy set that value, copy that old data's value and copy in new data's value and delete data in previous data.
+ * 
+ * @return
+ * 
+ * - 0 not find/ no previous data
+ * 
+ * - 1 find
+ */
+int ENV_CONFIG_cpy_prev_data(ENV_CONFIG_field *data, ENV_CONFIG_field *prev_data,error_details *err);
+
+/**
  * store used setting in data'storage or in file storage for future use.
  * 
  * When tracked, setting that is alredy stored will be ignored when finding next setting.

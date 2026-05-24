@@ -78,66 +78,98 @@ int track_error(error_details *err, const char *file,const char *funct_name, con
     return 0;
 }
 
+static void msg_invalid_bool(){
+    size_t str_offset = 0;
+    char *ON[] = {on_keyword};
+    char *OFF[] = {off_keyword};
+    const int ON_count = sizeof(ON)/ sizeof(ON[0]);
+    const int OFF_count = sizeof(OFF)/ sizeof(OFF[0]);
+    
+    str_offset = display_wrapped_text("| [Source Error] Expected :","| ",0,MAX_LINE_CHR); 
+    
+    for(int i=0; i < ON_count; i++) {
+        str_offset = display_wrapped_text(ON[i], "| ",str_offset,MAX_LINE_CHR);
+        putchar(' ');
+    }
+    for(int i=0; i < OFF_count; i++) {
+        str_offset = display_wrapped_text(OFF[i], "| ",str_offset,MAX_LINE_CHR);
+        putchar(' ');
+    }     
 
+    printf(" ");
+    display_wrapped_text("0(false) or 1(true)!","| ",str_offset,MAX_LINE_CHR);
+}
 
 
 static void general_err_msg(int error_code){
     switch(error_code){
         case buffer_overflow:
-            printf("| buffer overflow!"); break;
+            display_wrapped_text("| Fatal error: buffer overflow detected!","| ",0,MAX_LINE_CHR); break;
         case ERR_fopen:
-            printf("| cannot open/create file!"); break;
-        case ERR_fclose:
-            printf("| some thing happen when writing! please check if is open or it's permission"); break;
+            display_wrapped_text("| Unable to open/create file!","| ",0,MAX_LINE_CHR);
+            break;
+        case ERR_fclose: //!
+            display_wrapped_text("| An error occurred while saving. Please ensure the file is closed and verify write permissions","| ",0,MAX_LINE_CHR); break;
         case ERR_pclose:
-            printf("| Command not found or exited with error status!"); break;    
-        case ERR_fseek:
-            printf("| format for variable name/key in .env.example shoud contain \"=\"!"); break;   
+            display_wrapped_text("| Command not found or exited with error status!","| ",0,MAX_LINE_CHR); break;    
+        case ERR_fseek: //!
+            display_wrapped_text("| Failed to navigate within the template file structure!","| ",0,MAX_LINE_CHR); break;   
         case ERR_encoding:
-            printf("| Encoding error!");break;
-        case ERR_malloc:
-            printf("| cannot allocate memory for malloc()!"); break;
+            display_wrapped_text("| Encoding error detected!","| ",0,MAX_LINE_CHR); break;
+        case ERR_malloc: //!
+            display_wrapped_text("| Memory allocation failure (malloc failed)!","| ",0,MAX_LINE_CHR); break;
         case ERR_file_creation:
-            printf("| cannot create file! Please check if you have permission and isn't open!"); break;
+            display_wrapped_text("| Cannot create file! Please check directory permissions and make sure the file isn't open in another program.","| ",0,MAX_LINE_CHR); break;
         case ERR_set_EnvVal:
-            printf("| some thing went wrong when set enviroment variable!"); break;
+            display_wrapped_text("| An error occurred while setting the environment variable!","| ",0,MAX_LINE_CHR); break;
         case ERR_WinCreateProcess:
-            printf("| Error code when executing:%lu\n",GetLastError());
-            printf("| See more detail in:\n");
-            printf("| https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes");
+            printf("| Process execution error code:%lu\n",GetLastError());
+            display_wrapped_text("| Review error code documentation at:\n","| ",0,MAX_LINE_CHR);
+            display_wrapped_text("| https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes","| ",0,MAX_LINE_CHR);
             break;          
         // php and composer related
         case ERR_PHP_not_found:
-            printf("| cannot find php!"); break;
+            display_wrapped_text("| Cannot find php in run time!","| ",0,MAX_LINE_CHR); break;
         case ERR_COMPOSER_not_found:
-            printf("| composer.phar not found in project root! Please check if you have it and try again!"); break;      
+            display_wrapped_text("| 'composer.phar' not found in the project root! Please install it and try again.","| ",0,MAX_LINE_CHR); 
+            display_wrapped_text("| Install composer:","| ",0,MAX_LINE_CHR);
+            display_wrapped_text("| https://getcomposer.org/download/","| ",0,MAX_LINE_CHR);
+            break;      
         case ERR_ssl_cert:
-            printf("| SSL certificate problem!\n");
-            printf("| Please check if certification exist and are up to date!\n");
-            printf("| Also verify in read me to more possible reason...");
+            display_wrapped_text("| SSL certificate verification issue!\n","| ",0,MAX_LINE_CHR);
+            display_wrapped_text("| Please check if your certificates exist and are up to date.\n","| ",0,MAX_LINE_CHR);
+            display_wrapped_text("| Refer to the README file for more detail of possible causes.","| ",0,MAX_LINE_CHR);
             break;
         case ERR_COMPOSER_depencity:
-            printf("| Dependency solving error code in composer!"); break;
+            display_wrapped_text("| Composer encountered a dependency resolution error!!","| ",0,MAX_LINE_CHR); break;
         case ERR_PATH_invalid:
-            printf("| format for path contains invalid characters(note: some invalid character are not included)!"); break;
+            display_wrapped_text("| Target path format contains invalid characters!","| ",0,MAX_LINE_CHR);
+            display_wrapped_text("| Note: This validation check is not strict; unlisted invalid characters or words may still cause execution errors.","| ",0,MAX_LINE_CHR); 
+            break;
         case ERR_PATH_get_curr_abs:
-            printf("| cannot get absolute path of project root!\n"); break;
+            display_wrapped_text("| Failed to resolve the absolute path of the project root!\n","| ",0,MAX_LINE_CHR); break;
         case ERR_ENV_invalid_format:
-            printf("| format for variable name/key in .env.example shoud contain \"=\"!"); break;
+            display_wrapped_text("| Environment key format error: should be [key=value] format!","| ",0,MAX_LINE_CHR); break;
         case ERR_ENV_empty_value:
-            printf("| Values with skip flag in configuration file cannot be empty!"); break;                
+            display_wrapped_text("| Configuration values marked with a skip flag cannot be left empty!","| ",0,MAX_LINE_CHR); break;                
         case ERR_variable_start_digit:
-            printf("| variable name/key in .env.example cannot start with any digit!"); break;
+            display_wrapped_text("| Environment variable keys in .env.example cannot begin with a number (excluding file identifiers)!","| ",0,MAX_LINE_CHR); break;
         case ERR_variable_start_special_char:
-            printf("| variable name/key in .env.example cannot start with any special char(except for file)!");break;
+            display_wrapped_text("| Environment variable keys in .env.example cannot begin with special characters (excluding file identifiers)!","| ",0,MAX_LINE_CHR);break;
         case ERR_invalid_extension:
-            printf("| file type is not supported!"); break;
+            display_wrapped_text("| File extension type is not supported!","| ",0,MAX_LINE_CHR); break;
         case ERR_too_many_options:
-            printf("| max option can be used is %i!",MAX_OPTIONS); break;
+            char opt_buf[64];
+            snprintf(opt_buf, sizeof(opt_buf), "| The maximum number of options is %d!", MAX_OPTIONS);
+            display_wrapped_text(opt_buf, "| ", 0, MAX_LINE_CHR);
+            break;
         case ERR_permition_denied:
-            printf("| Permission denied!"); break;
+            display_wrapped_text("| Permission denied!","| ",0,MAX_LINE_CHR); break;
         case ERR_invalid_boolean:
-            printf("| invalid boolean value! only accept \"on\", \"off\", \"true\", \"false\", integer 0(false) and positive integer 1(true)!"); break;
+            msg_invalid_bool();
+            break;
+        case ERR_invalid_mode:
+            display_wrapped_text("| [Source Error]: Invalid mode selected. Only 'r_mode' and 'w_mode' constants defined in ENV_const.h are acceptable!","| ",0,MAX_LINE_CHR); break;
         case test_sucess:
             printf("| test went sucessfull!"); break;
     }
@@ -150,8 +182,8 @@ void print_error(error_details *err){
     general_err_msg(err->code);
 
     if(SHOW_DEBUG_INFO){
-        printf("| Start from\n");
-        printf("| vvvvvvvvvv\n");
+        printf("| Error start from\n");
+        printf("| vvvvvvvvvvvvvvvv\n");
 
         for(trace_error *curr_node = err->err_trace; curr_node != NULL; curr_node = curr_node->next){
             if(SHOW_ERR_LINE){

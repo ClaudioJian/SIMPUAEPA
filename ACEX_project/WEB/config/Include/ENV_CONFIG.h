@@ -86,6 +86,9 @@ typedef struct{
 */
 ENV_CONFIG_field *ENV_init_config_struct(const char* file_name,error_details *err);
 
+// delete current node in struct [data] passed
+void ENV_CONFIG_delete_node(ENV_CONFIG_field *data,config_node *curr_node,config_node *prev_node);
+
 // free and set all option node to null
 void ENV_CONFIG_clear_option(ENV_CONFIG_field *data);
 

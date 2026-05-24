@@ -1,91 +1,140 @@
-1. What this folder does:
-    This folder is for automation install all depencity, run some script, create new .env file, for example: script create database, setting server configurations.
-    IMPORTANT:
-        When you are trying add new setting to use for future, don't just change .env or setting enviroment value directly, 
-        you should change .env.example to other developers have same setting as your computer.
-        If you are uptading database structure, please list the script/file that uptade database inside internal.cfg like example below:
+Project Setup & Configuration Guide
+    This automation tool streamlines the installation of project dependencies, handles initial server configuration, 
+    runs initialization scripts (such as database structural setups), and generates local environment baselines.
+
+1. Directory Purpose & Automation Overview
+    When executed, setup.exe automatically processes the environment setup relative to the project root directory.
+
+    Automated Steps:
+    Generates a .env file in the project root to store shared configuration settings and sensitive credentials (e.g., database keys, application tokens).
+
+    Generates a vendor/ directory in the project root and automatically installs all required third-party project dependencies.
+
+    Technical References:
+    Environment Parsing: To learn how the application interacts with the generated environment variables, review the vlucas/phpdotenv Repository. (https://github.com/vlucas/phpdotenv)
+
+    Package Management: To add new project dependencies, update your configurations inside composer.json. See the Composer Basic Usage Guide for details.(https://getcomposer.org/doc/01-basic-usage.md)
+
+    !!! CRITICAL DEVELOPMENT RULE:
+    Do not modify local .env values or local environment state directly when creating new features for future deployment.
+    You must mirror those structural changes inside .env.example so other developers can sync their local environments.
+
+    If you are updating or creating database schemas, you must use version-controlled PHP migration scripts. 
+    Failure to use explicit database version controls will result in the setup script overwriting existing data tables entirely. 
+    List your active database update scripts(consider these scripts start form project root) inside internal.cfg under the file tracker lines using this exact syntax:
             #l: file to ...
             #f:
-            v3_name_schema.sql
+            v3_name_schema.php
 
-        when setup.exe runs, it will go to project's root!
-
-
-
-2. How to use:
-    Double click setup.exe, after that, it will start ask you to set some value in to put in .env. and some internal use configs.
-    If has some error see in 6. troubleshooting
-    
-
-3. What others folders and files do:
-    - [.env]: This file contain all common setting and sensitive data that are only avaible in your computer, 
-              others one and real server will contain diferent values for security reason.
-              Will be written in project root.
-              Important: do not send .env file to github.
-    A) config folder:
-        Recommend to see instruction in .env.example or in internal.cfg if you are changing/add new key name/default values.
-        - [.env.example]: All setting inside this file will be written in new .env(sitting in project root) to use in other applications.
-                          Example: #l:new values
-                                   NEW_VALUE = 12345
-        - [internal.cfg]: All setting used for setup.exe. You should add inside area "[FILES]" new files to run if you need.
-                          Example: #l:test file
-                                   test.php
-    B) src folder:
-        - database folder: here put all script to setting up database like create table, user and Etc.
-        - server folder: here put all script set setting for server.
-        setup.c: source code for setup.exe
-    C) other folders:
-        - [lib]: source code for both dll and .o files
-        - [Include]: header file for .c code.
-                     You can change some setting to change setup.exe behaviour like key size in ENV_const.h too if you want use less memory/perfomance(re-compile after change)
-        - others: put compiled files
-    [makefile] : script to compile setup.exe. you need have gcc and makefile installed to use. You don't need if you never need re-compile
-    (you can also download binary file directly in github if some uptade drop for setup.exe)
+        
 
 
-4. Restrictions:
-    This may fail on other computer/enviroment and that is not tested.
-    Only tested in Windows 10.
+2. Usage Instructions
+    Navigate to your project root directory and double-click setup.exe.(e.g ACEX_project/WEB/config)
 
-    When you are adding new/modify env values that is used in other files, please change key name and value of .env.example for others developers use.
-    If you are changing folder location inside this folder, please change constant in Include/ENV_const.h and notice others developers about this change
+    The interactive terminal interface will ask you to enter specific values for your .env configuration, followed by your internal setup parameters.
 
-    Only support php script to run. The database only supported is mysql.
-    You can use makefile to recompile, only necessary if you are changing any script except inside: src/database , src/server, all files in config
+    Legacy Data Resolution: If pre-existing configuration data(e.g .env) is detected in the project root, you can choose to either overwrite the entire data or append missing changes.
 
-    If that fail, please see instruction for "5. mannually setting".
+    In the event of a key conflict between old data and incoming defaults(that cannot be changed), the program will ask you to explicitly select which value to retain before proceeding.
+
+    If has some error see in 6. Troubleshooting Diagnostics and 5. Manual Configuration Fallback.
+
+
+
+
+3. Architecture & File Registry
+    Core Environment Core
+    .env — Contains specialized system flags and highly sensitive access credentials unique to your machine. 
+    Development instances and production servers will use entirely different data blocks for security safety. NEVER commit any file contain .env to GitHub repositories.
+
+    A) The config/ Directory
+    Consult the inline documentation inside .env.example or internal.cfg if you need to modify default keys or introduce new structural key-value sets.
+    .env.example — The baseline blueprints. All keys defined inside this framework are automatically translated into your newly generated root .env file.
+    internal.cfg — Houses runtime directives for setup.exe. Append new execution files inside the defined [FILES] block to declare structural dependencies.
+
+    B) The src/ Directory
+    src/database/ — Houses configuration scripts dedicated to constructing databases, establishing user tables, handling access controls, and assigning operational permissions.
+    src/server/ — Storage vector for custom core initialization parameters(e.g htacess, php.ini).
+    setup.c — The primary source code driving the setup.exe runtime workflow.
+
+    C) System Utilities & Resource Directories
+    lib/ — source files for compiling internal .o binary objects and dynamic-link libraries (.dll).
+
+    Include/ — header directory mapping out core .c logic. 
+                If you need to scale down parameters to optimize processing workloads (e.g., reducing KEY_SIZE limits inside ENV_const.h), 
+                change these constants and recompile the application binary.
+                See also in 7.Core Binary Recompilation (For Core Developers)
+
+    makefile — Compilation automation script maps. 
+                Running this requires local instances of gcc and make tools. 
+                If you are using pre-compiled binaries downloaded directly from GitHub, you can safely ignore this script.
 
     
-
-5. Manually setting:
-    If .env file didn't created, mean you need go configure manually:
-        1. copy file with name .env.example to project root
-        2. change file name to .env (additionally, you can change to .env.production for different situation)
-        3. change mostly of value inside .env
-    .env should store sensitive data(WARNING: ONLY IN BACKEND .env) and usual configure
-    do not move .exe to other place, if you want move/change .c or other file(like install_composer.php) to other place, please configure makefile and setup.c to match changes and uptade .exe
-    Downloading depencity:
-    in command line, first go to project root where contain composer.phar(cd), if composer.lock don't exist, run composer.phar update else run composer.phar install.
-    If has warning like: Warning: The lock file is not up to date..., then try run composer.phar update --with-all-dependencies.
     
-    Assumming database and server setting script has working well and do not overwrite existing data, run all files listed in internal.cfg or look inside folder [src/database] and [src/server]
-    If database script don't support version control/migration, you must look inside of their code and copy script that are necessary to avoid data loss
-    (example, if you have alredy one of table in code, don't run it)
-    You can ignore setup.exe and makefile as well.
+4. Operational Restrictions
+    Portability: This engine has been exhaustively tested exclusively on Windows 10. Unverified environments may produce unexpected errors.
+    Path Preservation: If you alter core folder topologies, you must update the location paths in Include/ENV_const.h and push those updates out to the development team.
+    System Assets: composer.phar is required for proper operation and must never be deleted from the system matrix. Otherwise you need download it in official site.
+    Engine Limits: Only support PHP scripts to communicates natively with MySQL databases.
+    Compilation Thresholds: Recompiling the application binary via the makefile is only required if you make structural changes to system source files. 
+                            Modifications to files strictly within src/database/, src/server/, or the config/ directory do not require recompilation.
 
-    
-6. troubleshooting
-    If show error similar to "SSL certificate problem" : 
-        1. system clock desync
-        2. certificate out data, uptade in https://curl.se/docs/caextract.html
-        3. antivirus fault, disable it TEMPORARY to check. also
-        see in https://getcomposer.org/doc/articles/troubleshooting.md#ssl-certificate-problem-unable-to-get-local-issuer-certificate for more details.
 
-6. To uptade setup.exe(skip this if setup.c or other file need compiles never changed):
-    Assumming you have gcc installed
-    
-    run in cmd: 
-    (add debug to show what command is running, or change to uptade in position of all, which delete all existing file and compile again)
-    mingw32-make -C path\to\ACEX_project\WEB\config all
-    or: 
-    cd path/to/this/folder   +    mingw32-make all
+
+5. Manual Configuration Fallback
+    If the automated setup utility fails to generate your working environment files, execute the initialization steps manually using the following procedure:
+
+    Phase I: Replicating Environment Files
+        Duplicate .env.example and place the copy directly into the project root directory.
+        Rename the duplicate file to .env (or create a distinct target context file, such as .env.production).
+        Open the file and customize the configuration variables manually.
+
+    Phase II: Manual Dependency Management
+        Ensure composer.phar is accessible. If missing, retrieve it from the Official Composer Download Portal.(https://getcomposer.org/download/)
+        Fire up your terminal window and navigate to your project root directory where composer.phar lives:
+
+        cd path/to/project/root
+        Check for an existing composer.lock file. If it does not exist, run a global update:
+
+        php composer.phar update
+        If a composer.lock file is present, trigger a native deployment sync instead:
+
+        php composer.phar install
+        If you encounter lock synchronization alerts stating “Warning: The lock file is not up to date...”, force a complete tree reconciliation:
+
+        php composer.phar update --with-all-dependencies
+
+    Phase III: Database Verification
+        Verify that your manual structural scripts do not overwrite live staging tables.
+        Manually execute the files declared inside internal.cfg (note: only run missing version of script for database),
+        or inspect src/database/ and src/server/ to select files safely.
+
+
+
+6. Troubleshooting Diagnostics
+    Issue A: SSL Certificate Verification Failure
+        System Clock Sync: Verify that your system's date, time, and timezone are correctly synchronized with internet time servers.
+        Expired CA Bundles: Update your local security certificate assets manually via cURL CA Extract Documentation. (https://curl.se/docs/caextract.html)
+        Antivirus: Security proxy filters can intercept TLS handshakes. 
+            Temporarily deactivate local firewalls or antivirus software to narrow down the issue. Refer to the Composer SSL Troubleshooting Guide for extended details.
+            https://getcomposer.org/doc/articles/troubleshooting.md#ssl-certificate-problem-unable-to-get-local-issuer-certificate
+
+    Issue B: Advanced Program Debugging
+        To safely debug runtime execution blockages, change the SHOW_DEBUG_INFO variable to "ON".
+        If errors persist, switch DISPLAY_ERROR_LINE to "ON" and forward the crash logs directly to the development team.
+
+
+
+7. Core Binary Recompilation (For Core Developers)
+    To compile or update structural features inside setup.exe using a local MinGW or GCC chain, run your command prompt and execute either command pattern below:
+
+
+    Method A: Target-driven make execution pointing directly to the config source vector
+    mingw32-make -C path\to\ACEX_project\WEB\config update
+
+    Method B: Inline directory translation execution pattern
+    cd path/to/this/folder
+    mingw32-make update
+
+(Note: To output real-time GCC logs during target construction phases, activate the local debug echo parameters, e.g ...update debug)

@@ -17,7 +17,7 @@ this files is to:
 #include <stdlib.h>
 
 int main(){
-    printf("PLEASE CHECK LICENSE FILE IN PROJECT ROOT!!!\n\n");
+    
 
     //moving to root of project
     if(chdir(ROOT)){
@@ -26,20 +26,45 @@ int main(){
         return 1;
     };
 
+    if(MAX_LINE_CHR<10) {
+        printf("MAX_LINE_CHR cannot be lower than 10\n");
+        stop();
+        return 1;
+    }
+
 
 
     //setting guide
-    printf("\nWelcome to server setup app!\n");
-    printf("This app is used to set initial configuration for sensitive data and common setting.\n");
-    printf("These data/settings usually change between machine to have better security.\n");
-    printf("For example, database password.\n");
-    printf("To add or change values, consult in .env.example\n\n");
-    printf("Current support: Windows\n\n");
 
-    printf("To using default value: input nothing and press enter key\n");
-    printf("Maxium lenght allowed: input = %i; value = %i char; key = %i char\n",MAX_INPUT_SIZE,MAX_VALUE_SIZE,MAX_KEY_SIZE);
+    printf("======================================================================\n");
+    printf("                  Welcome to the Server Setup Application!             \n");
+    printf("======================================================================\n");
+    printf("This tool streamlines initial configurations for sensitive data and common\n");
+    printf("settings, ensuring consistency across different machines.\n\n");
 
-    printf("\n\n");
+    printf("Once completed, this program will:\n");
+    printf("  1. Create a '.env' file in the project root to store common settings\n");
+    printf("     and sensitive credentials (e.g., database passwords).\n");
+    printf("  2. Create a 'vendor' folder in the project root containing all\n");
+    printf("     required project dependency libraries.\n\n");
+    printf("PLEASE CHECK LICENSE FILE IN PROJECT ROOT!!!\n\n");
+    printf("CRITICAL SECURITY NOTE:\n");
+
+    printf("Never commit or track '.env' files or the 'vendor' folder in Git!\n\n");
+    
+    printf("Configuration & Customization Guides:\n");
+    printf("  - General program behavior:  Modify '.internal.cfg' (e.g., warning flags)\n");
+    printf("  - Core system constraints:   Review 'Include/ENV_const.h' (e.g., buffer sizes)\n");
+    printf("  - Environment variables:     Add or modify fields in '.env.example'\n");
+    printf("  - Troubleshooting & Details: Refer to 'readme.txt'\n\n");
+
+    printf("Usage Hints:\n");
+    printf("  - To accept a default value: Leave the input empty and press ENTER.\n");
+    printf("  - Maximum allowed lengths:   Input = %i, Value = %i chars, Key = %i chars.\n\n", MAX_INPUT_SIZE, MAX_VALUE_SIZE, MAX_KEY_SIZE);
+
+    printf("System Support: Windows, MySQL\n");
+    printf("======================================================================\n\n");
+
 
     //----------------------start program---------------------------
     error_details *err = (error_details*) malloc(sizeof(error_details));
@@ -63,8 +88,9 @@ int main(){
 
     ENV_CONFIG_field *internal_data = catch_err(ENV_init_config_struct(CONFIG_FILE,err));
     ENV_CONFIG_field *ENV_data = catch_err(ENV_init_config_struct(ENV_EXAMPLE,err));
+    ENV_CONFIG_field *prev_data;
 
-    if(!err->code){catch_err(start_program(internal_data,ENV_data,err));};
+    if(!err->code){prev_data = catch_err(start_program(internal_data,ENV_data,err));};
 
     printf("===================Result===================\n");
     printf("|\n");
@@ -74,6 +100,7 @@ int main(){
     free_global_value();
     ENV_CONFIG_destroy(&internal_data);
     ENV_CONFIG_destroy(&ENV_data);
+    if(prev_data != NULL) ENV_CONFIG_destroy(&prev_data);
 
 
     printf("| All data have been cleaned!\n");
