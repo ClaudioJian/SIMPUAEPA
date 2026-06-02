@@ -73,7 +73,9 @@ Please also change in section below: IMPORTANT CONST
 #define ENVIRONMENT_KEY_NAME "ENVIRONMENT"
 #define PHP_path_envKeyName "PHP_PATH"
 #define show_debug_KeyName "SHOW_DEBUG_INFO"
+#define show_r_only_name "SHOW_READ_ONLY"
 #define show_ERR_location "DISPLAY_ERROR_LINE"
+#define SIMPLIFIED_DISPLAY_NAME "SIMPLIFIED_DISPLAY"
 
 
 
@@ -132,9 +134,15 @@ extern char* PHP_LOCATION;
 extern int WARNING_FLAGS;
 extern int SHOW_DEBUG_INFO;
 extern int SHOW_ERR_LINE;
+extern int SHOW_READ_ONLY;
+//fall back when malloc error
 extern int emergency_in_use;
+// flag that decide if need newline between variables=values
+extern int NEWLINE_BETWEEN_VARIABLES;
+extern int SIMPLIFIED_DISPLAY;
 
 #define r_mode 0
 #define w_mode 1
+#define internal_mode 2
 
 #endif

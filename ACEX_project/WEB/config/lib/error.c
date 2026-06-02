@@ -169,7 +169,7 @@ static void general_err_msg(int error_code){
             msg_invalid_bool();
             break;
         case ERR_invalid_mode:
-            display_wrapped_text("| [Source Error]: Invalid mode selected. Only 'r_mode' and 'w_mode' constants defined in ENV_const.h are acceptable!","| ",0,MAX_LINE_CHR); break;
+            display_wrapped_text("| [Source Error]: Invalid mode selected. Only modes constants defined in ENV_const.h are acceptable!","| ",0,MAX_LINE_CHR); break;
         case test_sucess:
             printf("| test went sucessfull!"); break;
     }

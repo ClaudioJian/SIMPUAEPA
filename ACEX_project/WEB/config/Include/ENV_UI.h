@@ -11,7 +11,7 @@
 /**  
  * start from the latest posision to grab value. if alredy set, skip that value. stop only when find new value that isn't set.
  * 
- * @param mode (r_mode)0 = read mode else (w_mode)1 will ask to set
+ * @param mode (r_mode)0 = read mode ,(w_mode)1 will ask to set, (internal_mode)2 mark file read as internal
  * 
  * REMEMBER to clear data by using ENV_CONFIG_clear(data)!!!
  * if the file alredy eof, don't run this unless has used ENV_CONFIG_rewind or manually set flag to 0. 
@@ -38,6 +38,8 @@ int ENV_CONFIG_step_config(ENV_CONFIG_field *data,ENV_CONFIG_field *prev_data,co
  * Receive user input and filtering that. the filtered data will be copied in data.
  * @return
  * - error when: malloc error, buffer overflow
+ * 
+ * - change variable NEWLINE_BETWEEN_VARIABLES: 1 if not simplified display info or is simplified display with option else 0
 */
 void ENV_CONFIG_ui_prompt(ENV_CONFIG_field* data, error_details *err);
 
@@ -50,6 +52,7 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field* data, error_details *err);
  * 
  * Try to find in all .env.example the key contain exactly same name passed in argument.
  * Cannot be used to set file.
+ * @param mode (r_mode)0 = read mode ,(w_mode)1 will ask to set, (internal_mode)2 mark file read as internal [don't display internal data with flag 's']
  * @returns int
  * - 1 = true if sucess 
  * 
@@ -57,7 +60,7 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field* data, error_details *err);
  * 
  * - -1 = buffer overflow, fseek error
  */
-int ENV_CONFIG_adjust_key(const char *setting,ENV_CONFIG_field *data, ENV_CONFIG_field *prev_data, error_details *err);
+int ENV_CONFIG_adjust_key(const char *setting,ENV_CONFIG_field *data, ENV_CONFIG_field *prev_data,const int mode, error_details *err);
 
 #endif
 

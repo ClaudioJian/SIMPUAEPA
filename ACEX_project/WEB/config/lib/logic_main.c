@@ -157,7 +157,7 @@ static int PHP_exists(ENV_CONFIG_field *data, error_details *err){
     //if not finded php path, loop until find
     do{
         //find where is php path
-        const int find = catch_err(ENV_CONFIG_adjust_key(PHP_path_envKeyName,data,NULL,err));
+        const int find = catch_err(ENV_CONFIG_adjust_key(PHP_path_envKeyName,data,NULL,internal_mode,err));
         if(err->code) return -1;
         // 0 mean key name error and negative mean error like malloc
         if(find){
@@ -216,8 +216,9 @@ static int PHP_exists(ENV_CONFIG_field *data, error_details *err){
         }
     }while(exit_code);
 
-    display_wrapped_text("| php found!","| ",0,MAX_LINE_CHR); putchar('\n');
     printf("|\n");
+    display_wrapped_text("| php found!","| ",0,MAX_LINE_CHR); putchar('\n');
+    if(SIMPLIFIED_DISPLAY) printf("|\n");
 
     //only track when find
     catch_err(ENV_CONFIG_track_depencity(data,err));
@@ -392,7 +393,7 @@ static char* set_environment(ENV_CONFIG_field *ENV_data,error_details *err){
     char buf[MAX_VALUE_SIZE+1]; 
     buf[0] = '\0';
 
-    catch_err(ENV_CONFIG_adjust_key(ENVIRONMENT_KEY_NAME,ENV_data,NULL,err));
+    catch_err(ENV_CONFIG_adjust_key(ENVIRONMENT_KEY_NAME,ENV_data,NULL,w_mode,err));
     if(err->code) return NULL;
 
     
@@ -402,8 +403,20 @@ static char* set_environment(ENV_CONFIG_field *ENV_data,error_details *err){
         const int res = catch_err(ERR_snprintf(expected,MAX_VALUE_SIZE+1,err));
         if(res) return NULL;
     }else{
-        //copy default value to value, since the data is NULL still
+        //copy default value to value, since the data is still NULL
         memcpy(ENV_data->value,ENV_data->original_value,MAX_VALUE_SIZE);
+
+        //ask again so value set won't be NULL in .env
+        if(SIMPLIFIED_DISPLAY) {
+            printf("|\n");
+            display_wrapped_text("| Suffix removed. Configuring base .env file - please re-enter value:", "| ",0,MAX_LINE_CHR); putchar('\n');
+        }else{
+            printf("|\n");
+            printf("|  ||---------------- NOTICE ----------------\n");
+            display_wrapped_text("|  || Switched to base .env configuration. (Input was 'null').", "|  || ",0,MAX_LINE_CHR); putchar('\n');
+            display_wrapped_text("|  || Please provide a new value for the .env file", "|  || ",0,MAX_LINE_CHR); putchar('\n');
+            printf("|  ||----------------------------------------\n");
+        }
         catch_err(ENV_CONFIG_ui_prompt(ENV_data,err));
         if(err->code) return NULL;
     }
@@ -513,9 +526,9 @@ static int find_bool(const char *string,error_details *err){
     return on;
 }
 
-//set global values(int)
+//set global values(int), can only be internal.cfg's data
 static void set_global_flags(ENV_CONFIG_field *data,char *key_name,int *flag_ptr ,error_details *err){
-    catch_err(ENV_CONFIG_adjust_key(key_name,data,NULL,err));
+    catch_err(ENV_CONFIG_adjust_key(key_name,data,NULL,internal_mode,err));
     if(err->code) return;
 
     *flag_ptr = catch_err(find_bool(data->value,err));
@@ -626,9 +639,10 @@ static int ask_overwrite(const char *file_name,error_details *err){
     if(res) return -1;
 
     do{
+        printf("|\n");
         display_wrapped_text(buf,"|",0,MAX_LINE_CHR); putchar('\n');
         display_wrapped_text("| Select a conflict resolution strategy:","|",0,MAX_LINE_CHR); putchar('\n');
-        display_wrapped_text("|  `--[1. Overwrite ALL | 2. Append new changes]:","|     ",0,MAX_LINE_CHR); putchar('\n');
+        display_wrapped_text("|  `--[1. Overwrite ALL | 2. Append new changes]:","|     ",0,MAX_LINE_CHR);
         fgets(answer, MAX_INPUT_SIZE, stdin);
     }while(answer[0]!='1' && answer[0]!='2');
 
@@ -671,7 +685,7 @@ static ENV_CONFIG_field *has_prev_data(const char *file_name,error_details *err)
 //return 1 if user agree else 0
 static int ask_keep_value(const char *key_name,const char *val,error_details *err){
     char msg[MAX_TEXT_SIZE];
-    const int res = catch_err(ERR_snprintf(snprintf(msg,sizeof(msg),"| Do you want keep setting [%s] with value [%s]",key_name,val),sizeof(msg),err));
+    const int res = catch_err(ERR_snprintf(snprintf(msg,sizeof(msg),"Do you want keep setting [%s] with value [%s]",key_name,val),sizeof(msg),err));
     if(res) return -1;
 
     const int agree = catch_err(confirmation(msg,"",err));
@@ -745,10 +759,12 @@ static char *select_file_name(ENV_CONFIG_field *data,error_details *err){
 
 
 ENV_CONFIG_field *start_program(ENV_CONFIG_field *internal_data,ENV_CONFIG_field *ENV_data,error_details *err){
+    catch_err(set_global_flags(internal_data,SIMPLIFIED_DISPLAY_NAME,&SIMPLIFIED_DISPLAY,err));
+    if(err->code) return NULL;
+
     printf("================Selecting Destination File================\n");
     printf("|\n");
     display_wrapped_text("| The values you configure now will be written to your new environment file","| ",0,MAX_LINE_CHR); putchar('\n');
-    printf("|\n");
 
     char *ENV_FILE_name = catch_err(select_file_name(ENV_data,err));
     if(err->code) return NULL;
@@ -759,43 +775,54 @@ ENV_CONFIG_field *start_program(ENV_CONFIG_field *internal_data,ENV_CONFIG_field
     
     ENV_CONFIG_field *prev_data = catch_err(has_prev_data(ENV_FILE_name,err));
 
+    NEWLINE_BETWEEN_VARIABLES = 1;
+    printf("|\n");
     printf("================Internal Setting================\n");
     printf("|\n");
     display_wrapped_text("| The values configured here will not be written to your new environment file.","| ",0,MAX_LINE_CHR); putchar('\n');
     display_wrapped_text("| They are settings required to run the this executable.","| ",0,MAX_LINE_CHR); putchar('\n');
-    printf("|\n");
 
-    
+    //setting all global flags to use
+
+
     catch_err(set_global_flags(internal_data,WARNING_FLAG_NAME,&WARNING_FLAGS,err));
     if(err->code) return prev_data;
+
     catch_err(set_global_flags(internal_data,show_debug_KeyName,&SHOW_DEBUG_INFO,err));
     if(err->code) return prev_data;
+
     catch_err(set_global_flags(internal_data,show_ERR_location,&SHOW_ERR_LINE,err));
     if(err->code) return prev_data;
+
+    catch_err(set_global_flags(internal_data,show_r_only_name,&SHOW_READ_ONLY,err));
+    if(err->code) return prev_data;
+
 
     const int php_exists = catch_err(PHP_exists(internal_data,err));
     if(!php_exists){err->code = ERR_PHP_not_found; return prev_data;}
 
-    catch_err(ENV_CONFIG_set_all(internal_data,NULL,w_mode,err));
+    catch_err(ENV_CONFIG_set_all(internal_data,NULL,internal_mode,err));
     if(err->code) return prev_data;
 
     printf("|\n");
     printf("| All setting have been configured in [%s]\n",CONFIG_FILE);
     printf("|\n");
+    NEWLINE_BETWEEN_VARIABLES = 1;
     printf("================Installing depencity================\n");
     display_wrapped_text("Important: This executable uses Composer to install required packages."," ",0,MAX_LINE_CHR); putchar('\n');
-    printf("|\n");
+    putchar('\n');
 
     catch_err(install_depencity(err));
     if(err->code) return prev_data;
 
     putchar('\n');
     display_wrapped_text("All dependencies have been successfully installed!!","| ",0,MAX_LINE_CHR); putchar('\n');
+    putchar('\n');
 
+    NEWLINE_BETWEEN_VARIABLES = 1;
     printf("================ENV================\n");
     printf("|\n");
     printf("| The values you are setting now will be writen in new .env file.\n");
-    printf("|\n");
 
 
     catch_err(ENV_CONFIG_set_all(ENV_data,prev_data,w_mode,err));
@@ -810,6 +837,7 @@ ENV_CONFIG_field *start_program(ENV_CONFIG_field *internal_data,ENV_CONFIG_field
     printf("|\n");
 
 
+    NEWLINE_BETWEEN_VARIABLES = 1;
     printf("===============writing files===============\n"); 
     printf("|\n");
     printf("| Writing file:[%s]\n",ENV_FILE_name);
@@ -833,6 +861,7 @@ ENV_CONFIG_field *start_program(ENV_CONFIG_field *internal_data,ENV_CONFIG_field
     printf("|\n");
     display_wrapped_text("| File have been written sucessfully!","| ",0,MAX_LINE_CHR); putchar('\n');
     printf("|\n");
+    NEWLINE_BETWEEN_VARIABLES = 1;
     printf("===============Running files===============\n"); 
 
     catch_err(run_all_file(internal_data,err));

@@ -40,7 +40,6 @@ typedef struct option_node{
 //
 // is_EOF = stop any function to run if set to 1
 //
-//
 // file_list = list contain all executable files(won't be written)
 //
 // option_list = temporary list that store all options
@@ -52,6 +51,7 @@ typedef struct option_node{
 // depencity list will be written to new file, but excluted_list won't
 typedef struct{
     int mode;
+
     int is_file;
     int is_EOF;
     int quant_option;
