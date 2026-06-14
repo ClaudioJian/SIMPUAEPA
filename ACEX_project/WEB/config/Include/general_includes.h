@@ -15,7 +15,10 @@
 
 #include "ACEX_normalize.h"
 
-
+typedef struct config_states{
+    global_values *flags;
+    error_details *err;
+} config_states;
 
 
 #endif

@@ -3,7 +3,10 @@
 //initialize by setting value to 0 or null
 static void ENV_CONFIG_init_values(ENV_CONFIG_field *new_node){
     new_node->mode = 0;
+    new_node->affected_data = 0;
+    new_node->total_data = 0;
     new_node->is_file = 0;
+    new_node->file_quant = 0;
     new_node->is_EOF = 0;
     new_node->quant_option = 0;
     new_node->start_offset = -1;
@@ -53,6 +56,7 @@ ENV_CONFIG_field *ENV_init_config_struct(const char* file_name,error_details *er
 
 
 void ENV_CONFIG_delete_node(ENV_CONFIG_field *data,config_node *curr_node,config_node *prev_node){
+    data->total_data--;
     config_node *next_node = NULL;
     if(curr_node == data->depencity_list && data->depencity_list->next !=NULL) {
         //replace next value to initial pointer without releasing start pointer. release only the next value(used data) and don't move since it has alredy replaced with next node.

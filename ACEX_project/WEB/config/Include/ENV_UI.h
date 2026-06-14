@@ -16,14 +16,16 @@
  * REMEMBER to clear data by using ENV_CONFIG_clear(data)!!!
  * if the file alredy eof, don't run this unless has used ENV_CONFIG_rewind or manually set flag to 0. 
  * 
- * if previous data is passed(not null), then it will try to write same data in new file
+ * if previous data is passed(not null), then it will try to write same data in new file.
+ * 
+ * Add affected_data if has new setting is set.
  * 
  * Set value depedends what user inputed(or use default value if nothing inputed finded) in env_data.
  * 
  * display label to explain what this value does.
  * @return 1=fail(EOF) 0=sucess -1 error = buffer overflow/malloc error
  */
-int ENV_CONFIG_step_config(ENV_CONFIG_field *data,ENV_CONFIG_field *prev_data,const int mode, error_details *err);
+int ENV_CONFIG_step_config(ENV_CONFIG_field *data,ENV_CONFIG_field *prev_data,const int mode,config_states *states);
 
 
 /**  
@@ -35,13 +37,15 @@ int ENV_CONFIG_step_config(ENV_CONFIG_field *data,ENV_CONFIG_field *prev_data,co
  * 
  * if is file, check if file exist and valid. if invalid, ask user to enter again until valid.
  * 
+ * Add affected_data if has new setting is set.
+ * 
  * Receive user input and filtering that. the filtered data will be copied in data.
  * @return
  * - error when: malloc error, buffer overflow
  * 
  * - change variable NEWLINE_BETWEEN_VARIABLES: 1 if not simplified display info or is simplified display with option else 0
 */
-void ENV_CONFIG_ui_prompt(ENV_CONFIG_field* data, error_details *err);
+void ENV_CONFIG_ui_prompt(ENV_CONFIG_field* data, config_states *states);
 
 /**
  * Set key indicated to data.
@@ -60,7 +64,7 @@ void ENV_CONFIG_ui_prompt(ENV_CONFIG_field* data, error_details *err);
  * 
  * - -1 = buffer overflow, fseek error
  */
-int ENV_CONFIG_adjust_key(const char *setting,ENV_CONFIG_field *data, ENV_CONFIG_field *prev_data,const int mode, error_details *err);
+int ENV_CONFIG_adjust_key(const char *setting,ENV_CONFIG_field *data, ENV_CONFIG_field *prev_data,const int mode,config_states *states);
 
 #endif
 

@@ -38,7 +38,7 @@ typedef enum{
     ERR_encoding,
     ERR_malloc,
     ERR_file_creation,
-    ERR_WinCreateProcess,
+    ERR_WinApi,
     ERR_set_EnvVal,
     // php and composer related
     ERR_PHP_not_found,
@@ -60,8 +60,6 @@ typedef enum{
     ERR_invalid_mode,
     test_sucess,
 }error_code_list;
-
-void print_error(error_details *err);
 
 int track_error(error_details *err, const char *file,const char *funct_name, const unsigned int line);
 void ERR_details_destroy(error_details **err);

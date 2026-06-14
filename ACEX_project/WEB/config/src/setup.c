@@ -10,15 +10,14 @@ this files is to:
 #include "logic_main.h"
 
 
-//-------------------------------------function----------------------------------------------------
 
 
 //----------------------------------------main---------------------------------------------------------------------
 #include <stdlib.h>
 
-int main(){
-    
 
+
+int main(){
     //moving to root of project
     if(chdir(ROOT)){
         printf("Cannot move to root directory\n");
@@ -67,37 +66,45 @@ int main(){
 
 
     //----------------------start program---------------------------
+    
+
+
     error_details *err = (error_details*) malloc(sizeof(error_details));
-    if(!err){
-        err->code = ERR_malloc;
-        snprintf(err->description,sizeof(err->description),"Out of memory!");
-        print_error(err);
-    }
+    if(!err){printf("out of memory!\n");return 1;}
+
     err->description[0] = '\0';
     err->code = 0;
     err->err_trace = NULL;
     err->last_error = NULL;
 
-    catch_err(set_abs_path(err));
+    global_values *gv = global_value_init();
+    if(!gv){printf("out of memory!\n");return 1;}
+
+    config_states *states = (config_states*) malloc(sizeof(config_states));
+    if(!states){printf("out of memory!\n");return 1;}
+    
+    states->flags = gv;
+    states->err = err;
+
+    catch_err(set_abs_path(states));
     if(err->code){
-        print_error(err);
+        print_error(states);
         printf("|\n");
-        stop();
         return 1;        
     }
 
-    ENV_CONFIG_field *internal_data = catch_err(ENV_init_config_struct(CONFIG_FILE,err));
-    ENV_CONFIG_field *ENV_data = catch_err(ENV_init_config_struct(ENV_EXAMPLE,err));
+    ENV_CONFIG_field *internal_data = catch_err(ENV_init_config_struct(CONFIG_FILE,states->err));
+    ENV_CONFIG_field *ENV_data = catch_err(ENV_init_config_struct(ENV_EXAMPLE,states->err));
     ENV_CONFIG_field *prev_data;
 
-    if(!err->code){prev_data = catch_err(start_program(internal_data,ENV_data,err));};
+    if(!err->code){prev_data = catch_err(start_program(internal_data,ENV_data,states));};
 
     printf("===================Result===================\n");
     printf("|\n");
     printf("| Cleaning datas...\n");
 
     
-    free_global_value();
+    
     ENV_CONFIG_destroy(&internal_data);
     ENV_CONFIG_destroy(&ENV_data);
     if(prev_data != NULL) ENV_CONFIG_destroy(&prev_data);
@@ -109,12 +116,12 @@ int main(){
 
     //error handle
     if(err->code) {
-        print_error(err);
+        print_error(states);
     }
     else{
         printf("| All files have been executed!\n");
     }
-    ERR_details_destroy(&err);
+    free_states(&states);
 
     printf("|______________________________________\n");
     putchar('\n');

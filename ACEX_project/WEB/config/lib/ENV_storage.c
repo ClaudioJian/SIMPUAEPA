@@ -130,6 +130,7 @@ int ENV_CONFIG_cpy_prev_data(ENV_CONFIG_field *data, ENV_CONFIG_field *prev_data
     int selected = 1;
 
     while(curr_node!=NULL){
+        //comparing previous data with found key
         if(strcmp(curr_node->key,data->key) == 0) {
             //copy prev data to new data
             //if the value cannot be set by user and have conflict between previous data and curr data
@@ -138,6 +139,7 @@ int ENV_CONFIG_cpy_prev_data(ENV_CONFIG_field *data, ENV_CONFIG_field *prev_data
                 if(err->code) return -1;
             }
             if(selected == 1) memcpy(data->value,curr_node->value,sizeof(data->value));
+            else if(selected == 2) data->affected_data++;
 
             ENV_CONFIG_delete_node(prev_data,curr_node,prev_node);
             
@@ -207,6 +209,7 @@ static int track_file(ENV_CONFIG_field *data, error_details *err){
         data->last_file_list->next = new_node;
     }
     data->last_file_list = new_node;
+    data->file_quant++;
     return 0;
 }
 
@@ -271,6 +274,7 @@ int ENV_CONFIG_track_depencity(ENV_CONFIG_field *data, error_details *err){
     if(data->is_file) {catch_err(track_file(data,err));}
     else {catch_err(track_setting(data,err));}
 
+    data->total_data++;
     if(err->code) return -1;
     return 0;
 }

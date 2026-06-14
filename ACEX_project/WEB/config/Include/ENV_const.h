@@ -102,6 +102,8 @@ Please also change in section below: IMPORTANT CONST
 
     #include <Processthreadsapi.h>
     #include <wtypesbase.h>
+    #include <namedpipeapi.h>
+    #include <fileapi.h>
 
 
     //function name
@@ -128,21 +130,31 @@ Please also change in section below: IMPORTANT CONST
 #endif
 
 //global values
-extern char* ABSOLUTE_PATH;
-extern char* PHP_LOCATION;
-//flags
-extern int WARNING_FLAGS;
-extern int SHOW_DEBUG_INFO;
-extern int SHOW_ERR_LINE;
-extern int SHOW_READ_ONLY;
+
 //fall back when malloc error
 extern int emergency_in_use;
-// flag that decide if need newline between variables=values
-extern int NEWLINE_BETWEEN_VARIABLES;
-extern int SIMPLIFIED_DISPLAY;
 
+typedef struct{
+    char* ABSOLUTE_PATH;
+    char* PHP_LOCATION;
+    int WARNING_FLAGS;
+    int SHOW_DEBUG_INFO;
+    int SHOW_ERR_LINE;
+    int SHOW_READ_ONLY;
+    // flag that decide if need newline between variables=values
+    int NEWLINE_BETWEEN_VARIABLES;
+    int SIMPLIFIED_DISPLAY;
+}global_values;
+
+
+// only read setting, not display any UI, just set value in data
 #define r_mode 0
+//ask
 #define w_mode 1
+//internal use, just set value without ask, but still can display read only value
 #define internal_mode 2
+
+
+global_values* global_value_init();
 
 #endif

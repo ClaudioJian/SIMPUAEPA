@@ -4,6 +4,11 @@
 
 trace_error emergency_node = {0};
 
+typedef struct config_states{
+    global_values *flags;
+    error_details *err;
+} config_states;
+
 int ERR_snprintf(const int expected,const size_t max_size,error_details *err){
     if(expected<0){
         err->code = ERR_encoding;
@@ -22,7 +27,7 @@ int track_error(error_details *err, const char *file,const char *funct_name, con
         err->code = ERR_malloc;
         new_node = &emergency_node;
 
-        if(!emergency_in_use){
+        if(emergency_in_use){
             snprintf(emergency_node.description,sizeof(emergency_node.description),"Out of memory!");
             emergency_in_use = 1;
         }else{
@@ -122,8 +127,8 @@ static void general_err_msg(int error_code){
             display_wrapped_text("| Cannot create file! Please check directory permissions and make sure the file isn't open in another program.","| ",0,MAX_LINE_CHR); break;
         case ERR_set_EnvVal:
             display_wrapped_text("| An error occurred while setting the environment variable!","| ",0,MAX_LINE_CHR); break;
-        case ERR_WinCreateProcess:
-            printf("| Process execution error code:%lu\n",GetLastError());
+        case ERR_WinApi:
+            printf("| Windows Api error code:%lu\n",GetLastError());
             display_wrapped_text("| Review error code documentation at:\n","| ",0,MAX_LINE_CHR);
             display_wrapped_text("| https://learn.microsoft.com/en-us/windows/win32/debug/system-error-codes","| ",0,MAX_LINE_CHR);
             break;          
@@ -177,16 +182,19 @@ static void general_err_msg(int error_code){
 }
 
 
-void print_error(error_details *err){
+void print_error(config_states *states){
+    error_details *err = states->err;
+    global_values *gv = states->flags;
+
     printf("| ERROR FOUND!\n");
     general_err_msg(err->code);
 
-    if(SHOW_DEBUG_INFO){
+    if(gv->SHOW_DEBUG_INFO){
         printf("| Error start from\n");
         printf("| vvvvvvvvvvvvvvvv\n");
 
         for(trace_error *curr_node = err->err_trace; curr_node != NULL; curr_node = curr_node->next){
-            if(SHOW_ERR_LINE){
+            if(gv->SHOW_ERR_LINE){
                 size_t size_total = strlen(curr_node->function) + strlen(curr_node->file);
                 char buf[100 + size_total];
                 snprintf(buf,100 + size_total,"| Error in function %s on line %i of file %s :",curr_node->function,curr_node->line,curr_node->file);

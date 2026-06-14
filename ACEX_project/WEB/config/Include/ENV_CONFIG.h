@@ -46,11 +46,15 @@ typedef struct option_node{
 //
 // mode: 0 = optional value, 1 = required value, -1 = skip value, 2 = user can select to ignore in run time
 //
+// affected_data: quant of data changed or added
 // start_offset: shortcut to first non comment line.
 //
 // depencity list will be written to new file, but excluted_list won't
 typedef struct{
     int mode;
+    int affected_data;
+    int total_data;
+    int file_quant;
 
     int is_file;
     int is_EOF;
