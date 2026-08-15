@@ -1,0 +1,9 @@
+{
+    "name": "simpuaepa/simpuaepa",
+    "version": "1.0.0",
+    "license": "MIT",
+    "description": "Sistema Inteligente de Monitoramento Participativo Urbano com Análise Espacial e Priorização Algorítmica",
+    "require": {
+        "vlucas/phpdotenv" : "^5.5"
+    }
+}
