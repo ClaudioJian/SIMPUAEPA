@@ -9,6 +9,11 @@
 */
 
 namespace ACEX_project\WEB\Auth;
+    if (!defined('ENTRY_POINT_CHECKED')) {
+      http_response_code(403);
+      exit('Direct access not permitted');
+    }
+    
     function Strong_password(string $password){
 
     };

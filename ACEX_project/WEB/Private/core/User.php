@@ -1,3 +1,4 @@
+
 <?php 
 /*
   +-------------------------------------------------------------------------------------------------+
@@ -5,7 +6,15 @@
   |  TODO: add filter for input and null ?? check, better code                                                                                               |
   +-------------------------------------------------------------------------------------------------+
 */
+
+?>
+<!--
 namespace ACEX_project\WEB\Core;
+
+if (!defined('ENTRY_POINT_CHECKED')) {
+    http_response_code(403);
+    exit('Direct access not permitted');
+}
 
 require_once "/../Error/Error_code.php";
 use ACEX_project\WEB\Private\Error\Error_Code;
@@ -31,10 +40,10 @@ class User{
      * 
      * @return object where contain all result of query
      * @return array
-     * - sucess: ['sucess'=>DB_INSERT,'result'=>obj row/record finded] when sign up sucess
-     * - ['sucess'=>USER_NOT_LOGGED,'description'=>'string'] if not logged
-     * - ['sucess'=>USER_ALREDY_EXIST,'description'=>string] if user alredy exist in database
-     * - ['sucess'=>DB_ERR_INSERT,'description'=>string] if cannot create in database
+     * - code: ['code'=>DB_INSERT,'result'=>obj row/record finded] when sign up sucess
+     * - ['code'=>USER_NOT_LOGGED,'description'=>'string'] if not logged
+     * - ['code'=>USER_ALREDY_EXIST,'description'=>string] if user alredy exist in database
+     * - ['code'=>DB_ERR_INSERT,'description'=>string] if cannot create in database
     */
     public function __construct(string $user_name,string $email,$user_id)
     {
@@ -54,24 +63,24 @@ class User{
      * 
      * @return object where contain all result of query
      * @return array
-     * - sucess: ['sucess'=>DB_INSERT,'result'=>obj of user created] when sign up sucess
-     * - ['sucess'=>USER_NOT_LOGGED,'description'=>'string'] if not logged
-     * - ['sucess'=>USER_ALREDY_EXIST,'description'=>string] if user alredy exist in database
-     * - ['sucess'=>DB_ERR_INSERT,'description'=>string] if cannot create in database
+     * - sucess: ['code'=>DB_INSERT,'result'=>obj of user created] when sign up sucess
+     * - ['code'=>USER_NOT_LOGGED,'description'=>'string'] if not logged
+     * - ['code'=>USER_ALREDY_EXIST,'description'=>string] if user alredy exist in database
+     * - ['code'=>DB_ERR_INSERT,'description'=>string] if cannot create in database
     */
     public static function Sign_up(string $user_name,string $password,string $email,bool $should_create_password=false){
         try{
             $conn = connect_database();
-            if(is_array($conn) && $conn['sucess']===Error_Code::db_connection) return ['sucess'=>Error_Code::db_connection,'description'=>'failed to connect database'];
+            if(is_array($conn) && $conn['code']===Error_Code::db_connection) return ['code'=>Error_Code::db_connection,'description'=>'failed to connect database'];
 
             //find if user name alredy taken
-            if(self::Alredy_exist($user_name,$conn)) return ['sucess'=>Error_Code::user_alredy_exist,'description'=>'user alredy exist'];
+            if(self::Alredy_exist($user_name,$conn)) return ['code'=>Error_Code::user_alredy_exist,'description'=>'user alredy exist'];
             if((!isset($password)||$password==='')  && $should_create_password) $password = Generate_password();
-            if(!Strong_password($password)) return ['sucess'=>Error_Code::password_weak,'description'=>'password is too weak'];
+            if(!Strong_password($password)) return ['code'=>Error_Code::password_weak,'description'=>'password is too weak'];
 
             self::Register_user($user_name,$password,$email,$conn);
         }catch(Exception $e){
-            return ['sucess'=>Error_Code::db_insert,'description'=>$e->getMessage()];
+            return ['code'=>Error_Code::db_insert,'description'=>$e->getMessage()];
         }
 
         //return entire row of that user, to set information into session
@@ -80,7 +89,7 @@ class User{
 
         $conn = NULL;
 
-        return ['sucess'=>Sucess_code::db_insert,'result'=>$user];
+        return ['code'=>Sucess_code::db_insert,'result'=>$user];
     }
 
     /**
@@ -88,25 +97,25 @@ class User{
      * 
      * @return object where contain all result of query
      * @return array
-     * - sucess: ['sucess'=>DB_INSERT,'result'=>obj of user created] when sign up sucess
-     * - ['sucess'=>Error_Code::user_alredy_logged,'description'=>'string','result'=>current user] if alredy logged
-     * - ['sucess'=>Error_Code::user_wrong_credit,'password'=>bool,'email'=>bool] if user exist but data wrong, the bool indicate true if that data wrong
-     * - ['sucess'=>Error_Code::user_not_found,'description'=>string] user not finded in database
+     * - code: ['code'=>DB_INSERT,'result'=>obj of user created] when sign up sucess
+     * - ['code'=>Error_Code::user_alredy_logged,'description'=>'string','result'=>current user] if alredy logged
+     * - ['code'=>Error_Code::user_wrong_credit,'password'=>bool,'email'=>bool] if user exist but data wrong, the bool indicate true if that data wrong
+     * - ['code'=>Error_Code::user_not_found,'description'=>string] user not finded in database
     */
     public static function Login(string $user_name,string $password,string $email){
         $conn = connect_database();
-        if(is_array($conn) && $conn['sucess']===Error_Code::db_connection) return ['sucess'=>Error_Code::db_connection,'description'=>'failed to connect database'];
+        if(is_array($conn) && $conn['code']===Error_Code::db_connection) return ['code'=>Error_Code::db_connection,'description'=>'failed to connect database'];
 
         if(self::Logged()) {
             $conn = null;
             return 
-            ['sucess'=>Error_Code::user_alredy_logged,
+            ['code'=>Error_Code::user_alredy_logged,
                 'description'=>'User is alredy logged',
                 'result'=>$_SESSION['user']
             ];}
         
         $response = self::Can_login($user_name,$password,$email,$conn);
-        if($response['sucess'] >0) {
+        if($response['code'] >0) {
             //store credential to session
             //TODO: id
             $user = new self($user_name,$email,$response['user_id']);
@@ -134,13 +143,13 @@ class User{
      * auto disconnect from database
      * @param PDO $conn PDO object pointer to connection of database, can be finded by return value of connect_database()
      * @return array
-     * - sucess: ['sucess'=>DB_DELETE,'result'=>obj row/record finded] when deleted
-     * - ['sucess'=>USER_NOT_LOGGED,'description'=>'string'] if not logged
-     * - ['sucess'=>USER_NOT_FIND,'description'=>'string'] if user not existed
-     * - ['sucess'=>DB_ERR_DELETE,'description'=>description] database fail to delete this user
+     * - code: ['code'=>DB_DELETE,'result'=>obj row/record finded] when deleted
+     * - ['code'=>USER_NOT_LOGGED,'description'=>'string'] if not logged
+     * - ['code'=>USER_NOT_FIND,'description'=>'string'] if user not existed
+     * - ['code'=>DB_ERR_DELETE,'description'=>description] database fail to delete this user
      */
     public static function delete_user(PDO $conn){
-        if(!self::logged()) return ['sucess'=>Error_Code::user_not_logged,'description'=>'not logged'];
+        if(!self::logged()) return ['code'=>Error_Code::user_not_logged,'description'=>'not logged'];
         if(!user_alredy_exist($_SESSION['user'],$conn)) return ['sucess'=>Error_Code::user_not_found,'description'=>'usuário não existe'];
         try{
             //search row with this user
@@ -151,12 +160,12 @@ class User{
             if(!($smtm->execute())) throw new Exception("Database não consegue deletar o usuário!");
         }catch(Exception $e){
             $conn = NULL;
-            return ['sucess'=>Error_Code::db_delete,'description'=>$e->getMessage()];
+            return ['code'=>Error_Code::db_delete,'description'=>$e->getMessage()];
         }
 
         $conn = NULL;
 
-        return ['sucess'=>Sucess_code::db_delete,'description'=>'user deleted'];
+        return ['code'=>Sucess_code::db_delete,'description'=>'user deleted'];
     }
 
     /**
@@ -169,9 +178,9 @@ class User{
      * 
      * @return object row of user in format: {column_name=value} 
      * @return array
-     * - ['sucess'=>Sucess_code::user_found,'result'=>object row finded,'db'=>$conn] if all crendential matches
-     * - ['sucess'=>Error_Code::user_wrong_credit,'password'=>bool,'email'=>bool] if user exist but data wrong, the bool indicate true if that data wrong
-     * - ['sucess'=>Error_Code::user_not_found,'description'=>string] user not finded in database
+     * - ['code'=>Sucess_code::user_found,'result'=>object row finded,'db'=>$conn] if all crendential matches
+     * - ['code'=>Error_Code::user_wrong_credit,'password'=>bool,'email'=>bool] if user exist but data wrong, the bool indicate true if that data wrong
+     * - ['code'=>Error_Code::user_not_found,'description'=>string] user not finded in database
      */
     private static function Can_login(string $user_name,string $password,string $email,PDO $conn){
         $result = self::Retrieve_user_data($user_name,$conn);
@@ -185,14 +194,14 @@ class User{
             //return immedialy if there has different value
             foreach($err as $e){
                 if($e) {
-                    $err['sucess']=Error_Code::user_wrong_credit;
+                    $err['code']=Error_Code::user_wrong_credit;
                     return $err;
                 }
             }
-            return ['sucess'=>Sucess_code::user_found,'result'=>$result];
+            return ['code'=>Sucess_code::user_found,'result'=>$result];
         }
         $conn = NULL;
-        return ['sucess'=>Error_Code::user_not_found, "description"=>'user don\'t exist'];
+        return ['code'=>Error_Code::user_not_found, "description"=>'user don\'t exist'];
     }
 
     /**
@@ -234,5 +243,4 @@ class User{
      * 
      */
     private static function Logged() : bool{ return isset($_SESSION['user']);}
-};
-?>
+};-->

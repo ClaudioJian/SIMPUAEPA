@@ -19,10 +19,13 @@ namespace ACEX_project\WEB\Private\Error;
         
         case request_invalid_general = -40;
         case request_invalid_input = -41;
+        case requst_session_obsolete = -45;
+        case request_session_abandoned = -46;
 
         case db_connection = -50;
         case db_grant = -51;
         case db_insert = -52;
+        case db_update = -53;
         case db_delete = -54;
         case db_select = -55;
 
