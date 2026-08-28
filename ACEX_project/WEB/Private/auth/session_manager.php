@@ -70,7 +70,7 @@ namespace ACEX_project\WEB\Auth;
     /**
      * start brand new session or replace previous session marking as obsolete
      */
-    function New_session(array $options) : void{
+    function New_session(array $options=[]) : void{
         if(session_status()===PHP_SESSION_DISABLED) return;
         if(session_status()===PHP_SESSION_ACTIVE){
             //replace old id to new id

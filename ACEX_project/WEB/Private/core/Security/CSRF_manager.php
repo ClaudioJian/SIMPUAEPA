@@ -8,6 +8,7 @@
   | CSRF_generate(): must have session active, can be used to create and store token in session     |
   | CSRF_isexpired():bool                                                                           |
   | CSRF_validate():bool -> must have session active. check if CSRF token still valid else exit     |    
+  | CSRF_allowed_method():bool->return if this request need be protected                            |
   +-------------------------------------------------------------------------------------------------+
 */
 
@@ -23,7 +24,21 @@ namespace ACEX_project\WEB\Core\Security;
     require_once __DIR__ . "/../AppCommonVar.php";
     require_once __DIR__ . "/../../Auth/session_manager.php";
 
+    //https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-Dest
+    //TODO: change to deticated place to handle this
+    // this where response data will be used
+    $SecFetchDest_allow_list = array('audio','audioworklet','document','embed','empty','fencedframe','font','frame','iframe','image','json','manifest','object','paintworklet','report','style','track','video','webidentity','worker','xslt');
+    /**
+     * handle fetch api for csrf if used
+     * @return bool false if isn't fetch api else true, exit if invalid request
+     */
+    function CSRF_handle_fetch_API(){
+        $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+        if(!CSRF_allowed_method() || !isset($headers['Sec-Fetch-Site'])) return false;
+        if($headers['Sec-Fetch-Site']==='cross-site' || $headers['Sec-Fetch-Mode']==='cors') CSRF_invalidation("Same origin policy violation, current site don't support CORS");
 
+        return true;
+    }
 
     function CSRF_isexpired():bool{
         if(defined($_SESSION['CSRF_TOKEN_MAXLIFE']) && time() - $_SESSION['CSRF_TOKEN_MAXLIFE']>CSRF_TOKEN_MAXLIFE) return true;
@@ -52,10 +67,10 @@ namespace ACEX_project\WEB\Core\Security;
      * @return bool false for invalid token and suggest to regenerate it. else for invalidation, request is abandoned
      */
     function CSRF_validate() : bool{
-        if(CSRF_allowed_method()) return true;
+        if(!CSRF_allowed_method()) return true;
         if(session_status()!==PHP_SESSION_ACTIVE) throw new Exception("No active session for generate CSRF token");
 
-        if(!isset($_SESSION['CSRF_TOKEN'])) CSRF_invalidation("No CSRF token stored in server");
+        if(!isset($_SESSION['CSRF_TOKEN'])) return false;
         if(empty($_SESSION['CSRF_TOKEN']) || empty($_SESSION['CSRF_TOKEN_MAXLIFE'])) CSRF_invalidation("No valid CSRF token provided");
         if(CSRF_isexpired()) return false;
         
@@ -89,7 +104,7 @@ namespace ACEX_project\WEB\Core\Security;
         return hash_hmac("SHA256",$message,$_SESSION['CSRF_SECRET_KEY']);
     }
 
-    function CSRF_allowed_method(){
+    function CSRF_allowed_method():bool{
         foreach(CSRF_TOKEN_VALIDATE_METHOD as $method) if($_SERVER['REQUEST_METHOD'] === $method) return true;
         return false;
     }
@@ -103,12 +118,15 @@ namespace ACEX_project\WEB\Core\Security;
         //TODO: expand possible client send token
         $token = "";
         switch($_SERVER['REQUEST_METHOD']){
-            case "POST":
-            break;
-            case "PUT":
-            break;
-            case "DELETE":
-            break;
+            case "POST":{
+                break;
+            }
+            case "PUT":{
+                break;
+            }
+            case "DELETE":{
+                break;
+            }
         };
         $headers = getallheaders();
         if($headers === false) return $token;
