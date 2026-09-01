@@ -1,0 +1,33 @@
+.login-container {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 1000;
+}
+
+.login-button {
+    display: block;
+    padding: 12px 18px;
+    background: white;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+    border-radius: 10px;
+    text-decoration: none;
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    /*box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);*/
+}
+
+.login-button:hover{
+    background-color: #f1f3f4;
+    color: #1a73e8;
+    /*box-shadow: 0 3px 8px rgba(0, 0, 0, 0.30);*/
+}
+
+
+
+
+
+
+
