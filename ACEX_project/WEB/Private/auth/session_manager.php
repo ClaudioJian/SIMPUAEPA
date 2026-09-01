@@ -9,6 +9,7 @@
   |                                       Table of content                                          |     
   |                                                                                                 | 
   | Session_status: enum that mark status of session to determine is valid, disabled                |
+  | Session_exist: check if current session originated from previous                                |
   | Validate_session() : validate status of current session, return Session_status                  |
   | Filter_Session(): return false when exit session if obsolete else if abandoned exit+clean data  |
   | Update_Session(): should call for every request to update activity of session                   |
@@ -18,12 +19,10 @@
 */
 
 namespace ACEX_project\WEB\Auth;
-    require_once __DIR__ . "/../Core/AppCommonVar.php";
+    require_once __DIR__ . "/../Core/Security/CSRF_manager.php";
+    use function ACEX_project\WEB\Core\Security\CSRF_generate;
 
-    if (!defined('ENTRY_POINT_CHECKED')) {
-        http_response_code(403);
-        exit('Direct access not permitted');
-    }
+    require_once __DIR__ . "/../Core/AppCommonVar.php";
     //header('Cache-Control: no-cache, no-store, must-revalidate, private'); -> should put last moment when sending back
 
     enum Session_status: int{
@@ -34,6 +33,12 @@ namespace ACEX_project\WEB\Auth;
         case disabled = 4;
     }
 
+    /**
+     * check current session is from previous or is actually completly new
+     */
+    function Session_exists():bool{
+        return !isset($_SESSION['last_active_time']);
+    }
 
     function Validate_session() : Session_status{
         if(session_status()===PHP_SESSION_DISABLED) return Session_status::disabled;
@@ -46,7 +51,7 @@ namespace ACEX_project\WEB\Auth;
     }
 
     /**
-     * if current session invalid, exit imedially for obsolete or abandoned, clean session data if abandoned
+     * if current session invalid, exit imedially for obsolete or abandoned(old session is destroyed), clean session data if abandoned
      * @return bool if valid then true else false
      */
     function Filter_session():bool{
@@ -64,15 +69,17 @@ namespace ACEX_project\WEB\Auth;
      * if is not disabled/inactive or is alredy obsolete/abandoned then renew time of active time
      */
     function Update_session():void{
-        if(Filter_session()) $_SESSION['last_active_time'] = time();
+        $_SESSION['last_active_time'] = time();
     }
 
     /**
      * start brand new session or replace previous session marking as obsolete
+     * csrf token is generated.
      */
-    function New_session(array $options=[]) : void{
-        if(session_status()===PHP_SESSION_DISABLED) return;
-        if(session_status()===PHP_SESSION_ACTIVE){
+    function New_session(array $options=[]) : bool{
+        if(session_status()===PHP_SESSION_DISABLED) return false;
+        $replace = session_status()===PHP_SESSION_ACTIVE && isset($_SESSION['last_active_time']);
+        if($replace){
             //replace old id to new id
             session_regenerate_id(false);
             //force mark
@@ -83,11 +90,15 @@ namespace ACEX_project\WEB\Auth;
 
             session_id($current_sid);
         }
-        session_start($options);
+        $sucess = true;
+        if(session_status()===PHP_SESSION_NONE) $sucess = session_start($options);
+        CSRF_generate();
         //set new timestamp tracker for new session
         $_SESSION['last_active_time'] = time();
         if(!isset($_SESSION['absolute_time'])) $_SESSION['absolute_time'] = time();
         if(isset($_SESSION['obsolete_time'])) unset($_SESSION['obsolete_time']);
+        
+        return $sucess;
     }
 
 

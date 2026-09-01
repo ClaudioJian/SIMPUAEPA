@@ -19,8 +19,7 @@
 */
 
 namespace ACEX_project\WEB\Core;
-    require_once __DIR__ . '/../vendor/autoload.php';
-    require_once './Security/Request_manager.php';
+    require_once __DIR__ . '/../../vendor/autoload.php';
 
     use Dotenv\Dotenv;
 
@@ -37,7 +36,7 @@ namespace ACEX_project\WEB\Core;
 
 
     function Initialize_value(){
-        $dotenv = Dotenv::createImmutable(__DIR__. "/../");
+        $dotenv = Dotenv::createImmutable(__DIR__. "/../../");
         $dotenv->load();
         try{
             $dotenv->required([
