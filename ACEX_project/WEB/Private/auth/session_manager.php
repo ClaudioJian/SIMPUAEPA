@@ -14,15 +14,17 @@
   | Filter_Session(): return false when exit session if obsolete else if abandoned exit+clean data  |
   | Update_Session(): should call for every request to update activity of session                   |
   | New_session(): should be use every risk action, change permission, authetication                |
+  | session_startup(): used when the request need session based action                              |
   | other function is used internally and should not be used in other context                       |
   +-------------------------------------------------------------------------------------------------+
 */
 
 namespace ACEX_project\WEB\Auth;
     require_once __DIR__ . "/../Core/Security/CSRF_manager.php";
-    use function ACEX_project\WEB\Core\Security\CSRF_generate;
-
     require_once __DIR__ . "/../Core/AppCommonVar.php";
+    use function ACEX_project\WEB\Core\Security\CSRF_generate;
+    
+
     //header('Cache-Control: no-cache, no-store, must-revalidate, private'); -> should put last moment when sending back
 
     enum Session_status: int{
@@ -31,6 +33,19 @@ namespace ACEX_project\WEB\Auth;
         case abandoned = 2;
         case inactive = 3;
         case disabled = 4;
+    }
+
+    //continue previous session or create new session
+    function session_startup(){
+        if(!session_start()) {
+            http_response_code(500);
+            exit();
+        }
+        if(!Session_exists() && Filter_session()) Update_session();
+        else if(!New_session()){
+            http_response_code(500);
+            exit();
+        }
     }
 
     /**
@@ -126,11 +141,11 @@ namespace ACEX_project\WEB\Auth;
      */
     function Nuke_session():void{
         if(session_status()!== PHP_SESSION_ACTIVE) return;
+
         
         $_SESSION = [];
         session_destroy();
-        $param = session_get_cookie_params();
-        setcookie(session_name(),"",1,$param['path'],$param['domain'],$param['secure'],$param['httponly']);
+        
         Exit_session();
     }
 
@@ -139,6 +154,10 @@ namespace ACEX_project\WEB\Auth;
      */
     function Exit_session():void{
         if(session_status()!== PHP_SESSION_ACTIVE) return;
+
+        $param = session_get_cookie_params();
+        setcookie(session_name(),"",1,$param['path'],$param['domain'],$param['secure'],$param['httponly']);
+        
         //track here in log which is destroyed: user,ip,time
         header("HTTP/1.1 403 Forbidden");
         header('Cache-Control: no-cache, no-store, must-revalidate, private');

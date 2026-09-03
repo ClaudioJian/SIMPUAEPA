@@ -80,6 +80,7 @@ namespace ACEX_project\WEB\Core;
         define('CSRF_TOKEN_GENERATE_SEPARATOR', '__');
 
         define('UNSUPPORTED_METHOD',['CONNECT','TRACE']);
+        define('VALID_HTTP_METHOD',['POST','GET','HEAD','CONNECT','TRACE','DELETE','PUT','PATCH']);
 
 
         //avoid define/load env twice to opmization, note this is per request
