@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pão com ovo</title>
+     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+
+     <link rel="stylesheet" href="camadas-css.css"/>
+     <!-- Make sure you put this AFTER Leaflet's CSS -->
+ <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+     
+</head>
+<body>
+    <div id="map">
+        <script >
+            var map = L.map('map', {
+    center: [-23.662, -46.555],
+    zoom: 14,
+    //layers: [normal, conjunto_icones]
+});
+    var normal = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+    maxZoom: 19, 
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>' 
+        //
+}).addTo(map);
+            
+            
+
+    
+
+
+           // layerControl.addBaseLayer(normal, "mapa");
+        //var conjunto_icones = L.layerGroup([conjunto_defaults, conjunto_outros, conjunto_perigos, 
+        //conjunto_esgotos, conjunto_poluicoes, conjunto_sonoros, conjunto_ruas, conjunto_eletricidades]);
+
+        //layerControl.addOverlay(conjunto_icones, "icones");
+
+
+    
+    var defaultIcon = L.icon({
+    iconUrl: 'icones/default.png', // Aqui é onde define a imagem do icone, necessário a pasta para organização
+    //shadowUrl: 'leaf-shadow.png', // não vamos fazer com sombra, fica estranho e é desnecessário
+
+    iconSize:     [55, 50], // size of the icon
+    shadowSize:   [50, 64], // size of the shadow
+    iconAnchor:   [0, 0], // point of the icon which will correspond to marker's location
+    shadowAnchor: [4, 62],  // the same for the shadow
+    popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+});
+
+
+
+    L.marker([51.5, -0.09], {icon: defaultIcon}).addTo(map);
+    var LeafIcon = L.Icon.extend({
+    options: {
+        //shadowUrl: 'leaf-shadow.png', // não vamos fazer com sombra, fica estranho e é desnecessário
+        iconSize:     [50, 50],     //o tamanho do icone, idealmente 40-50 de tamanho
+        //shadowSize:   [50, 64], // não vamos fazer com sombra, fica estranho e é desnecessário
+        iconAnchor:   [0, 0],     //o ponto de onde o ponto aparece em relação a marcação, melhor deixar zerado
+        //shadowAnchor: [4, 62], // não vamos fazer com sombra, fica estranho e é desnecessário
+        popupAnchor:  [25, -3] // onde que aparece o texto, do que testado, essa séria a melhor configuração
+    }
+});
+    var defaultIcon = new LeafIcon({iconUrl: 'icones/default.png'}), //como declarar um ponto novo
+    perigoIcon = new LeafIcon({iconUrl: 'icones/perigo.png'}),  //dessa vez com outro icone
+    outroIcon = new LeafIcon({iconUrl: 'icones/outro.png'}),    // também com outro icone
+    esgotoIcon = new LeafIcon({iconUrl: 'icones/esgoto.png'}),
+    poluicaoIcon = new LeafIcon({iconUrl: 'icones/poluicao.png'}),
+    sonoraIcon = new LeafIcon({iconUrl: 'icones/sonora.png'}),
+    ruaIcon = new LeafIcon({iconUrl: 'icones/rua.png'}),
+    eletricidadeIcon = new LeafIcon({iconUrl: 'icones/eletricidade.png'});
+    L.icon = function (options) {
+    return new L.Icon(options);
+};
+//Separação dos icones
+
+//Separação do icone default
+
+var conjunto_defaults = L.layerGroup([L.marker([-23.659, -46.555], {icon: defaultIcon}).addTo(map).bindPopup("Eu sou uma marcação default.")]);
+//ao separar os elementos, podemos usar o método layerGroup da biblioteca leaflet para juntá-los.
+
+//Separação do  icone de perigo
+
+var conjunto_perigos = L.layerGroup([
+    L.marker([-23.660, -46.553], {icon: perigoIcon}).addTo(map).bindPopup("Eu sou uma marcação de perigo."),
+    L.marker([-23.660, -46.555], {icon: perigoIcon}).addTo(map).bindPopup("Eu sou uma marcação de perigo."),
+    L.marker([-23.660, -46.557], {icon: perigoIcon}).addTo(map).bindPopup("Eu sou uma marcação de perigo.")]);
+
+
+//Separação do icone de outro
+
+var conjunto_outros = L.layerGroup([
+    L.marker([-23.661, -46.553], {icon: outroIcon}).addTo(map).bindPopup("Eu sou uma marcação de outro."),
+    L.marker([-23.661, -46.555], {icon: outroIcon}).addTo(map).bindPopup("Eu sou uma marcação de outro."),
+    L.marker([-23.661, -46.557], {icon: outroIcon}).addTo(map).bindPopup("Eu sou uma marcação de outro.")]); 
+
+//Separação do icone de esgoto
+
+var conjunto_esgotos = L.layerGroup([
+    L.marker([-23.662, -46.553], {icon: esgotoIcon}).addTo(map).bindPopup("Eu sou uma marcação de esgoto."),
+    L.marker([-23.662, -46.555], {icon: esgotoIcon}).addTo(map).bindPopup("Eu sou uma marcação de esgoto."),
+    L.marker([-23.662, -46.557], {icon: esgotoIcon}).addTo(map).bindPopup("Eu sou uma marcação de esgoto.")]);
+
+//Separação do icone de poluição
+
+var conjunto_poluicoes = L.layerGroup([
+L.marker([-23.663, -46.553], {icon: poluicaoIcon}).addTo(map).bindPopup("Eu sou uma marcação de poluição."),
+L.marker([-23.663, -46.555], {icon: poluicaoIcon}).addTo(map).bindPopup("Eu sou uma marcação de poluição."),
+L.marker([-23.663, -46.557], {icon: poluicaoIcon}).addTo(map).bindPopup("Eu sou uma marcação de poluição.")]);
+
+//Separação do icone de poluição sonora
+
+var conjunto_sonoros = L.layerGroup([
+L.marker([-23.664, -46.553], {icon: sonoraIcon}).addTo(map).bindPopup("Eu sou uma marcação de poluição sonora."),
+L.marker([-23.664, -46.555], {icon: sonoraIcon}).addTo(map).bindPopup("Eu sou uma marcação de poluição sonora."),
+L.marker([-23.664, -46.557], {icon: sonoraIcon}).addTo(map).bindPopup("Eu sou uma marcação de poluição sonora.")]);
+
+//Separação do icone de problema na rua
+
+var conjunto_ruas = L.layerGroup([
+L.marker([-23.665, -46.553], {icon: ruaIcon}).addTo(map).bindPopup("Eu sou uma marcação de problemas na rua."),
+L.marker([-23.665, -46.555], {icon: ruaIcon}).addTo(map).bindPopup("Eu sou uma marcação de problemas na rua."),
+L.marker([-23.665, -46.557], {icon: ruaIcon}).addTo(map).bindPopup("Eu sou uma marcação de problemas na rua.")]);
+
+//Separação do icone de eletricidade
+
+var conjunto_eletricidades = L.layerGroup([
+L.marker([-23.666, -46.553], {icon: eletricidadeIcon}).addTo(map).bindPopup("Eu sou uma marcação de eletricidade."),
+L.marker([-23.666, -46.555], {icon: eletricidadeIcon}).addTo(map).bindPopup("Eu sou uma marcação de eletricidade."),
+L.marker([-23.666, -46.557], {icon: eletricidadeIcon}).addTo(map).bindPopup("Eu sou uma marcação de eletricidade.")]);
+
+    
+    
+        </script>
+    </div>
+    <!--fim do script do mapa e inicio do controle da visualização dos ícones -->
+    <div class="control-visu-icon">
+        
+        <div class="conjunto">
+            <button type="button"  class="botao-controle" onclick=""><img src="icones/visualizacao-sf.png" alt="visualização de ícones"/></button>
+            <div class="">
+                <label>
+                    <span>
+                        <input type="checkbox" class="" checked=""/>
+                        <span> Cities</span>
+                    </span>
+                </label>
+            </div>
+            <div>
+                <label>
+                    <span>
+                        <input type="checkbox" class=""/>
+                        <span> Parks</span>
+                    </span>
+                    </label>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
