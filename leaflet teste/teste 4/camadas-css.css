@@ -1,0 +1,74 @@
+#map {
+    height:100vh;
+    width:100vw;
+}
+
+body {
+    position: relative;
+    z-index:-10;
+}
+
+.control-visu-icon {
+    height: 500px;
+    width: 350px;
+    background-color:#FFFFFF;
+    display:grid;
+    grid-template-columns: auto;
+    grid-template-rows: auto auto auto auto auto auto auto;
+    border: 3px solid black;
+    border-radius: 8px;
+    align-items:left;
+    top:0%;
+    right:0%;
+}
+
+img {
+    height:60px;
+    width:60px;
+    display:flex;
+}
+
+.imagem-visualizacao {
+    height:100px;
+    width:100px;
+    display:flex;
+}
+
+.test{
+    display: flex;
+    z-index:401;
+    top:0%;
+    right:10%;
+    position:absolute;
+}
+
+.botao-controle {
+    width:120px;
+    height: 80px;
+    position:absolute;
+    display:flex;
+    top:1%;
+    right:11%;
+    z-index: 650;
+}
+
+
+.visivel {
+    visibility:hidden;
+    display: none;
+    z-index:4;
+}
+
+
+.opçoes{
+    display: flex;
+    gap: 10px;
+    width:350px;
+    height:60x;
+    background-color:orange;
+    justify-content:flex-start;
+    align-items:right;
+}
+
+
+
