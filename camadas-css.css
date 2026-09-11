@@ -1,0 +1,38 @@
+#map {
+    height:100vh;
+    width:100vw;
+}
+
+body {
+    position: relative;
+}
+
+.control-visu-icon {
+    height: 500px;
+    width: 500px;
+    background-color:orange;
+    display:flex;
+    position:absolute;
+    border: 3px solid black;
+    border-radius: 8px;
+    align-items:center;
+    z-index:1;
+}
+
+img {
+    height:100px;
+    width:100px;
+    display:flex;
+}
+
+.botao-controle {
+    width:120px;
+    height: 80px;
+    display:flex;
+    top:0%;
+    justify-content:top;
+}
+
+.conjunto {
+    
+}
