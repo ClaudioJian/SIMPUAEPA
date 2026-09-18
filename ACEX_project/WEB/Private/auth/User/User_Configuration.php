@@ -6,7 +6,7 @@
   +-------------------------------------------------------------------------------------------------+
 */
 
-namespace ACEX_project\WEB\Core;
+namespace ACEX_project\WEB\Private\Auth\User;
 
 if (!defined('ENTRY_POINT_CHECKED')) {
     http_response_code(403);

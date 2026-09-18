@@ -6,11 +6,16 @@
     <title>Teste de conecção</title>
 </head>
 <body>
-    <form method="POST" action="/SIMPUAEPA/test">    
-        <input type="email" name="email" placeholder="E-mail" required><br><br>
+    <form method="POST" action="/SIMPUAEPA/subscribe">    
+        <!--<input type="email" name="email" placeholder="E-mail" required><br><br>-->
         <button type="submit">enviar</button>
+    </form>
+
+    <form method="POST" action="/SIMPUAEPA/subscribe" >    
+        <button type="submit" id="replay_attack">replay attack</button>
     </form>
     
 </body>
+
 <script src="../API/api-client.js"></script>
 </html>

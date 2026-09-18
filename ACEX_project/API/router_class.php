@@ -6,7 +6,7 @@ namespace ACEX_project\API;
 
     require_once __DIR__ . "/../WEB/Private/Core/AppCommonVar.php";
     require_once __DIR__ . "/../WEB/Private/Core/Security/CSRF_manager.php";
-    use function ACEX_project\WEB\Auth\session_startup;
+    use function ACEX_project\WEB\Private\Auth\session_startup;
     use Exception;
 
 
@@ -27,8 +27,8 @@ namespace ACEX_project\API;
             $this->action = $action;
             $this->use_session = $use_session;
         }
-        public function execute(string $method,string $requested_resource){
-            if($requested_resource !== $this->res || $method !== $this->method) return;
+        public function execute(string $method,string $requested_resource) : bool{
+            if($requested_resource !== $this->res || $method !== $this->method) return false;
             if($this->use_session){
                 $status = session_status();
                 if($status===PHP_SESSION_DISABLED){
@@ -38,6 +38,7 @@ namespace ACEX_project\API;
                 if($status === PHP_SESSION_NONE) session_startup();
             }
             ($this->action)();
+            return true;
         }
     }
 
@@ -45,11 +46,15 @@ namespace ACEX_project\API;
         $method = strtoupper($_SERVER['REQUEST_METHOD']);
         $pathi = $_SERVER['PATH_INFO'];
         $required_resource = ($pathi===null||$pathi==='') ? null : strtolower($_SERVER['PATH_INFO']);
-
+        
+        $found = false;
         foreach($all_route as $route){
             if ($route instanceof Route) {
-                $route->execute($method, $required_resource);
+                $found = $route->execute($method, $required_resource);
+                if($found) return;
             }
         }
+        http_response_code(404);
+        exit();
     }
 ?>

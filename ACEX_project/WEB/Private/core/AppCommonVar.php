@@ -18,10 +18,17 @@
   +-------------------------------------------------------------------------------------------------+
 */
 
-namespace ACEX_project\WEB\Core;
+namespace ACEX_project\WEB\Private\Core;
     require_once __DIR__ . '/../../vendor/autoload.php';
 
-    use Dotenv\Dotenv;
+use ACEX_project\WEB\Private\Error\Error_code;
+use ACEX_project\WEB\Private\Error\Error_condition;
+use ACEX_project\WEB\Private\Error\Error_domain;
+use ACEX_project\WEB\Private\Error\Log_level;
+use ACEX_project\WEB\Private\Error\Resource_code;
+use Dotenv\Dotenv;
+
+use function ACEX_project\WEB\Private\Error\Handle_error;
 
     enum Sucess_code : int{
         case user_found = 15; 
@@ -49,7 +56,9 @@ namespace ACEX_project\WEB\Core;
                 'SESSION_ACTIVE_TIME',
                 'SESSION_ABSOLUTE_TIME',
                 'CSRF_TOKEN_MAXLIFE',
-                'CSRF_TOKEN_HEADER_NAME'
+                'CSRF_TOKEN_HEADER_NAME',
+                'REQUEST_MAX_LIFE',
+                'HOME_PAGE_LOCATION',
             ])->notEmpty();
 
             $dotenv->required([
@@ -57,11 +66,15 @@ namespace ACEX_project\WEB\Core;
                 'SESSION_OBSOLETE_MAXLIFE',
                 'SESSION_ACTIVE_TIME',
                 'SESSION_ABSOLUTE_TIME',
-                'CSRF_TOKEN_MAXLIFE'
+                'CSRF_TOKEN_MAXLIFE',
+                'REQUEST_MAX_LIFE'
             ])->isInteger();        
         }catch(\Dotenv\Exception\ValidationException $e){
-            http_response_code(500);
-            exit("Server misconfiguration". $e->getMessage());
+            Handle_error(
+                new Error_code(Error_domain::configuration,Resource_code::env,Error_condition::missing),
+                Log_level::fatal,
+                $e->getMessage()
+            );
         }
 
         define('DB_NAME', $_ENV['DATABASE_NAME']);
@@ -79,9 +92,23 @@ namespace ACEX_project\WEB\Core;
         define('CSRF_TOKEN_HEADER_NAME', $_ENV['CSRF_TOKEN_HEADER_NAME']);
         define('CSRF_TOKEN_GENERATE_SEPARATOR', '__');
 
+        define('REQUEST_MAX_LIFE',$_ENV['REQUEST_MAX_LIFE']);
+        define('NONCE_SEP','#');
+
         define('UNSUPPORTED_METHOD',['CONNECT','TRACE']);
         define('VALID_HTTP_METHOD',['POST','GET','HEAD','CONNECT','TRACE','DELETE','PUT','PATCH']);
 
+        $home_location = ltrim($_ENV['HOME_PAGE_LOCATION'],'/');
+        
+
+        define('HOME_PAGE_LOCATION',$home_location);
+        if(!file_exists(__DIR__ . "/../../Public_html/".$home_location)){
+            Handle_error(
+                new Error_code(Error_domain::configuration,Resource_code::env,Error_condition::missing),
+                Log_level::fatal,
+                "Missing home page - doesnt exist or not found[".__DIR__ . "/../../Public_html/".$home_location."]"
+            );
+        }
 
         //avoid define/load env twice to opmization, note this is per request
         define('INITIALIZED',true);

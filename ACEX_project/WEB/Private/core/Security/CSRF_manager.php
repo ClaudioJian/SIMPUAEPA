@@ -14,7 +14,18 @@
   +-------------------------------------------------------------------------------------------------+
 */
 
-namespace ACEX_project\WEB\Core\Security;
+namespace ACEX_project\WEB\Private\Core\Security;
+
+    require_once __DIR__ . "/../../Error/Error_code.php";
+    require_once __DIR__ . "/../../Error/Error_manager.php";
+
+    use ACEX_project\WEB\Private\Error\Error_code;
+    use ACEX_project\WEB\Private\Error\Error_condition;
+    use ACEX_project\WEB\Private\Error\Error_domain;
+use ACEX_project\WEB\Private\Error\Resource_code;
+
+use function ACEX_project\WEB\Private\Error\Log_internal;
+
     require_once __DIR__ . "/../AppCommonVar.php";
     require_once __DIR__ . "/../../Auth/session_manager.php";
 
@@ -30,7 +41,7 @@ namespace ACEX_project\WEB\Core\Security;
         
         if(!isset($headers['sec-fetch-site'])) return;
         $sec_fetch_site = $headers['sec-fetch-site'];
-        if($sec_fetch_site==='' || $sec_fetch_site==='cross-site') CSRF_invalidation("Same origin policy violation, current site don't support CORS");
+        if($sec_fetch_site==='' || $sec_fetch_site==='cross-site') CSRF_invalidation("Same origin policy violation, current site don't support CORS",Error_condition::denied);
     }
 
     function CSRF_isexpired():bool{
@@ -57,7 +68,7 @@ namespace ACEX_project\WEB\Core\Security;
      * this code is modified from @link https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
      */
     function CSRF_generate() : void{
-        if(session_status()!==PHP_SESSION_ACTIVE) CSRF_invalidation("No active session for generate CSRF token in generation");      
+        if(session_status()!==PHP_SESSION_ACTIVE) CSRF_invalidation("No active session for generate CSRF token in generation",Error_condition::missing);      
 
         $_SESSION['CSRF_TOKEN'] = CSRF_create_hmac();
         $_SESSION['CSRF_TOKEN_CREATED'] = time();
@@ -67,7 +78,7 @@ namespace ACEX_project\WEB\Core\Security;
 
     /**
      * create completly new hashed message for CSRF token
-     * WARNING: CSRF_SECRET_KEY is not configured correct
+     * WARNING: SECRET_KEY is not configured correct
      */
     function CSRF_create_hmac(string $random_val='') : string{
         /*
@@ -76,14 +87,14 @@ namespace ACEX_project\WEB\Core\Security;
             2. when key expire, need change all hmac(hashed message) to make validation possible
             3. this is not session based, however, need implant database to do it
         */ 
-        $_SESSION['CSRF_SECRET_KEY'] ??= bin2hex(random_bytes(64)); 
+        $_SESSION['SECRET_KEY'] ??= bin2hex(random_bytes(64)); 
        
 
         $session_id = session_id();
 
         if($random_val==='') $random_val = bin2hex(random_bytes(64));
         $message = strlen($session_id) . CSRF_TOKEN_GENERATE_SEPARATOR . $session_id . CSRF_TOKEN_GENERATE_SEPARATOR . strlen($random_val) . CSRF_TOKEN_GENERATE_SEPARATOR . $random_val;
-        $CSRF_Token = hash_hmac("SHA256",$message,$_SESSION['CSRF_SECRET_KEY']) . CSRF_TOKEN_GENERATE_SEPARATOR . $random_val;
+        $CSRF_Token = hash_hmac("SHA256",$message,$_SESSION['SECRET_KEY']) . CSRF_TOKEN_GENERATE_SEPARATOR . $random_val;
         return $CSRF_Token;
     }
 
@@ -97,20 +108,20 @@ namespace ACEX_project\WEB\Core\Security;
      */
     function CSRF_validate() : bool{
         if(!CSRF_required_method()) return true;
-        if(session_status()!==PHP_SESSION_ACTIVE) CSRF_invalidation("No active session for generate CSRF token in validation"); 
+        if(session_status()!==PHP_SESSION_ACTIVE) CSRF_invalidation("No active session for generate CSRF token in validation",Error_condition::missing); 
         
         $current_token = $_SESSION['CSRF_TOKEN'] ?? '';
         if($current_token==='' || CSRF_isexpired()) return false;   
         $client_token = CSRF_get_client_token();
         if(empty($client_token)) {
-            if($_SERVER['REQUEST_METHOD']!=='POST') CSRF_invalidation("forbidden");
+            if($_SERVER['REQUEST_METHOD']!=='POST') CSRF_invalidation("forbidden",Error_condition::missing);
             else return false;
         }
 
         $raw_data_array = explode(CSRF_TOKEN_GENERATE_SEPARATOR,$client_token);
 
         if (count($raw_data_array) !== 2) {
-            CSRF_invalidation("Malformed CSRF token");
+            CSRF_invalidation("Malformed CSRF token",Error_condition::format);
         }
 
         $token = $raw_data_array[0];
@@ -120,7 +131,7 @@ namespace ACEX_project\WEB\Core\Security;
         $expected_token = explode(CSRF_TOKEN_GENERATE_SEPARATOR,$expected_full_token)[0];
 
 
-        if(!hash_equals($token,$expected_token)) CSRF_invalidation("CSRF token mismatch");
+        if(!hash_equals($token,$expected_token)) CSRF_invalidation("CSRF token mismatch",Error_condition::incorrect);
 
         return true;
     }
@@ -130,10 +141,13 @@ namespace ACEX_project\WEB\Core\Security;
         return false;
     }
 
-    function CSRF_invalidation(string $msg){
+    function CSRF_invalidation(string $msg,Error_condition $condition){
+        Log_internal(
+            new Error_code(Error_domain::request,Resource_code::csrf,$condition),
+            err_msg:$msg
+        );
         //immedially expire front end cookie
         setcookie(CSRF_TOKEN_HEADER_NAME,"",1,"/","",true,false);
-        header("X-ERR-DESCRIPTION:".$msg);
         http_response_code(403);
         exit($msg);
     }

@@ -19,11 +19,18 @@
   +-------------------------------------------------------------------------------------------------+
 */
 
-namespace ACEX_project\WEB\Auth;
+namespace ACEX_project\WEB\Private\Auth;
+
+use ACEX_project\WEB\Private\Error\Error_code;
+use ACEX_project\WEB\Private\Error\Error_condition;
+use ACEX_project\WEB\Private\Error\Error_domain;
+use ACEX_project\WEB\Private\Error\Log_level;
+use ACEX_project\WEB\Private\Error\Resource_code;
+
     require_once __DIR__ . "/../Core/Security/CSRF_manager.php";
     require_once __DIR__ . "/../Core/AppCommonVar.php";
-    use function ACEX_project\WEB\Core\Security\CSRF_generate;
-    
+    use function ACEX_project\WEB\Private\Core\Security\CSRF_generate;
+    use function ACEX_project\WEB\Private\Error\Log_internal;
 
     //header('Cache-Control: no-cache, no-store, must-revalidate, private'); -> should put last moment when sending back
 
@@ -35,7 +42,9 @@ namespace ACEX_project\WEB\Auth;
         case disabled = 4;
     }
 
-    //continue previous session or create new session
+    /**
+     * continue previous session or create new session
+    */
     function session_startup(){
         if(!session_start()) {
             http_response_code(500);
@@ -85,6 +94,17 @@ namespace ACEX_project\WEB\Auth;
      */
     function Update_session():void{
         $_SESSION['last_active_time'] = time();
+        $ip = $_SERVER['REMOTE_ADDR'];
+        $user_agent = $_SERVER['HTTP_USER_AGENT'];
+        
+        Monitor_session('ip',$ip);
+        Monitor_session('user_agent',$user_agent);
+    }
+
+    function Monitor_session(string $name,mixed $compared_value){
+        $_SESSION['session_anomaly'] ??= [];
+        if(isset($_SESSION[$name]) && $_SESSION[$name]!== $compared_value) $_SESSION['anomaly'][] = $name;
+        $_SESSION[$name] = $compared_value;
     }
 
     /**
@@ -137,14 +157,17 @@ namespace ACEX_project\WEB\Auth;
 
     /**
      * immedially clean all session data and exit
-     * TODO: if user use grant, flush their privilege
      */
     function Nuke_session():void{
         if(session_status()!== PHP_SESSION_ACTIVE) return;
-
         
         $_SESSION = [];
         session_destroy();
+        Log_internal(
+            new Error_code(Error_domain::request,Resource_code::session,Error_condition::expired),
+            Log_level::warning,
+            "Invalid request to obsolete session"
+        );
         
         Exit_session();
     }
@@ -161,6 +184,7 @@ namespace ACEX_project\WEB\Auth;
         //track here in log which is destroyed: user,ip,time
         header("HTTP/1.1 403 Forbidden");
         header('Cache-Control: no-cache, no-store, must-revalidate, private');
+        header('Clear-Site-Data: cache');
         exit();
     }
 
