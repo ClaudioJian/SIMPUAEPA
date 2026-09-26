@@ -1,7 +1,7 @@
 <?php
 namespace ACEX_project\WEB\Private\Api;
 
-    use function ACEX_project\WEB\Private\Auth\session_startup;
+use function ACEX_project\WEB\Private\Auth\session_initialize;
     use ltrim;
 
     /**
@@ -15,7 +15,7 @@ namespace ACEX_project\WEB\Private\Api;
     function Redirect(string $resource_name="",array $data=[],bool $nonce=false,int $http_code=303){
         header("X-redirection:true");
 
-        if($data!==[] && session_status()===PHP_SESSION_NONE) session_startup();
+        if($data!==[] && session_status()===PHP_SESSION_NONE) session_initialize();
         if($resource_name==='') $resource_name = HOME_PAGE_LOCATION;
         header('Location:'. "/SIMPUAEPA/".$resource_name);
         header("X-target-location:"."/SIMPUAEPA/".ltrim($resource_name,'/'));

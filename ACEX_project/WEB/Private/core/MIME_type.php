@@ -57,7 +57,7 @@ namespace ACEX_project\WEB\Private\Core;
     /**
      * construct full MIME type without option.
      * Use MIME['type']['subtype'] to avoid mistake.
-     * @return string|null sucess example:application/json. null when type/subtring is not specified
+     * @return string|null success example:application/json. null when type/subtring is not specified
      */
     function Construct_MIME(string $subtype):string|null{
         $subtype = strtolower(trim($subtype));

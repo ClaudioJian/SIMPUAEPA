@@ -86,6 +86,7 @@ use Exception;
         case unauthenticated=-14;
         case configuration = -15;
         case denied        = -16;
+        case abnomaly      = -17;
     }
 
     enum Log_level{

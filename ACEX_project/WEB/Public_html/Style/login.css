@@ -1,0 +1,68 @@
+
+body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f4f4f9;
+
+    background-image: url(../images/img.3.png);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+
+.login-container {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    width: 100%;
+    max-width: 320px;
+}
+
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; 
+}
+
+
+input[type="email"], 
+input[type="password"] {
+    padding: 14px; 
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+
+.btn-pequeno {
+    padding: 8px;
+    font-size: 14px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+
+button[type="submit"] {
+    background-color: #007BFF;
+    color: white;
+    border: none;   
+}
+
+
+.btn-cadastro {
+    text-align: center;
+    text-decoration: none;
+    background-color: #e0e0e0;
+    color: #333;
+    border: 1px solid #ccc;
+}

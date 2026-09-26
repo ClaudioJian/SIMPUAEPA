@@ -90,10 +90,8 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
         $_SESSION['SECRET_KEY'] ??= bin2hex(random_bytes(64)); 
        
 
-        $session_id = session_id();
-
         if($random_val==='') $random_val = bin2hex(random_bytes(64));
-        $message = strlen($session_id) . CSRF_TOKEN_GENERATE_SEPARATOR . $session_id . CSRF_TOKEN_GENERATE_SEPARATOR . strlen($random_val) . CSRF_TOKEN_GENERATE_SEPARATOR . $random_val;
+        $message = strlen($random_val) . CSRF_TOKEN_GENERATE_SEPARATOR . $random_val;
         $CSRF_Token = hash_hmac("SHA256",$message,$_SESSION['SECRET_KEY']) . CSRF_TOKEN_GENERATE_SEPARATOR . $random_val;
         return $CSRF_Token;
     }
@@ -149,7 +147,7 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
         //immedially expire front end cookie
         setcookie(CSRF_TOKEN_HEADER_NAME,"",1,"/","",true,false);
         http_response_code(403);
-        exit($msg);
+        exit();
     }
     
     function CSRF_get_client_token():string{     

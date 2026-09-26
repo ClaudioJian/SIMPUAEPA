@@ -11,11 +11,15 @@ namespace ACEX_project\WEB\Private\Auth\User;
 
 
 
-
+use Exception;
 use Throwable;
 
+
 require_once __DIR__ . "/../../Api/database/database_manager.php";
+
+use function ACEX_project\WEB\Private\Api\database\Connect_database;
 use function ACEX_project\WEB\Private\Api\database\Database_simple_insert;
+use function ACEX_project\WEB\Private\Api\database\Handle_query_fail;
 
 require_once __DIR__ . "/../../Api/database/database_dictionary.php";
 use ACEX_project\WEB\Private\Api\database\All_tables;
@@ -25,12 +29,14 @@ use ACEX_project\WEB\Private\Api\database\tb_user_columns;
 require_once __DIR__ . "/../../Api/database/Authorization_manager.php";
 use function ACEX_project\WEB\Private\Api\database\Is_query_permitted;
 
+require_once __DIR__ . "/../../Api/RedirectUtils.php";
+use function ACEX_project\WEB\Private\Api\Redirect;
+
 require_once __DIR__ . "/../../Api/NonceRequest.php";
 use function ACEX_project\WEB\Private\Api\Require_nonce;
 
-require_once __DIR__ . "/../../Auth/password_handler.php";
+require_once __DIR__ . "/../password_handler.php";
 use function ACEX_project\WEB\Private\Auth\Secure_hash_password;
-use function ACEX_project\WEB\Private\Auth\Strong_password;
 
 require_once __DIR__ ."/../../Core/MIME_type.php";
 use function ACEX_project\WEB\Private\Core\Construct_MIME;
@@ -46,50 +52,107 @@ use ACEX_project\WEB\Private\Error\Error_domain;
 use ACEX_project\WEB\Private\Error\Log_level;
 use ACEX_project\WEB\Private\Error\Resource_code;
 
+require_once __DIR__ ."/login.php";
+require_once __DIR__ ."/Authentication.php";
 
   /**
    * when redirect involved, may have no body so you should store elsewhere and could put in passed parameter. if no data supplied, it will try to get from request body.
    */
   function Create_account(array $request_body=[]){
-    Require_nonce();
+    $conn = null;
+    $id = null;
+    try{
+      if(Is_logged()) Redirect();
+      Require_nonce();
 
-    if($request_body===[]) $request_body = Get_request_body();
+      if($request_body===[]) $request_body = Get_request_body();
 
 
-    $email = $request_body['email'] ?? '';
-    $user_name = $request_body['name'] ?? '';
-    $password = $request_body['password'] ?? '';
+      $email = $request_body['email'] ?? '';
+      $user_name = $request_body['name'] ?? '';
+      $password = $request_body['password'] ?? '';
 
-    Validate_enroll_data($user_name,$email,$password);
-    Is_enroll_authorized();
-    $password = Secure_hash_password($password);
+      Validate_enroll_data($email,$password,$user_name);
+      Is_enroll_authorized();
+      $password = Secure_hash_password($password);
 
-    //check duplicate from database
-    //not implement yet
 
-    $sucess = Database_simple_insert(
-      [
-        [
+      Exit_if_duplicated($email,$user_name);
+
+      $id_list = Database_simple_insert(
+        [[
           'table' => All_tables::user,
           'insert' => [
-            [
-              'column' => tb_user_columns::email,
-              'value' => $email
-            ],
-            [
-              'column' => tb_user_columns::name_user,
-              'value' => $user_name
-            ],
-            [
-              'column' => tb_user_columns::password,
-              'value' => $password
+              [
+                'column' => tb_user_columns::email,
+                'value' => [$email]
+              ],
+              [
+                'column' => tb_user_columns::name_user,
+                'value' => [$user_name]
+              ],
+              [
+                'column' => tb_user_columns::password,
+                'value' => [$password]
+              ]
             ]
-          ]
-        ]
-      ]
-    );
-    if(!$sucess) http_response_code(500);
+          ]]);
+
+      if(!$id_list) http_response_code(500);
+
+      foreach($id_list as $uid){
+        if($uid['table'] === All_tables::user) {
+          $id = (int)$uid['id'];
+          break;
+        }
+      }
+      if($id===null) throw new Exception('in Create_account(): Cannot find last id inserted');
+    }catch(Throwable $e){
+      Handle_query_fail($e,$conn);
+    }
+
+    Internal_login($id);
+
+    header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+    echo json_encode(['success'=>0,'uid'=>$id]);
     exit();
+  }
+
+  /**
+   * Exit immedially if find duplicate and return json response, not may still have race condition so be sure insert is upsert.
+   */
+  function Exit_if_duplicated(string $email,string $name) : void{
+    $query = "SELECT
+        EXISTS (
+            SELECT 1
+            FROM " . All_tables::user->name . "
+            WHERE " . tb_user_columns::email->name . " = :email
+        ) AS email_exist,
+        EXISTS (
+            SELECT 1
+            FROM " . All_tables::user->name . "
+            WHERE " . tb_user_columns::name_user->name . " = :user_name
+        ) AS uname_exist
+      ";
+      $conn = Connect_database();
+      
+      $smtm = $conn->prepare($query);
+      if($smtm===false) throw new Exception('in Create_account(): Database server failed to prepare statement for select query');
+
+      $smtm->execute([
+        ':email'=>$email,
+        ':user_name'=>$name]);
+
+      $row = $smtm->fetch(\PDO::FETCH_ASSOC);
+
+      $email_exist = $row['email_exist'];
+      $name_exist = $row['uname_exist'];
+      if($email_exist || $name_exist){
+        http_response_code(400);
+        header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+        echo json_encode(['success'=>-1,'name'=> $name_exist? 2 : 4,'email'=> $email_exist? 2 : 4,'password'=>4]);
+        exit();
+      }
   }
 
   /**
@@ -116,59 +179,4 @@ use ACEX_project\WEB\Private\Error\Resource_code;
       );
     }
   }
-
-  /**
-   * Exit immedially if invalid and Respond with :
-   * http code 400
-   * $name and $email -> 0 sucess, 1 too long, 2 duplicated, 3 missing, 4 not validated
-   * $password -> 0 sucess, 1 too weak, 2 missing, 3 not validated
-   */
-  function Validate_enroll_data(string $name,string $email,string $password) : void{
-    //0 sucess, 1 too long, 2 duplicated, 3 missing, 4 not validated for name and email
-    //0 sucess, 1 too weak, 2 missing, 3 not validated for password
-    $response = ['name'=>4,'email'=>4,'password'=>3];
-
-    try{
-      if(($email === '' || $name === '' || $password === '')) {
-
-        $missing_txt = '';
-        if($name === '') {
-          $response['name'] = 3;
-          $missing_txt .= ' name';
-        }
-        if($email === '') {
-          $response['email'] = 3;
-          $missing_txt .= ' email';
-        }
-        if($password === '') {
-          $response['password'] = 2;
-          $missing_txt .= ' password';
-        }
-        
-        Handle_error(
-          new Error_code(Error_domain::request,Resource_code::credential,Error_condition::missing),
-          err_msg: 'Account enrollment failed: '. $missing_txt . ' is/are missing from request data'
-        );
-      }
-
-      if(!Strong_password($password)) {
-        Handle_error(
-          new Error_code(Error_domain::request,Resource_code::credential,Error_condition::missing),
-          err_msg: 'Account enrollment failed: password is too weak'
-        );
-      }
-    }catch(Throwable $e){
-      $json = json_encode($response);
-      header('Content-Type: '.Construct_MIME(MIME['application']['json']));
-      http_response_code(400);
-      
-      echo $json;
-      
-      exit();
-    }
-  }
-
-
-
-
 ?>

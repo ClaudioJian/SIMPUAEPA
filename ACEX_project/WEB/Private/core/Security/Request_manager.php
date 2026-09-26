@@ -11,8 +11,10 @@ namespace ACEX_project\WEB\Private\Core\Security;
   require_once __DIR__ . '/../../Api/NonceRequest.php';
   require_once __DIR__ . '/../../Auth/session_manager.php';
 
-  use function ACEX_project\WEB\Private\Auth\session_startup;
   use function ACEX_project\WEB\Private\Api\Nonce_request_clean;
+
+  require_once __DIR__ ."/../../Core/MIME_type.php";
+  use function ACEX_project\WEB\Private\Core\Construct_MIME;
 
   function Validate_request(){
     Nonce_request_clean();
@@ -51,46 +53,42 @@ namespace ACEX_project\WEB\Private\Core\Security;
     if($headers===false) $headers=[];
     
     CSRF_handle_fetch_API();
-    //continue previous session or create new session
-    session_startup();
-
-    //check if is state change request, if so, start session no matter what
-    if(CSRF_required_method()){
-      header('Cache-Control: no-cache, no-store, must-revalidate, private');
-      Handle_CSRF_GET();
-
-      CSRF_validate();
-    }
+    CSRF_validate();
   }
 
 
   function Handle_CSRF_GET(){
-    $pathi = $_SERVER['PATH_INFO'];
-    $required_resource = ($pathi===null||$pathi==='') ? null : strtolower($_SERVER['PATH_INFO']);
-    
-    if($required_resource=="/csrf" && $_SERVER['REQUEST_METHOD']==='POST'){
-      //when request, this mean the client is trying renew
-      if(!CSRF_validate()) {
-        $headers = array_change_key_case(getallheaders(), CASE_LOWER);
-        CSRF_generate_send($headers); 
-      }
+    if(!CSRF_required_method()) return;
+    header('Cache-Control: no-cache, no-store, must-revalidate, private');
 
-      http_response_code(304);
-      exit();
+    //when request, this mean the client is trying renew
+    if(!CSRF_validate()) {
+      $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+      CSRF_generate_send($headers); 
     }
+
+    http_response_code(304);
+    exit();
+    
   }
 
 
 
     /**
-     *  get value posted in json from web in array form.
+     *  get value posted in json from web in array form. don't use when is multi-part
      *  to use: returned_array['key']
      * @return array ['key'=>'value'] from fetch(url,{...,body:JSON.stringfy(key:value)})
      */
     function Get_request_body(){
         $request_raw = file_get_contents('php://input');
         $assoc_arr = json_decode($request_raw,true);
-        
+
+        if($assoc_arr===false && json_last_error() === JSON_ERROR_NONE){
+          http_response_code(415);
+          header('accept: ' . Construct_MIME(MIME['application']['json']));
+          exit();
+        }
+
         return $assoc_arr;
     }
 

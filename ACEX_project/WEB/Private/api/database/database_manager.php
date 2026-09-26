@@ -20,7 +20,8 @@ namespace ACEX_project\WEB\Private\Api\database;
     use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
     use Exception;
-    use Throwable;
+use PDOStatement;
+use Throwable;
 
     use function ACEX_project\WEB\Private\Error\MyArray_check;
     use function ACEX_project\WEB\Private\Error\MyArray_missing_key;
@@ -30,23 +31,27 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
     /**
      * connect to database.
      * auto exit database when error occur.
-     * @return PDO sucess: object pointer to connection of database
+     * @param bool $keep_connection if this set to true, same connection is returned, else new connection
+     * @return PDO success: object pointer to connection of database
      * @return null and throw error when fail
      */
-    function Connect_database() :PDO|null{
+    function Connect_database(bool $keep_connection = true) :PDO|null{
         $dns = "mysql: host=" .HOST. "port=".DB_PORT.";dbname=".DB_NAME;
-
-        try{
-            $conn = new PDO($dns,SERVER_USER,DB_PASSWORD);
-        }catch(PDOException $e){
-            $conn = NULL;
-            Handle_error(
-                new Error_Code(Error_domain::database,Resource_code::connection,Error_condition::unknown),
-                Log_level::error,
-                $e->getMessage()
-            );
-            return null;
+        static $conn = null;
+        if(!$keep_connection) $conn = null;
+        if($conn === null){
+            try{
+                $conn = new PDO($dns,SERVER_USER,DB_PASSWORD);
+            }catch(PDOException $e){
+                Log_internal(
+                    new Error_Code(Error_domain::database,Resource_code::connection,Error_condition::unknown),
+                    err_msg:$e->getMessage()
+                );
+                $conn = NULL;
+                return null;
+            }
         }
+        
         return $conn;
     }
 
@@ -57,15 +62,25 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
      *     table: All_tables,
      *     insert: list<array{
      *         column: \UnitEnum,
-     *         value: mixed
+     *         value: List<mixed>
      *     }>
      * }> $query_arr
+     * @return bool|list<array{table:All_tables,id:string}> false if failed else return inserted id(multi row return FIRST id)
      */
-    function Database_simple_insert(array $query_arr) :bool{
+    function Database_simple_insert(array $query_arr,bool $use_transaction = false) :bool|array{
         $conn = null;
         try{            
             $conn = Connect_database();
-            $conn->beginTransaction();
+            $id_list = [];
+            if($conn === null){
+                Handle_error(
+                    new Error_Code(Error_domain::database,Resource_code::connection,Error_condition::unknown),
+                    Log_level::error,
+                    'Database connection failed when trying create account'
+                );
+            }
+
+            if($use_transaction) $conn->beginTransaction();
 
             foreach($query_arr as $tb_query) {
                 $table = $tb_query['table'] ?? MyArray_missing_key('table','Database_simple_insert','query_arr');
@@ -88,30 +103,47 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
                     . ' VALUES '.$arr_query['value'];
 
                 $smtm = $conn->prepare($query);
+                if($smtm===false) throw new Exception('Database server failed to prepare statement');
 
-                foreach($arr_query['binded_value'] as $name=>$values){
-                    $flags = Find_php_param_from_value($values);
-
-                    if($flags!==null) $smtm->bindValue($name,$values,$flags);
-                    else $smtm->bindValue($name,$values);
-                    
-                }
-                $smtm->execute();
+                PDO_Mybind_params($arr_query['binded_value'],$smtm);
+                $last_id = $conn->lastInsertId();
+                if($last_id) $id_list[] = ['table'=>$table,'id'=>$last_id];
             }
-            $conn->commit();
+            if($use_transaction) $conn->commit();
         }catch(Throwable $e){
-            if ($conn instanceof PDO && $conn->inTransaction()) $conn->rollBack();
-            $conn=null;
-
-            Log_internal(
-                new Error_Code(Error_domain::database,Resource_code::db_insert,Error_condition::unknown),
-                Log_level::error,
-                $e->getMessage()
-            );
+            Handle_query_fail($e,$conn,Resource_code::db_insert);
             return false;
         }
         $conn=null;
-        return true;
+        return $id_list;
+    }
+
+    function Handle_query_fail(Throwable $e, PDO|null &$conn,Resource_code $query = Resource_code::db_query){
+        if ($conn instanceof PDO && $conn->inTransaction()) $conn->rollBack();
+
+        Log_internal(
+            new Error_Code(Error_domain::database,$query,Error_condition::unknown),
+            Log_level::error,
+            $e->getMessage()
+        );
+
+        $conn=null;
+        http_response_code(500);
+        exit();
+    }
+
+    /**
+     * Bind values and execute. May throw error after execute
+     * @param array{string,mixed} $key_val_pair expect: [:value_name => value]
+     */
+    function PDO_Mybind_params(array $key_val_pair,PDOStatement $smtm) : void{
+        foreach($key_val_pair as $name=>$values){
+                $flags = Find_php_param_from_value($values);
+
+                if($flags!==null) $smtm->bindValue($name,$values,$flags);
+                else $smtm->bindValue($name,$values);
+            }
+        $smtm->execute();
     }
 
     /**
@@ -119,8 +151,8 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
      *
      * @param list<array{
      *     column: \UnitEnum,
-     *     value: mixed
-     * }> $all_param
+     *     value: list<mixed>
+     * }> $all_columns
      * 
      * @return array{
      *     column: string,
@@ -128,40 +160,65 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
      *     binded_value: array<string, mixed>
      * }
      */
-    function Query_insert_wrapper(All_tables $table, array $all_param):array{
-        $column_names = $value_name = $binded_values = [];
+    function Query_insert_wrapper(All_tables $table, array $all_columns):array{
+        $column_names = $value_names = $binded_values = $row_names = [];
 
-        $counter = 1;
-        foreach($all_param as $params){
-            MyArray_check($params,'Invalid argument $all_param: the value isnt array');
+        $max_row_count = 0;
+        $column_idx = 1;
+        foreach($all_columns as $column_arr){
+            
+            MyArray_check($column_arr,'Invalid argument $all_param: the value isnt array');
             //validation
-            $column = $params['column'] ?? MyArray_missing_key('column','Query_insert_wrapper','all_param');
+            $column = $column_arr['column'] ?? MyArray_missing_key('column','Query_insert_wrapper','all_param');
             Column_belong_to_table($table,[$column]);
             
-            $value = $params['value'] ?? MyArray_missing_key('value','Query_insert_wrapper','all_param');
+            $all_column_value = $column_arr['value'] ?? MyArray_missing_key('value','Query_insert_wrapper','all_param');
+            MyArray_check($all_column_value ,'Invalid argument $all_param: the value isnt array');
 
-            $named_value = Generate_value_name($counter,$table->name);
-            
+            $row_count = count($all_column_value);
+            if($max_row_count === 0) $max_row_count = $row_count;
+            else if($max_row_count !== $row_count) Handle_error(
+                new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::incorrect),
+                Log_level::fatal,
+                'Invalid argument in Query_insert_wrapper(): expected '.$max_row_count.' values for column ' . $column->name . ', but only ' . $row_count . ' were provided.' 
+            );
+
+            //current array:
+            //[value1,value2,value3] for column x = $counter
+            //should become: $value_names = [
+            //   '0'=>[table1_column_1_row_0,table1_column_2_row_0,table1_column_3_row_0],
+            //   '1'=>[table1_column_1_row_1,table1_column_2_row_1,table1_column_3_row_1]
+            //]
+            for($row_idx=0; $row_idx < $row_count ; $row_idx++){
+                $value = $all_column_value[$row_idx];
+                $named_value = Generate_value_name($column_idx,$row_idx+1,$table->name);
+
+                $value_names[$row_idx][$column_idx] = $named_value;
+                $binded_values[$named_value] = $value;
+            }
+
+
             $column_names[] = $column->name;
-            $value_name[] = $named_value;
-            $binded_values[$named_value] = $value;
-            $counter ++;
+            $column_idx ++;
         }
         
+        // [[x,y,z],[x,y,z]] => [(x,y,z),(x,y,z)]
+        foreach($value_names as $row) {$row_names[] = '(' . implode(",",$row) . ')';}
         
+        //[(x,y,z),(x,y,z)]=>(x,y,z),(x,y,z)
         return [
             'column'=> '(' . implode(",",$column_names) . ')',
-            'value'=> '(' . implode(",",$value_name) . ')',
+            'value'=> implode(",",$row_names),
             'binded_value'=> $binded_values
         ];
     }
 
     /**
-     * return: table name(if present) + value(prefix) + unique indentifier or order(string)
+     * return: table name(if present) + column(prefix) + unique column indentifier or order(string) + row id, e.g ':user_column_1_row_1'
      */
-    function Generate_value_name(int $id,string $table_name = ""):string{
+    function Generate_value_name(int $column_id,int $row_id ,string $table_name = ""):string{
         $tb_name = $table_name === '' ? "" : $table_name."_";
-        return ":".$tb_name."value_".$id."_";
+        return ":".$tb_name."column".$column_id."_row_".$row_id;
     }
 
     /**if type is null, type should using default type */

@@ -8,8 +8,7 @@
   | you should require this file if need these constraint                                           |
   | WARNING: when require this, if env file is malconfigured, return http code 500                  |
   |                                                                                                 |
-  |                                        Table of content                                         |
-  | Sucess_code:enum                                                                                |
+  |                                        Table of content                                         |                                                                               
   | user_found, db_insert, db_update, db_delete, db_select                                          |
   | Constant per request: const                                                                     |
   | DB_NAME :string, DB_PASSWORD:string, HOST: string, SERVER_USER:string                           |
@@ -30,14 +29,6 @@ use Dotenv\Dotenv;
 
 use function ACEX_project\WEB\Private\Error\Handle_error;
 
-    enum Sucess_code : int{
-        case user_found = 15; 
-
-        case db_insert = 52;
-        case db_update = 53;
-        case db_delete = 54;
-        case db_select = 55;
-    };
 
     if(!defined('INITIALIZED')) Initialize_value();
 

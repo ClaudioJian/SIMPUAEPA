@@ -1,11 +1,84 @@
+
+
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastre-se</title>
+    <link rel="stylesheet" href="../Style/cadastro.css">
 </head>
 <body>
-    <h1>cadastrar</h1>
+
+    <div class="login-container">
+        
+        <form id="registerForm">    
+            
+            <input type="hidden" id="csrf_token" name="csrf_token" value="">
+           
+            <input type="text" name="nome" placeholder="Nome Completo" required>
+            <input type="email" name="email" placeholder="E-mail" required>
+            <input type="password" id="senha" name="senha" placeholder="Senha" required>
+            <input type="password" id="confirmar_senha" name="confirmar_senha" placeholder="Confirmar Senha" required>
+        
+            <button type="submit" class="btn-pequeno">Cadastrar</button>
+            <a href="login.html" class="btn-cadastro btn-pequeno">Já tenho conta (Login)</a>
+        </form>
+    </div>
+
+    <script>
+        const registerForm = document.getElementById('registerForm');
+
+        registerForm.addEventListener('submit', async function(event) {
+            
+            event.preventDefault(); 
+
+            const senha = document.getElementById('senha').value;
+            const confirmarSenha = document.getElementById('confirmar_senha').value;
+
+            
+            if (senha !== confirmarSenha) {
+                alert("As senhas não coincidem! Por favor, verifique.");
+                return; 
+            }
+
+          
+            const url = "/SIMPUAEPA-BackEnd/ACEX_project/API/router.php"; 
+            
+            
+            const formData = new FormData(registerForm);
+
+            try {
+               
+                const response = await fetch(url, {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Erro no servidor: ${response.status}`);
+                }
+
+                
+                const result = await response.json();
+                console.log("Resposta do Servidor:", result);
+
+              
+                if (result.registered === true) {
+                    alert("Cadastro realizado com sucesso! Redirecionando para o login...");
+                    window.location.href = "login.html"; 
+                } else {
+                    
+                    alert(result.message || "Erro ao realizar o cadastro. Tente novamente.");
+                }
+
+            } catch (error) {
+                console.error("Falha na requisição:", error.message);
+                alert("Não foi possível conectar ao servidor para realizar o cadastro.");
+            }
+        });
+    </script>
+
 </body>
 </html>

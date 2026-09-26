@@ -127,7 +127,8 @@ async function interceptFormRequest(e) {
     const cgenTime = Date.now();
     headers.append('x-cgen-time',cgenTime);
     
-    const options = {method:method,body:data,headers:headers};
+    const options = {method:method,headers:headers};
+    if(method!== 'HEAD' && method!== 'GET') options.body = data;
 
     let serverResponse = await originalFetch(url,options);
 

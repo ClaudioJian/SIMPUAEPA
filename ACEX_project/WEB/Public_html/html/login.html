@@ -1,56 +1,75 @@
-//botão de login envia o pedido de login, se server fala é logado, o usuário é logado
-// java script pode receber o resposta e mudar o site de aCORDO COM RESPOSTA ENVIADO POR server
-//POR EXEMPLO, O SERVER PODE ENVIAR json como {"dataType":"user","logged":true}
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fazer Login</title>
+    <link rel="stylesheet" href="../Style/login.css">
 </head>
 <body>
 
-    <a href="../index.html" class="back-btn">
-    Voltar</a>
+    <div class="login-container">
+        
+        <form id="loginForm">    
+            
+            <input type="hidden" id="csrf_token" name="csrf_token" value="">
 
-    <br><br>
+            <input type="email" id="email" name="email" placeholder="E-mail" required>
+            <input type="password" id="senha" name="senha" placeholder="Senha" required>
+        
+            <button type="submit" class="btn-pequeno">Login</button>
+            <a href="cadastro.html" class="btn-cadastro btn-pequeno">Cadastrar</a>
+        </form>
+    </div>
 
-    <!--url está fora, não consegue se estar no backend, precisa um ponte, php não existe..., baixar php-->
+    <script>
+        
+        const loginForm = document.getElementById('loginForm');
 
-    <form method="POST" action="../index.php">    
-        <input type="email" name="email" placeholder="E-mail" required><br><br>
+        
+        loginForm.addEventListener('submit', async function(event) {
+            
+            event.preventDefault(); 
 
-        <input type="password" name="senha" placeholder="Senha" required><br><br>
-    
-        <button type="submit">Login</button>
+           
+            const url = "/SIMPUAEPA-BackEnd/ACEX_project/API/router.php"; 
 
-    </form>
+            
+            const formData = new FormData(loginForm);
 
-    <a href="cadastro.html">Cadastrar</a>
-
-
-    <!--<script>
-        //"/private/core/security/request_handler" não existe ainda, não baixou o versão que tem esse
-        //enviar usa POST,PATCH,DELETE
-        //pegar dados usa GET ou HEAD
-        //login precisa enviar o nome do usuário
-        async function GetData() {
-            const url = "/private/core/security/request_handler";
             try {
-                //backend vai fazer algo como $user = $_POST['username']; o $user torna example
-                const response = await fetch(url,{method: "GET"} );
+                
+                const response = await fetch(url, {
+                    method: "POST",
+                    body: formData
+                });
+
+                
                 if (!response.ok) {
-                throw new Error(`Response status: ${response.status}`);
+                    throw new Error(`Erro no servidor: ${response.status}`);
                 }
 
+                
                 const result = await response.json();
-                console.log(result);
+                console.log("Resposta do Servidor:", result);
+
+                
+                if (result.dataType === "user" && result.logged === true) {
+                    alert("Login realizado com sucesso!");
+                    
+                    window.location.href = "../index.php"; 
+                } else {
+                    
+                    alert("E-mail ou senha incorretos. Tente novamente.");
+                }
+
             } catch (error) {
-                console.error(error.message);
+                
+                console.error("Falha na requisição:", error.message);
+                alert("Não foi possível conectar ao servidor.");
             }
-            }
-    </script>-->
+        });
+    </script>
     
 </body>
 </html>
