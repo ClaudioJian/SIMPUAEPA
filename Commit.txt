@@ -1,0 +1,3 @@
+Na tabela User a linha de histórico ele recebe a TABELA histórico, como?
+Tirei o Last access pois não há razão aparente para a função
+Tema está como Boolean pois 0 Tema escuro e 1 Tema claro
