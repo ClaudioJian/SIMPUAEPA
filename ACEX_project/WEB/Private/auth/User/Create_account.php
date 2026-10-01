@@ -98,8 +98,8 @@ require_once __DIR__ ."/Authentication.php";
             ]
           ]]);
 
-      if(!$id_list) http_response_code(500);
-
+      if($id_list===false) http_response_code(500);
+      else
       foreach($id_list as $uid){
         if($uid['table'] === All_tables::user) {
           $id = (int)$uid['id'];
@@ -115,6 +115,7 @@ require_once __DIR__ ."/Authentication.php";
 
     header('Content-Type: '.Construct_MIME(MIME['application']['json']));
     echo json_encode(['success'=>0,'uid'=>$id]);
+    http_response_code(201);
     exit();
   }
 
@@ -135,6 +136,10 @@ require_once __DIR__ ."/Authentication.php";
         ) AS uname_exist
       ";
       $conn = Connect_database();
+      if($conn === null) {
+        http_response_code(500);
+        echo json_encode(['success'=>-3]);
+      }
       
       $smtm = $conn->prepare($query);
       if($smtm===false) throw new Exception('in Create_account(): Database server failed to prepare statement for select query');

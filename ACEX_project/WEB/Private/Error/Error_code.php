@@ -50,6 +50,7 @@ use Exception;
         case env              = -18;
         case session          = -19;
         case db_query         = -20;
+        case file             = -21;
 
         //action
         case action           = -50;

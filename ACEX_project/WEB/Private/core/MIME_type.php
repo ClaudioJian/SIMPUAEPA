@@ -21,16 +21,22 @@
 namespace ACEX_project\WEB\Private\Core;
     /**
      * define all usable mime type and corresponded subtype.
+     * The key is subtype and value is extension
      * @example MIME['application']['json']
      * @var array{
      *     application: list{json:'json'},
+     *     image: list{png:'png',jpeg:'jpg'},
      *     text: list{html:'html',css:'css'}
      * }
      */
     define('MIME',
         [
-            'application' => [
+            'application'=>[
                 'json'=>'json'
+            ],
+            'image' => [
+                'png'=>'png',
+                'jpeg'=>'jpg'
             ],
             'text'=>[
                 'html'=>'html',
@@ -55,19 +61,29 @@ namespace ACEX_project\WEB\Private\Core;
     }
 
     /**
-     * construct full MIME type without option.
+     * return the full mime from extension
+     */
+    function Find_MIME_from_extension(string $extension):string|null{
+        $extension = strtolower(trim($extension));
+
+        foreach(MIME as $type=>$subtypes){
+            $subtype = array_search($extension,$subtypes,true);
+            if($subtype !== false) return $type . '/' . $subtype;
+        }
+        return null;
+    }
+
+    /**
+     * construct full MIME type fron mime subtype without option.
      * Use MIME['type']['subtype'] to avoid mistake.
      * @return string|null success example:application/json. null when type/subtring is not specified
      */
     function Construct_MIME(string $subtype):string|null{
         $subtype = strtolower(trim($subtype));
-        $target_type = "";
+
         foreach(MIME as $type=>$_subtype){
-            if(in_array($subtype,$_subtype)) $target_type = $type;
+            if(isset($subtype[$subtype])) $type.'/'.$subtype;
         }
-        
-        if($target_type==='') return null;
-        
-        return $target_type.'/'.$subtype;
+        return null;
     }
 ?>

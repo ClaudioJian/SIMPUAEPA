@@ -34,8 +34,8 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 
 
     function Initialize_value(){
-        $dotenv = Dotenv::createImmutable(__DIR__. "/../../");
-        $dotenv->load();
+        $dotenv = Dotenv::createImmutable(__DIR__. "/../../",[".env",'.env.development','.env.production']);
+        $dotenv->safeLoad();
         try{
             $dotenv->required([
                 'DATABASE_NAME',
@@ -88,6 +88,8 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 
         define('UNSUPPORTED_METHOD',['CONNECT','TRACE']);
         define('VALID_HTTP_METHOD',['POST','GET','HEAD','CONNECT','TRACE','DELETE','PUT','PATCH']);
+
+        define('FILE_UPLOAD_FIELD_NAME','userfile');
 
         $home_location = ltrim($_ENV['HOME_PAGE_LOCATION'],'/');
         

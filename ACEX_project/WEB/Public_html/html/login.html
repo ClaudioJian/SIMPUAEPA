@@ -8,68 +8,13 @@
 </head>
 <body>
 
-    <div class="login-container">
-        
-        <form id="loginForm">    
-            
-            <input type="hidden" id="csrf_token" name="csrf_token" value="">
-
-            <input type="email" id="email" name="email" placeholder="E-mail" required>
-            <input type="password" id="senha" name="senha" placeholder="Senha" required>
-        
-            <button type="submit" class="btn-pequeno">Login</button>
-            <a href="cadastro.html" class="btn-cadastro btn-pequeno">Cadastrar</a>
-        </form>
-    </div>
-
-    <script>
-        
-        const loginForm = document.getElementById('loginForm');
-
-        
-        loginForm.addEventListener('submit', async function(event) {
-            
-            event.preventDefault(); 
-
-           
-            const url = "/SIMPUAEPA-BackEnd/ACEX_project/API/router.php"; 
-
-            
-            const formData = new FormData(loginForm);
-
-            try {
-                
-                const response = await fetch(url, {
-                    method: "POST",
-                    body: formData
-                });
-
-                
-                if (!response.ok) {
-                    throw new Error(`Erro no servidor: ${response.status}`);
-                }
-
-                
-                const result = await response.json();
-                console.log("Resposta do Servidor:", result);
-
-                
-                if (result.dataType === "user" && result.logged === true) {
-                    alert("Login realizado com sucesso!");
-                    
-                    window.location.href = "../index.php"; 
-                } else {
-                    
-                    alert("E-mail ou senha incorretos. Tente novamente.");
-                }
-
-            } catch (error) {
-                
-                console.error("Falha na requisição:", error.message);
-                alert("Não foi possível conectar ao servidor.");
-            }
-        });
-    </script>
+    <form enctype="multipart/form-data" action="/SIMPUAEPA/fileuploadtest" method="POST">
+    <!-- MAX_FILE_SIZE must precede the file input field -->
+    <input type="hidden" name="MAX_FILE_SIZE" value="41943040" />
+    <!-- Name of input element determines name in $_FILES array -->
+    Send this file: <input name="userfile" type="file" />
+    <input type="submit" value="Send File" />
+    </form>
     
 </body>
 </html>

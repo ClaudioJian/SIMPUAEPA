@@ -14,11 +14,8 @@
     <div class="login-container">
         
         <form id="registerForm">    
-            
-            <input type="hidden" id="csrf_token" name="csrf_token" value="">
-           
-            <input type="text" name="nome" placeholder="Nome Completo" required>
-            <input type="email" name="email" placeholder="E-mail" required>
+            <input type="text" name="nome" id="nome" placeholder="Nome Completo" required>
+            <input type="email" id="email" name="email" placeholder="E-mail" required>
             <input type="password" id="senha" name="senha" placeholder="Senha" required>
             <input type="password" id="confirmar_senha" name="confirmar_senha" placeholder="Confirmar Senha" required>
         
@@ -27,6 +24,10 @@
         </form>
     </div>
 
+        <form action="/SIMPUAEPA/logout" method="POST">
+            <button type="submit" class="btn-pequeno">LogOut</button>
+        </form>
+
     <script>
         const registerForm = document.getElementById('registerForm');
 
@@ -34,45 +35,34 @@
             
             event.preventDefault(); 
 
-            const senha = document.getElementById('senha').value;
+            const name = document.getElementById('nome').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('senha').value;
             const confirmarSenha = document.getElementById('confirmar_senha').value;
 
-            
-            if (senha !== confirmarSenha) {
+            const data = {
+                name:name, email: email, password:password
+            }
+
+            if (password !== confirmarSenha) {
                 alert("As senhas não coincidem! Por favor, verifique.");
                 return; 
             }
 
           
-            const url = "/SIMPUAEPA-BackEnd/ACEX_project/API/router.php"; 
+            const url = "/SIMPUAEPA/subscribe"; 
             
             
-            const formData = new FormData(registerForm);
 
             try {
                
                 const response = await fetch(url, {
                     method: "POST",
-                    body: formData
+                    body: JSON.stringify(data)
                 });
-
-                if (!response.ok) {
-                    throw new Error(`Erro no servidor: ${response.status}`);
-                }
-
                 
                 const result = await response.json();
                 console.log("Resposta do Servidor:", result);
-
-              
-                if (result.registered === true) {
-                    alert("Cadastro realizado com sucesso! Redirecionando para o login...");
-                    window.location.href = "login.html"; 
-                } else {
-                    
-                    alert(result.message || "Erro ao realizar o cadastro. Tente novamente.");
-                }
-
             } catch (error) {
                 console.error("Falha na requisição:", error.message);
                 alert("Não foi possível conectar ao servidor para realizar o cadastro.");
@@ -81,4 +71,5 @@
     </script>
 
 </body>
+<script src="../API/api-client.js"></script>
 </html>

@@ -130,7 +130,9 @@ namespace ACEX_project\WEB\Private\Api;
      * WARNING: $_SESSION['SECRET_KEY'] is not secure, used for simplicity 
      */
     function Snonce_generate(string $random_val, int $stime){
+        if(!isset($_SESSION['SECRET_KEY'])) $_SESSION['SECRET_KEY'] = bin2hex(random_bytes(32));
         $server_secret = $_SESSION['SECRET_KEY'];
+
 
         $message = strlen($random_val) . NONCE_SEP . $random_val . $stime;
         $token = hash_hmac('SHA256',$message,$server_secret);

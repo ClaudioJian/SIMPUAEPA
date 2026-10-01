@@ -22,9 +22,9 @@ namespace ACEX_project\WEB\Private\Core\Security;
     use ACEX_project\WEB\Private\Error\Error_code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
-use ACEX_project\WEB\Private\Error\Resource_code;
+    use ACEX_project\WEB\Private\Error\Resource_code;
 
-use function ACEX_project\WEB\Private\Error\Log_internal;
+    use function ACEX_project\WEB\Private\Error\Log_internal;
 
     require_once __DIR__ . "/../AppCommonVar.php";
     require_once __DIR__ . "/../../Auth/session_manager.php";
