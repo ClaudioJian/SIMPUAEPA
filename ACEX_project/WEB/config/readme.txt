@@ -66,6 +66,8 @@ Project Setup & Configuration Guide
     Engine Limits: Only support PHP scripts to communicates natively with MySQL databases.
     Compilation Thresholds: Recompiling the application binary via the makefile is only required if you make structural changes to system source files. 
                             Modifications to files strictly within src/database/, src/server/, or the config/ directory do not require recompilation.
+    
+    The original code can finded in https://github.com/ClaudioJian/Auto_installer
 
 
 

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+     <!-- Make sure you put this AFTER Leaflet's CSS -->
+ <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+     <link rel="stylesheet" href="Style/css-estudo.css"/>
+     <link rel="stylesheet" href="Style/style.css"/>
+</head>
+<body>
+    <div id="map">
+
+        <div class="login-container">
+            <a href="html/login.html" class="login-button">Login</a>
+        </div>
+
+        <script >
+            var map = L.map('map').setView([51.505, -0.09], 13); // localização no mapa.
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { // ter que ter o copyright para marcar o lugar.
+    maxZoom: 19, //o site também é para pegar o lugar para poder usar o mapa, usaremos openstreetmap.
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>' //teremos que fazer essa exportação 
+        //quando fizer o trabalho
+}).addTo(map);
+            var marker = L.marker([51.5, -0.09]).addTo(map); //coloca uma marcação tipo ponto do google.
+
+            var circle = L.circle([51.508, -0.11], { // coloca um círculo, tem que colocar os dados dele.
+    color: 'red',
+    fillColor: '#f03',
+    fillOpacity: 0.5,
+    radius: 500
+}).addTo(map);
+
+        var polygon = L.polygon([ // faz um polígono, outra marcação do mapa
+    [51.509, -0.08],
+    [51.503, -0.06],
+    [51.51, -0.047]
+]).addTo(map);
+
+    marker.bindPopup("<b>Hello world!</b><br>I am a popup.").openPopup(); // faz um pop up no mapa.
+circle.bindPopup("I am a circle."); // descrição do pop up, quando você clica no círculo.
+polygon.bindPopup("I am a polygon."); //descrição do pop up, quando você clica no polígono.
+    var popup = L.popup() // um pop up que não é de uma marcação anterior, dá para fazer um pop up direto
+    .setLatLng([51.513, -0.09]) //ponto do pop up no mapa
+    .setContent("I am a standalone popup.") // o que está escrito no pop up
+    .openOn(map); // comando para aparecer
+    //Here we use openOn instead of addTo because it handles automatic closing of a 
+    // previously opened popup when opening a new one which is good for usability.
+
+    function onMapClick(e) { // um exemplo de evento ao clicar no mapa
+    alert("You clicked the map at " + e.latlng); // ele gerou um aviso de tela quando clicou no mapa, 
+                                                // do ponto clicado fora das marcações.
+}
+
+map.on('click', onMapClick); //execução do comando de clicar no mapa e avisar.
+
+var popup = L.popup();
+
+function onMapClick(e) { //o comando foi modificado aqui, agora ele  dá um pop up no mapa do local em vez de dar um aviso na tela.
+    popup
+        .setLatLng(e.latlng) //seta a coordenada ao clicar
+        .setContent("You clicked the map at " + e.latlng.toString()) // aparece a mensagem
+        .openOn(map); // aparece no mapa
+}
+
+map.on('click', onMapClick); // método utilizado ao clicar, coloca em funcionamento o comando
+//no caso, O OUTRO EVENTO ESTÁ EM DESUSO POR CONTA DESSE.
+            </script>
+    </div>
+</body>
+</html>

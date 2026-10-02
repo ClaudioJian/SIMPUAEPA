@@ -1,0 +1,27 @@
+php_flag session.use_strict_mode On
+php_flag session.cookie_secure On
+php_flag session.cookie_httponly On
+
+php_value session.name "__Host-Http-PHPSESSID"
+php_value session.cookie_samesite "Strict"
+php_value session.sid_length 32
+php_value session.cookie_path "/"
+
+#every request is treat as if it want to go Public_html folder, so the folder like ACEX_Project is hidden from client
+RewriteEngine On
+
+<If "%{THE_REQUEST}=~m#/ACEX_Project/#i">
+    Require all denied
+</If>
+
+# $1 grab url compared with stripped host, scheme(e.g https://) and current file
+RewriteCond %{DOCUMENT_ROOT}/SIMPUAEPA/ACEX_Project/WEB/Public_html/$1 -f [OR]
+RewriteCond %{DOCUMENT_ROOT}/SIMPUAEPA/ACEX_Project/WEB/Public_html/$1 -d
+RewriteRule ^(.*)$ ACEX_Project/WEB/Public_html/$1 [L]  
+
+#if still don't match, fallback to router.php
+RewriteCond %{REQUEST_URI} !^/SIMPUAEPA/ACEX_Project/API/router\.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ ACEX_Project/API/router.php/$1 [L,QSA]
+
