@@ -1,0 +1,40 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Cadastre-se</title>
+        <link rel="stylesheet" href="../Style/cadastro.css">
+        
+    </head>
+    <body>
+
+        <button id="themeToggle" class="theme-toggle">
+            <img id="themeIcon" src="../images/dia-e-noite.png" alt="Alterar tema">
+        </button>
+
+        <div class="login-container">
+            
+            <form id="registerForm">    
+                <input type="text" name="name" id="name" placeholder="Nome Completo" required>
+                <input type="email" id="email" name="email" placeholder="E-mail" required>
+                <input type="password" id="password" name="password" placeholder="Senha" required>
+                <input type="password" name="confirm_password" id="confirm_password" placeholder="Confirmar Senha" required>
+            
+                <button type="submit" class="btn-pequeno">Cadastrar</button>
+                <a href="login.html" class="btn-cadastro btn-pequeno">Já tenho conta (Login)</a>
+            </form>
+
+        </div>
+
+            <form action="/SIMPUAEPA/logout" method="POST">
+                <button type="submit" class="btn-pequeno">LogOut</button>
+            </form>
+
+    </body>
+
+    <script src="../API/api-client.js"></script>
+    <script src="../UI/cadastro.js"></script>
+
+</html>

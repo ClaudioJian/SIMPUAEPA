@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa - SIMPUAEPA</title>
+
+    <!-- CSS do Leaflet -->
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""
+    >
+
+    <!-- Seus arquivos CSS existentes -->
+    <link rel="stylesheet" href="Style/css-estudo.css">
+    <link rel="stylesheet" href="Style/style.css">
+
+</head>
+
+<body>
+
+    <!-- BOTÃO SANDUÍCHE -->
+    <button
+        id="hamburger"
+        type="button"
+        aria-label="Abrir menu"
+        aria-controls="menu"
+        aria-expanded="false"
+    >
+        <div class="line1"></div>
+        <div class="line2"></div>
+        <div class="line3"></div>
+    </button>
+
+    <!-- MENU LATERAL -->
+    <nav id="menu" aria-label="Menu principal">
+        <div class="menu-titulo">SIMPUAEPA</div>
+
+        <ul>
+            <li data-acao="salvos">
+                <span class="menu-icone">🔖</span>
+                Salvos
+            </li>
+
+            <li data-acao="recentes">
+                <span class="menu-icone">◷</span>
+                Recentes
+            </li>
+
+            <li data-acao="contribuicoes">
+                <span class="menu-icone">▧</span>
+                Suas contribuições
+            </li>
+        </ul>
+
+        <div class="menu-separador"></div>
+
+        <ul>
+            <li data-acao="compartilhar">
+                <span class="menu-icone">↗</span>
+                Compartilhar localização
+            </li>
+
+            <li data-acao="linha-tempo">
+                <span class="menu-icone">⌁</span>
+                Sua linha do tempo
+            </li>
+
+            <li data-acao="dados">
+                <span class="menu-icone">⊙</span>
+                Seus dados no Maps
+            </li>
+
+            <li data-acao="personalizacao">
+                <span class="menu-icone">◆</span>
+                Personalização
+            </li>
+        </ul>
+
+        <div class="menu-separador"></div>
+
+        <ul>
+            <li data-acao="adicionar-lugar">
+                <span class="menu-icone">＋</span>
+                Adicionar lugar
+            </li>
+
+            <li data-acao="empresa">
+                <span class="menu-icone">▦</span>
+                Adicionar sua empresa
+            </li>
+
+            <li data-acao="editar-mapa">
+                <span class="menu-icone">✎</span>
+                Editar o mapa
+            </li>
+
+            <li data-acao="ajuda">
+                <span class="menu-icone">?</span>
+                Ajuda
+            </li>
+
+            <li data-acao="configuracoes">
+                <span class="menu-icone">⚙</span>
+                Configurações
+            </li>
+        </ul>
+    </nav>
+
+    <!-- FUNDO ESCURECIDO -->
+    <div id="overlay"></div>
+
+    <!-- MAPA E LOGIN -->
+    <div id="map">
+
+        <div class="login-container" id="login-container">
+
+            <!-- Visitante -->
+            <a
+                id="btn-login"
+                href="html/login.html"
+                class="login-button"
+            >
+                Login
+            </a>
+
+            <!-- Usuário logado -->
+            <div id="user-menu" class="user-menu" style="display:none;">
+
+                <button
+                    id="avatar"
+                    class="avatar"
+                    type="button"
+                    aria-label="Menu do usuário"
+                    aria-expanded="false"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        width="100%"
+                        height="100%"
+                        aria-hidden="true"
+                    >
+                        <circle cx="12" cy="12" r="12" fill="#bdc1c6"/>
+                        <circle cx="12" cy="9" r="4" fill="white"/>
+                        <path d="M4 20c0-4 4-6 8-6s8 2 8 6z" fill="white"/>
+                    </svg>
+                </button>
+
+                <div
+                    id="dropdown"
+                    class="dropdown"
+                    style="display:none;"
+                >
+                    <button
+                        id="btn-logout"
+                        class="dropdown-item"
+                        type="button"
+                    >
+                        Logout
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT DO LEAFLET -->
+    <script
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""
+    ></script>
+
+    <script>
+        // ================= MENU LATERAL =================
+
+        const hamburger = document.getElementById("hamburger");
+        const menu = document.getElementById("menu");
+        const overlay = document.getElementById("overlay");
+
+        function abrirMenu() {
+            menu.classList.add("open");
+            overlay.classList.add("open");
+            hamburger.classList.add("open");
+
+            hamburger.setAttribute("aria-expanded", "true");
+            hamburger.setAttribute("aria-label", "Fechar menu");
+        }
+
+        function fecharMenu() {
+            menu.classList.remove("open");
+            overlay.classList.remove("open");
+            hamburger.classList.remove("open");
+
+            hamburger.setAttribute("aria-expanded", "false");
+            hamburger.setAttribute("aria-label", "Abrir menu");
+        }
+
+        hamburger.addEventListener("click", function () {
+            if (menu.classList.contains("open")) {
+                fecharMenu();
+            } else {
+                abrirMenu();
+            }
+        });
+
+        overlay.addEventListener("click", fecharMenu);
+
+        // Fecha o menu com a tecla Escape
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") {
+                fecharMenu();
+                fecharDropdown();
+            }
+        });
+
+        // Impede os cliques no menu de chegarem ao mapa
+        L.DomEvent.disableClickPropagation(menu);
+        L.DomEvent.disableScrollPropagation(menu);
+
+        // Exemplo de ação dos itens do menu
+        menu.querySelectorAll("li[data-acao]").forEach(function (item) {
+            item.addEventListener("click", function () {
+                const acao = item.dataset.acao;
+
+                console.log("Item selecionado:", acao);
+
+                // Implemente a ação desejada para cada opção.
+                fecharMenu();
+            });
+        });
+
+
+        // ================= MAPA LEAFLET =================
+
+        const map = L.map("map").setView([51.505, -0.09], 13);
+
+        L.tileLayer(
+            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 19,
+                attribution:
+                    '&copy; <a href="https://www.openstreetmap.org/copyright">' +
+                    'OpenStreetMap</a>'
+            }
+        ).addTo(map);
+
+        // Marcador
+        const marker = L.marker([51.5, -0.09]).addTo(map);
+
+        marker.bindPopup(
+            "<b>Hello world!</b><br>I am a popup."
+        );
+
+        // Círculo
+        const circle = L.circle([51.508, -0.11], {
+            color: "red",
+            fillColor: "#f03",
+            fillOpacity: 0.5,
+            radius: 500
+        }).addTo(map);
+
+        circle.bindPopup("I am a circle.");
+
+        // Polígono
+        const polygon = L.polygon([
+            [51.509, -0.08],
+            [51.503, -0.06],
+            [51.51, -0.047]
+        ]).addTo(map);
+
+        polygon.bindPopup("I am a polygon.");
+
+        // Popup ao clicar no mapa
+        map.on("click", function (e) {
+            L.popup()
+                .setLatLng(e.latlng)
+                .setContent(
+                    "Você clicou nas coordenadas: " +
+                    e.latlng.lat.toFixed(6) + ", " +
+                    e.latlng.lng.toFixed(6)
+                )
+                .openOn(map);
+        });
+
+
+        // ================= LOGIN / AVATAR / LOGOUT =================
+
+        const loginContainer = document.getElementById("login-container");
+        const btnLogin = document.getElementById("btn-login");
+        const userMenu = document.getElementById("user-menu");
+        const avatar = document.getElementById("avatar");
+        const dropdown = document.getElementById("dropdown");
+        const btnLogout = document.getElementById("btn-logout");
+
+        // Impede que cliques no login acionem o mapa
+        L.DomEvent.disableClickPropagation(loginContainer);
+
+        function mostrarLogado() {
+            btnLogin.style.display = "none";
+            userMenu.style.display = "block";
+        }
+
+        function mostrarDeslogado() {
+            userMenu.style.display = "none";
+            dropdown.style.display = "none";
+            avatar.setAttribute("aria-expanded", "false");
+            btnLogin.style.display = "inline-block";
+        }
+
+        function verificarLogin() {
+            if (localStorage.getItem("uid")) {
+                mostrarLogado();
+            } else {
+                mostrarDeslogado();
+            }
+        }
+
+        function fecharDropdown() {
+            dropdown.style.display = "none";
+            avatar.setAttribute("aria-expanded", "false");
+        }
+
+        // Abre ou fecha o menu do usuário
+        avatar.addEventListener("click", function (e) {
+            e.stopPropagation();
+
+            const estaAberto = dropdown.style.display === "block";
+
+            dropdown.style.display = estaAberto ? "none" : "block";
+
+            avatar.setAttribute(
+                "aria-expanded",
+                String(!estaAberto)
+            );
+        });
+
+        // Fecha o dropdown ao clicar fora
+        document.addEventListener("click", function (e) {
+            if (!userMenu.contains(e.target)) {
+                fecharDropdown();
+            }
+        });
+
+        // Logout
+        btnLogout.addEventListener("click", async function () {
+            try {
+                const resposta = await fetch("/SIMPUAEPA/logout", {
+                    method: "POST",
+                    credentials: "same-origin"
+                });
+
+                if (!resposta.ok) {
+                    console.error(
+                        "O servidor retornou um erro no logout:",
+                        resposta.status
+                    );
+                }
+            } catch (err) {
+                console.error("Falha no logout:", err);
+            }
+
+            localStorage.removeItem("uid");
+            mostrarDeslogado();
+        });
+
+        verificarLogin();
+
+    </script>
+
+</body>
+</html>

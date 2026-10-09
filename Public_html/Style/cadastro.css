@@ -1,0 +1,161 @@
+
+body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f4f4f9;
+
+    
+    background-image: url(../images/img.3.png);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+
+.login-container {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    width: 100%;
+    max-width: 320px;
+}
+
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px; 
+}
+
+
+input[type="text"],
+input[type="email"], 
+input[type="password"] {
+    padding: 14px; 
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    outline: none;
+}
+
+
+input:focus {
+    border-color: #007BFF;
+}
+
+
+.btn-pequeno {
+    padding: 8px; 
+    font-size: 14px; 
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+
+button[type="submit"] {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+}
+
+
+button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+
+.btn-cadastro {
+    text-align: center;
+    text-decoration: none;
+    background-color: #e0e0e0;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+
+.btn-cadastro:hover {
+    background-color: #d2d2d2;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* DARK MODE ABAIXO: */
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+
+    width: 50px;
+    height: 50px;
+
+    border: none;
+    border-radius: 50%;
+
+    background-color: white;
+
+    cursor: pointer;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 0;
+}
+
+.theme-toggle img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+}
+
+body.dark-mode {
+    background-color: #121212;
+}
+
+body.dark-mode .login-container {
+    background-color: #1e1e1e;
+    border-color: #333;
+}
+
+body.dark-mode input {
+    background-color: #2a2a2a;
+    color: white;
+    border-color: #444;
+}
+
+body.dark-mode input::placeholder {
+    color: #aaa;
+}
+
+body.dark-mode .btn-cadastro {
+    background-color: #333;
+    color: white;
+    border-color: #444;
+}
+
+body.dark-mode .btn-cadastro:hover {
+    background-color: #444;
+}
+
+body.dark-mode .theme-toggle {
+    background-color: #333;
+    color: white;
+}
