@@ -1,3 +1,9 @@
 .env
 .env.*
 vendor/
+
+WEB/Public_html/Test/
+
+WEB/Private/Uploads/**/**/*
+!WEB/Private/Uploads/**/**/
+!WEB/Private/Uploads/**/**/.gitkeep

@@ -15,13 +15,15 @@ use Exception;
      * fatal   - Log the error, return HTTP 500 and terminate the request.
      * error   - Log the error and throw an exception.
      * @param Log_level $lvl fatal: end request | error: throw new Exception() | others: only log the message
+     * @param string $data the data to send to browser when is fatal error
      */
-    function Handle_error(Error_code $code,Log_level $lvl = Log_level::error,string $err_msg = "") : void{
+    function Handle_error(Error_code $code,Log_level $lvl = Log_level::error,string $err_msg = "", string $data = "") : void{
         Log_internal($code,$lvl,$err_msg);
 
         switch($lvl){
             case Log_level::fatal :{
                 http_response_code(500);
+                if($data!=="") echo $data;
                 exit();                
             }
             case Log_level::error :{

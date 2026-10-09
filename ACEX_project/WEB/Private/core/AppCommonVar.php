@@ -20,14 +20,16 @@
 namespace ACEX_project\WEB\Private\Core;
     require_once __DIR__ . '/../../vendor/autoload.php';
 
-use ACEX_project\WEB\Private\Error\Error_code;
-use ACEX_project\WEB\Private\Error\Error_condition;
-use ACEX_project\WEB\Private\Error\Error_domain;
-use ACEX_project\WEB\Private\Error\Log_level;
-use ACEX_project\WEB\Private\Error\Resource_code;
-use Dotenv\Dotenv;
+    require_once __DIR__ . '/../Error/Error_manager.php';
+    require_once __DIR__ . '/../Error/Error_code.php';
+    use ACEX_project\WEB\Private\Error\Error_code;
+    use ACEX_project\WEB\Private\Error\Error_condition;
+    use ACEX_project\WEB\Private\Error\Error_domain;
+    use ACEX_project\WEB\Private\Error\Log_level;
+    use ACEX_project\WEB\Private\Error\Resource_code;
+    use Dotenv\Dotenv;
 
-use function ACEX_project\WEB\Private\Error\Handle_error;
+    use function ACEX_project\WEB\Private\Error\Handle_error;
 
 
     if(!defined('INITIALIZED')) Initialize_value();
@@ -50,6 +52,8 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
                 'CSRF_TOKEN_HEADER_NAME',
                 'REQUEST_MAX_LIFE',
                 'HOME_PAGE_LOCATION',
+                'PHP_PATH',
+                'FILE_UPLOAD_VALIDATION_MAX_LIFE'
             ])->notEmpty();
 
             $dotenv->required([
@@ -58,7 +62,8 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
                 'SESSION_ACTIVE_TIME',
                 'SESSION_ABSOLUTE_TIME',
                 'CSRF_TOKEN_MAXLIFE',
-                'REQUEST_MAX_LIFE'
+                'REQUEST_MAX_LIFE',
+                'FILE_UPLOAD_VALIDATION_MAX_LIFE'
             ])->isInteger();        
         }catch(\Dotenv\Exception\ValidationException $e){
             Handle_error(
@@ -67,6 +72,7 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
                 $e->getMessage()
             );
         }
+        define('PHP_PATH',$_ENV['PHP_PATH']);
 
         define('DB_NAME', $_ENV['DATABASE_NAME']);
         define('DB_PASSWORD', $_ENV['DATABASE_PASSWORD']);
@@ -84,6 +90,9 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         define('CSRF_TOKEN_GENERATE_SEPARATOR', '__');
 
         define('REQUEST_MAX_LIFE',$_ENV['REQUEST_MAX_LIFE']);
+        define('FILE_UPLOAD_VALIDATION_MAX_LIFE', $_ENV['FILE_UPLOAD_VALIDATION_MAX_LIFE']);
+        
+
         define('NONCE_SEP','#');
 
         define('UNSUPPORTED_METHOD',['CONNECT','TRACE']);

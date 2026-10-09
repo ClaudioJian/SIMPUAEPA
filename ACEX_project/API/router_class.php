@@ -7,8 +7,8 @@ namespace ACEX_project\API;
     require_once __DIR__ . "/../WEB/Private/Core/AppCommonVar.php";
     require_once __DIR__ . "/../WEB/Private/Core/Security/CSRF_manager.php";
     use function ACEX_project\WEB\Private\Auth\session_initialize;
-use function ACEX_project\WEB\Private\Auth\User\Is_logged;
-use function ACEX_project\WEB\Private\Core\Construct_MIME;
+    use function ACEX_project\WEB\Private\Auth\User\Is_logged;
+    use function ACEX_project\WEB\Private\Core\Construct_MIME;
 
     require_once __DIR__ . "/../WEB/Private/Core/Security/Request_manager.php";
     use function ACEX_project\WEB\Private\Core\Security\Validate_request;
