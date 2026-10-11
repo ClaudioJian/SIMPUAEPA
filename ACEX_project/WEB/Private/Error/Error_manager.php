@@ -22,7 +22,7 @@ use Exception;
 
         switch($lvl){
             case Log_level::fatal :{
-                http_response_code(500);
+                \http_response_code(500);
                 if($data!=="") echo $data;
                 exit();                
             }
@@ -46,12 +46,12 @@ use Exception;
      */
     function Log_internal(Error_code $code,Log_level $lvl = Log_level::error,string $err_msg = ""){
         //day day/month/year time in milisec(hour:min:sec.ms)
-        $curr_t = date('D d/M/Y H:i:s'). sprintf('.%03d', (int)((microtime(true) * 1000) % 1000));
+        $curr_t = \date('D d/M/Y H:i:s'). \sprintf('.%03d', (int)((\microtime(true) * 1000) % 1000));
         
-        $extra_msg = $err_msg === '' ? '' : "- <<".$err_msg.">>";
+        $extra_msg = $err_msg === '' ? '' : "- <<$err_msg>>";
 
         //log this error somewhere
-        $log_msg = sprintf('[%s] [%s] %s %s',$curr_t,$lvl->name,(string)$code,$extra_msg);
+        $log_msg = \sprintf('[%s] [%s] %s %s',$curr_t,$lvl->name,(string)$code,$extra_msg);
         //not implanted yet
     }
 
@@ -73,7 +73,7 @@ use Exception;
     };
 
     function MyArray_check(mixed $target, string $msg):void{
-        if(!is_array($target)){
+        if(!\is_array($target)){
             Handle_error(
                 new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::type),
                 Log_level::fatal,

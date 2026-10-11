@@ -1,11 +1,11 @@
 <?php
 namespace ACEX_project\WEB\Private\Api;
 
-require_once __DIR__ ."/../Core/MIME_type.php";
-use function ACEX_project\WEB\Private\Core\Construct_MIME;
+    require_once __DIR__ ."/../Core/MIME_type.php";
+    use function ACEX_project\WEB\Private\Core\Construct_MIME;
 
-use function ACEX_project\WEB\Private\Auth\session_initialize;
-    use ltrim;
+    use function ACEX_project\WEB\Private\Auth\session_initialize;
+
 
     /**
      * send redirect for client. need session to be active to able store information(don't matter if is guest or authenticated user).
@@ -18,11 +18,11 @@ use function ACEX_project\WEB\Private\Auth\session_initialize;
     function Redirect(string $resource_name="",array $data=[],bool $nonce=false,int $http_code=303){
         if($data!==[] && session_status()===PHP_SESSION_NONE) session_initialize();
         if($resource_name==='') $resource_name = HOME_PAGE_LOCATION;
-        header('Content-type: '.Construct_MIME(MIME['application']['json']));
-        header('Location:'. "/SIMPUAEPA/".$resource_name);
-        header("X-target-location:"."/SIMPUAEPA/".ltrim($resource_name,'/'));
-        http_response_code($http_code);
+
+        \header('Content-type: '.Construct_MIME(MIME['application']['json']));
+        \header("Location: /SIMPUAEPA/$resource_name");
+        \header("X-target-location: /SIMPUAEPA/".ltrim($resource_name,'/'));
+        \http_response_code($http_code);
         
         exit();
     }
-?>

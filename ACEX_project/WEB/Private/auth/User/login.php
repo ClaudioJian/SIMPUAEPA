@@ -40,7 +40,7 @@ require_once __DIR__ . "/User_data.php";
 
     function Login(array $request_body = []){
         if(Is_logged()) {
-            header('Content-type: '.Construct_MIME(MIME['application']['json']));
+            \header('Content-type: '.Construct_MIME(MIME['application']['json']));
             echo json_encode(['success'=>1,'uid'=>$_SESSION['uid']]);
             exit();
         }
@@ -61,7 +61,7 @@ require_once __DIR__ . "/User_data.php";
             Handle_query_fail($e,$conn);
         }
 
-        header('Content-type: '.Construct_MIME(MIME['application']['json']));
+        \header('Content-type: '.Construct_MIME(MIME['application']['json']));
         echo json_encode(['success'=>0,'uid'=>$_SESSION['uid']]);
         exit();
     }
@@ -71,7 +71,7 @@ require_once __DIR__ . "/User_data.php";
         $conn = Connect_database();
 
         $query = "SELECT " .
-            implode(", ",[tb_user_columns::id_user->name, tb_user_columns::email->name, tb_user_columns::password->name]).
+            \implode(", ",[tb_user_columns::id_user->name, tb_user_columns::email->name, tb_user_columns::password->name]).
             " FROM ". All_tables::user->name. 
             " WHERE ". tb_user_columns::email->name ." = :email"
         ;
@@ -81,8 +81,8 @@ require_once __DIR__ . "/User_data.php";
         $smtm->execute([':email'=>$email]);
 
         if($smtm->rowCount()<1) {
-            http_response_code(400);
-            header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+            \http_response_code(400);
+            \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
             echo json_encode([...$response,'email'=>2,'success'=>-1]);
             exit();
         }
@@ -91,8 +91,8 @@ require_once __DIR__ . "/User_data.php";
         $stored_passwd = $row[tb_user_columns::password->name];
 
         if(!Secure_password_verify($raw_passwd,$stored_passwd)){
-            http_response_code(400);
-            header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+            \http_response_code(400);
+            \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
             echo json_encode([...$response,'success'=>-1,'password'=>2]);
             exit();
         }
@@ -109,4 +109,3 @@ require_once __DIR__ . "/User_data.php";
     function Is_logged():bool{
         return isset($_SESSION['uid']);
     }
-?>

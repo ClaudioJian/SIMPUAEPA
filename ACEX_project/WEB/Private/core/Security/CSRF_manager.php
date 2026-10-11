@@ -34,9 +34,9 @@ namespace ACEX_project\WEB\Private\Core\Security;
      * handle fetch api for csrf used as deep defence
      */
     function CSRF_handle_fetch_API(){
-        $headers = getallheaders();
+        $headers = \getallheaders();
         if($headers===false) return;
-        $headers = array_change_key_case($headers, CASE_LOWER);
+        $headers = \array_change_key_case($headers, CASE_LOWER);
 
         
         if(!isset($headers['sec-fetch-site'])) return;
@@ -45,7 +45,7 @@ namespace ACEX_project\WEB\Private\Core\Security;
     }
 
     function CSRF_isexpired():bool{
-        return !isset($_SESSION['CSRF_TOKEN_CREATED']) || time() - $_SESSION['CSRF_TOKEN_CREATED']>CSRF_TOKEN_MAXLIFE;
+        return !isset($_SESSION['CSRF_TOKEN_CREATED']) || \time() - $_SESSION['CSRF_TOKEN_CREATED']>CSRF_TOKEN_MAXLIFE;
     }
 
     /**
@@ -55,9 +55,9 @@ namespace ACEX_project\WEB\Private\Core\Security;
         if($headers === false) return;
         CSRF_generate();
         
-        header('Cache-Control: no-cache, no-store, must-revalidate, private');
-        header('Allow: POST');
-        http_response_code(204);
+        \header('Cache-Control: no-cache, no-store, must-revalidate, private');
+        \header('Allow: POST');
+        \http_response_code(204);
         exit();
     }
     /**
@@ -71,9 +71,9 @@ namespace ACEX_project\WEB\Private\Core\Security;
         if(session_status()!==PHP_SESSION_ACTIVE) CSRF_invalidation("No active session for generate CSRF token in generation",Error_condition::missing);      
 
         $_SESSION['CSRF_TOKEN'] = CSRF_create_hmac();
-        $_SESSION['CSRF_TOKEN_CREATED'] = time();
-        header(CSRF_TOKEN_HEADER_NAME. ': ' .$_SESSION['CSRF_TOKEN']);
-        setcookie(CSRF_TOKEN_HEADER_NAME,$_SESSION['CSRF_TOKEN'],['expires'=>(time() + CSRF_TOKEN_MAXLIFE),'path'=>'/','domain'=>'','secure'=>true,'httponly'=>false,'samesite'=>"Strict"]);
+        $_SESSION['CSRF_TOKEN_CREATED'] = \time();
+        \header(CSRF_TOKEN_HEADER_NAME. ': ' .$_SESSION['CSRF_TOKEN']);
+        \setcookie(CSRF_TOKEN_HEADER_NAME,$_SESSION['CSRF_TOKEN'],['expires'=>(\time() + CSRF_TOKEN_MAXLIFE),'path'=>'/','domain'=>'','secure'=>true,'httponly'=>false,'samesite'=>"Strict"]);
     }
 
     /**
@@ -87,12 +87,12 @@ namespace ACEX_project\WEB\Private\Core\Security;
             2. when key expire, need change all hmac(hashed message) to make validation possible
             3. this is not session based, however, need implant database to do it
         */ 
-        $_SESSION['SECRET_KEY'] ??= bin2hex(random_bytes(64)); 
+        $_SESSION['SECRET_KEY'] ??= \bin2hex(random_bytes(64)); 
        
 
-        if($random_val==='') $random_val = bin2hex(random_bytes(64));
-        $message = strlen($random_val) . CSRF_TOKEN_GENERATE_SEPARATOR . $random_val;
-        $CSRF_Token = hash_hmac("SHA256",$message,$_SESSION['SECRET_KEY']) . CSRF_TOKEN_GENERATE_SEPARATOR . $random_val;
+        if($random_val==='') $random_val = \bin2hex(random_bytes(64));
+        $message = \strlen($random_val) . CSRF_TOKEN_GENERATE_SEPARATOR . $random_val;
+        $CSRF_Token = \hash_hmac("SHA256",$message,$_SESSION['SECRET_KEY']) . CSRF_TOKEN_GENERATE_SEPARATOR . $random_val;
         return $CSRF_Token;
     }
 
@@ -106,7 +106,7 @@ namespace ACEX_project\WEB\Private\Core\Security;
      */
     function CSRF_validate() : bool{
         if(!CSRF_required_method()) return true;
-        if(session_status()!==PHP_SESSION_ACTIVE) CSRF_invalidation("No active session for generate CSRF token in validation",Error_condition::missing); 
+        if(\session_status()!==PHP_SESSION_ACTIVE) CSRF_invalidation("No active session for generate CSRF token in validation",Error_condition::missing); 
         
         $current_token = $_SESSION['CSRF_TOKEN'] ?? '';
         if($current_token==='' || CSRF_isexpired()) return false;   
@@ -116,9 +116,9 @@ namespace ACEX_project\WEB\Private\Core\Security;
             else return false;
         }
 
-        $raw_data_array = explode(CSRF_TOKEN_GENERATE_SEPARATOR,$client_token);
+        $raw_data_array = \explode(CSRF_TOKEN_GENERATE_SEPARATOR,$client_token);
 
-        if (count($raw_data_array) !== 2) {
+        if (\count($raw_data_array) !== 2) {
             CSRF_invalidation("Malformed CSRF token",Error_condition::format);
         }
 
@@ -126,10 +126,10 @@ namespace ACEX_project\WEB\Private\Core\Security;
         $random_val = $raw_data_array[1];
         
         $expected_full_token = CSRF_create_hmac($random_val);
-        $expected_token = explode(CSRF_TOKEN_GENERATE_SEPARATOR,$expected_full_token)[0];
+        $expected_token = \explode(CSRF_TOKEN_GENERATE_SEPARATOR,$expected_full_token)[0];
 
 
-        if(!hash_equals($token,$expected_token)) CSRF_invalidation("CSRF token mismatch",Error_condition::incorrect);
+        if(!\hash_equals($token,$expected_token)) CSRF_invalidation("CSRF token mismatch",Error_condition::incorrect);
 
         return true;
     }
@@ -145,19 +145,19 @@ namespace ACEX_project\WEB\Private\Core\Security;
             err_msg:$msg
         );
         //immedially expire front end cookie
-        setcookie(CSRF_TOKEN_HEADER_NAME,"",1,"/","",true,false);
-        http_response_code(403);
+        \setcookie(CSRF_TOKEN_HEADER_NAME,"",1,"/","",true,false);
+        \http_response_code(403);
         exit();
     }
     
     function CSRF_get_client_token():string{     
         if (isset($_POST[CSRF_TOKEN_HEADER_NAME])) return $_POST[CSRF_TOKEN_HEADER_NAME];
     
-        $headers = getallheaders();
+        $headers = \getallheaders();
         if($headers===false) return '';
-        $headers = array_change_key_case($headers, CASE_LOWER);
+        $headers = \array_change_key_case($headers, CASE_LOWER);
 
 
-        return $headers[strtolower(CSRF_TOKEN_HEADER_NAME)] ?? '';
+        return $headers[\strtolower(CSRF_TOKEN_HEADER_NAME)] ?? '';
     }
 ?>

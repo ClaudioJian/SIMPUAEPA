@@ -34,22 +34,22 @@ namespace ACEX_project\WEB\Private\Core\Security;
     */
     
 
-    $method = strtoupper($_SERVER['REQUEST_METHOD']);
+    $method = \strtoupper($_SERVER['REQUEST_METHOD']);
 
-    if(!in_array($method,VALID_HTTP_METHOD,true)) {
-      http_response_code(400);
+    if(!\in_array($method,VALID_HTTP_METHOD,true)) {
+      \http_response_code(400);
       exit();
     }
 
     foreach(UNSUPPORTED_METHOD as $unsupport_method) if($method===strtoupper($unsupport_method)){
-      $allowed_methods = array_diff(VALID_HTTP_METHOD,UNSUPPORTED_METHOD);
-      header('Allow:'.implode(" ,",$allowed_methods));
-      http_response_code(405);
+      $allowed_methods = \array_diff(VALID_HTTP_METHOD,UNSUPPORTED_METHOD);
+      \header('Allow:'.\implode(" ,",$allowed_methods));
+      \http_response_code(405);
       exit();
     };    
 
     //CSRF protection
-    $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+    $headers = \array_change_key_case(\getallheaders(), CASE_LOWER);
     if($headers===false) $headers=[];
     
     CSRF_handle_fetch_API();
@@ -59,15 +59,15 @@ namespace ACEX_project\WEB\Private\Core\Security;
 
   function Handle_CSRF_GET(){
     if(!CSRF_required_method()) return;
-    header('Cache-Control: no-cache, no-store, must-revalidate, private');
+    \header('Cache-Control: no-cache, no-store, must-revalidate, private');
 
     //when request, this mean the client is trying renew
     if(!CSRF_validate()) {
-      $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+      $headers = \array_change_key_case(\getallheaders(), CASE_LOWER);
       CSRF_generate_send($headers); 
     }
 
-    http_response_code(304);
+    \http_response_code(304);
     exit();
     
   }
@@ -80,12 +80,13 @@ namespace ACEX_project\WEB\Private\Core\Security;
      * @return array ['key'=>'value'] from fetch(url,{...,body:JSON.stringfy(key:value)})
      */
     function Get_request_body(){
-        $request_raw = file_get_contents('php://input');
-        $assoc_arr = json_decode($request_raw,true);
+        $request_raw = \file_get_contents('php://input');
+        if(($request_raw === false || $request_raw === "") && $_SERVER['REQUEST_METHOD']==='POST') return $_POST;
+        $assoc_arr = \json_decode($request_raw,true);
 
         if($assoc_arr===false && json_last_error() === JSON_ERROR_NONE){
-          http_response_code(415);
-          header('accept: ' . Construct_MIME(MIME['application']['json']));
+          \http_response_code(415);
+          \header('accept: ' . Construct_MIME(MIME['application']['json']));
           exit();
         }
 

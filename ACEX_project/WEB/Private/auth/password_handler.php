@@ -14,7 +14,7 @@ namespace ACEX_project\WEB\Private\Auth;
      */
     function Strong_password(string $password) : bool{
       //should consider to use some library to check. however, no time to implement
-      return strlen($password) > 15;
+      return \strlen($password) > 15;
     };
 
     function Generate_password(){
@@ -28,12 +28,12 @@ namespace ACEX_project\WEB\Private\Auth;
     */
     function Secure_hash_password(string $passwd, bool $fast_hash = true):string | null{
       //avoid truncate password and make it fixed size, to secure this, should use pepper as well
-      if($fast_hash) $passwd = base64_encode(hash('sha256',$passwd));
-      if(defined("PASSWORD_ARGON2ID")) {
+      if($fast_hash) $passwd = \base64_encode(hash('sha256',$passwd));
+      if(\defined("PASSWORD_ARGON2ID")) {
         $passwd = password_hash($passwd,PASSWORD_ARGON2ID,['memory_cost'=>19456,'time_cost'=>2]);
       }else{
-        $hashed_passwd = base64_encode(hash('sha384',$passwd));
-        $passwd = password_hash($hashed_passwd,PASSWORD_DEFAULT);
+        $hashed_passwd = \base64_encode(hash('sha384',$passwd));
+        $passwd = \password_hash($hashed_passwd,PASSWORD_DEFAULT);
       }
       return $passwd;
     }
@@ -45,8 +45,8 @@ namespace ACEX_project\WEB\Private\Auth;
      * @param string $real_passwd real password from database
      */
     function Secure_password_verify(string $passwd, string $real_passwd) : bool{
-      $passwd = base64_encode(hash('sha256',$passwd));
+      $passwd = \base64_encode(hash('sha256',$passwd));
 
-      return password_verify($passwd, $real_passwd);
+      return \password_verify($passwd, $real_passwd);
     }
 ?>

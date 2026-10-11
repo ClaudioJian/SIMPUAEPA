@@ -9,10 +9,10 @@ namespace ACEX_project\WEB\Private\Api;
      * To store information, use Nonce_request_create()
      */
     function Require_nonce(){
-        header('cache-control: no-store');
-        if(!isset($_SESSION['nonce_request']) || !is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
+        \header('cache-control: no-store');
+        if(!isset($_SESSION['nonce_request']) || !\is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
 
-        $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+        $headers = \array_change_key_case(\getallheaders(), CASE_LOWER);
         if($headers===false) $headers=[];
 
         $requested_snonce = $headers['x-snonce'] ?? '';
@@ -37,30 +37,30 @@ namespace ACEX_project\WEB\Private\Api;
      * MUST called in every request
      */
     function Nonce_request_clean(){
-        if(session_status() === PHP_SESSION_DISABLED) return;
-        $is_none = session_status() === PHP_SESSION_NONE;
-        if($is_none) session_start();
+        if(\session_status() === PHP_SESSION_DISABLED) return;
+        $is_none = \session_status() === PHP_SESSION_NONE;
+        if($is_none) \session_start();
 
-        if(!isset($_SESSION['nonce_request']) || !is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
+        if(!isset($_SESSION['nonce_request']) || !\is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
 
         foreach($_SESSION['nonce_request'] as $snonce=>$request) {
             Clean_expired_snonce($request['sgen_time'],$snonce);
         }
-        if($is_none) session_commit();
+        if($is_none) \session_commit();
     }
 
     function Validate_client_response(string $snonce, int $cgen_time, string $client_response,string $cnonce){
         if($client_response==='') Nonce_token_invalid(false,true);
 
         $request_uri = $_SERVER['REQUEST_URI'];
-        $method = strtoupper($_SERVER['REQUEST_METHOD']);
-        $path = parse_url($request_uri,PHP_URL_PATH);
+        $method = \strtoupper($_SERVER['REQUEST_METHOD']);
+        $path = \parse_url($request_uri,PHP_URL_PATH);
         
-        $A2 = hash('SHA256',$method . ":" . $path);
+        $A2 = \hash('SHA256', "$method:$path");
 
         $message = $cnonce . NONCE_SEP . $snonce . NONCE_SEP . $cgen_time . NONCE_SEP . $A2;
         $expected = hash('SHA256',$message);
-        if(!hash_equals($expected,$client_response)) {
+        if(!\hash_equals($expected,$client_response)) {
             Nonce_token_invalid(false);
         }
     }
@@ -70,12 +70,12 @@ namespace ACEX_project\WEB\Private\Api;
      * for regular public data, store directly in session using array($_SESSION['data1'] = array({'x'=>$data})) or $_SESSION['data1'] = $data
      */
     function Nonce_request_create(mixed $data){
-        if(session_status()===PHP_SESSION_NONE) session_start();
+        if(\session_status()===PHP_SESSION_NONE) \session_start();
 
-        if(!isset($_SESSION['nonce_request']) || !is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
+        if(!isset($_SESSION['nonce_request']) || !\is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
 
 
-        $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+        $headers = \array_change_key_case(getallheaders(), CASE_LOWER);
         if($headers===false) $headers=[];
 
         $id = $headers['x-snonce'];
@@ -89,17 +89,17 @@ namespace ACEX_project\WEB\Private\Api;
     function Validate_time(string $raw_cgen_time,string $request_snonce){
         $cgen_time = (int)$raw_cgen_time;
         if($cgen_time<0 || !ctype_digit($raw_cgen_time)){
-            http_response_code(400);
-            header('vary:x-cgen-time');
+            \http_response_code(400);
+            \header('vary: x-cgen-time');
             exit();
         }
         
 
         $expected_time = $_SESSION['nonce_request'][$request_snonce]['cgen_time'];
-        $now = (int) floor(microtime(true) * 1000);
+        $now = (int) \floor(microtime(true) * 1000);
         $age =  $now - $cgen_time;
         if($age <0 || $age > REQUEST_MAX_LIFE || $expected_time != $cgen_time) {
-            header('vary:x-cgen-time');
+            \header('vary: x-cgen-time');
             Nonce_token_invalid(true);
         }
     }
@@ -111,7 +111,7 @@ namespace ACEX_project\WEB\Private\Api;
     function Validate_request_snonce(string $snonce){
         if($snonce === '' || $snonce === null) Nonce_token_invalid(false,true);
         //ensure exist
-        if(!isset($_SESSION['nonce_request']) || !is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
+        if(!isset($_SESSION['nonce_request']) || !\is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
         if(!isset($_SESSION['nonce_request'][$snonce])) Nonce_token_invalid(false);
 
         $random = $_SESSION['nonce_request'][$snonce]['random_val'];
@@ -120,7 +120,7 @@ namespace ACEX_project\WEB\Private\Api;
 
 
         if(Clean_expired_snonce($snonce_gen_time,$snonce) ||
-            !hash_equals($snonce,$expected_snonce)
+            !\hash_equals($snonce,$expected_snonce)
         ) Nonce_token_invalid(false);
         if($_SESSION['nonce_request'][$snonce]['used'] === true) Nonce_token_invalid(true);
     }
@@ -130,12 +130,12 @@ namespace ACEX_project\WEB\Private\Api;
      * WARNING: $_SESSION['SECRET_KEY'] is not secure, used for simplicity 
      */
     function Snonce_generate(string $random_val, int $stime){
-        if(!isset($_SESSION['SECRET_KEY'])) $_SESSION['SECRET_KEY'] = bin2hex(random_bytes(32));
+        if(!isset($_SESSION['SECRET_KEY'])) $_SESSION['SECRET_KEY'] = \bin2hex(random_bytes(32));
         $server_secret = $_SESSION['SECRET_KEY'];
 
 
-        $message = strlen($random_val) . NONCE_SEP . $random_val . $stime;
-        $token = hash_hmac('SHA256',$message,$server_secret);
+        $message = \strlen($random_val) . NONCE_SEP . $random_val . $stime;
+        $token = \hash_hmac('SHA256',$message,$server_secret);
         return $token;
     }
 
@@ -145,7 +145,7 @@ namespace ACEX_project\WEB\Private\Api;
      * @return bool true if data cleaned
      */
     function Clean_expired_snonce(int $generated_time,string $target_snonce) :bool{
-        $now = (int) floor(microtime(true) * 1000);
+        $now = (int) \floor(microtime(true) * 1000);
         $age = $now - $generated_time;
         if($age<0 || $age <= REQUEST_MAX_LIFE) return false;
         
@@ -160,23 +160,23 @@ namespace ACEX_project\WEB\Private\Api;
      */
     function Nonce_token_invalid(bool $stale,bool $challenge = false){
         if($challenge){ 
-            if(session_status() === PHP_SESSION_NONE) session_start();
+            if(\session_status() === PHP_SESSION_NONE) \session_start();
             Store_nonce();
         }
-        header('x-request-stale:'.$stale);
+        \header("x-request-stale: $stale");
 
-        http_response_code(401);
+        \http_response_code(401);
         exit();
     }
 
     function Store_nonce(){
-        $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+        $headers = \array_change_key_case(getallheaders(), CASE_LOWER);
         if($headers===false) $headers=[];
 
         $cgen_time = $headers['x-cgen-time'] ?? 0;
 
-        $random_val = bin2hex(random_bytes(64));
-        $stime = (int) floor(microtime(true) * 1000);
+        $random_val = \bin2hex(random_bytes(64));
+        $stime = (int) \floor(microtime(true) * 1000);
         $snonce = Snonce_generate($random_val,$stime);
         $_SESSION['nonce_request'][$snonce] = [
             'cgen_time'=>$cgen_time,
@@ -186,7 +186,7 @@ namespace ACEX_project\WEB\Private\Api;
             'sgen_time'=>$stime,
         ];
 
-        header('x-snonce:'.$snonce);
+        \header("x-snonce: $snonce");
     }
 
 ?>

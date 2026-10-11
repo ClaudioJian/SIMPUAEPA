@@ -1,8 +1,9 @@
 <?php 
 
 namespace ACEX_project\API;
-    require_once __DIR__ ."/router_class.php";
     require_once __DIR__ . "/../WEB/Private/Core/AppCommonVar.php";  
+
+    require_once __DIR__ ."/router_class.php";
 
     require_once __DIR__ . "/../WEB/Private/Auth/User/Create_account.php";
     use function ACEX_project\WEB\Private\Auth\User\Create_account;
@@ -12,44 +13,28 @@ namespace ACEX_project\API;
 
     require_once __DIR__ . "/../WEB/Private/Auth/User/Logout.php";
     use function ACEX_project\WEB\Private\Auth\User\Logout;
+use function ACEX_project\WEB\Private\Auth\User\Upload_map_img;
+use function ACEX_project\WEB\Private\Auth\User\Upload_profile;
 
-    require_once __DIR__ . "/../WEB/Private/Core/Security/File_upload/File_upload.php";
-    use function ACEX_project\WEB\Private\Core\Security\File_upload\Secure_file_upload;
+    require_once __DIR__ . "/../WEB/Private/Auth/User/Upload.php";
 
-    require_once __DIR__ . "/../WEB/Private/Core/Security/File_upload/File_upload_utils.php";
-
-    
-    use ACEX_project\WEB\Private\Core\Security\File_upload\User_file_storation_path;
 
     require_once __DIR__ . "/../WEB/Private/Core/Security/CSRF_manager.php";
     use function ACEX_project\WEB\Private\Core\Security\Handle_CSRF_GET;
 
-    require_once __DIR__ . "/../WEB/Private/Core/MIME_type.php";
-    use ACEX_project\WEB\Private\Core\Avaible_extension;
-
-    ini_set('session.cookie_lifetime',(string)(SESSION_ABSOLUTE_TIME+10));
-    ini_set('session.gc_maxlifetime',(string)(SESSION_ABSOLUTE_TIME+10));
-    header('x-content-type-options:nosniff');
+    \ini_set('session.cookie_lifetime',(string)(SESSION_ABSOLUTE_TIME+10));
+    \ini_set('session.gc_maxlifetime',(string)(SESSION_ABSOLUTE_TIME+10));
+    \header('x-content-type-options:nosniff');
 
 
     //routing logic
-    $route = array(
-        new Route("/csrf",'POST',function(){
-            Handle_CSRF_GET();
-        }),
-        new Route("/subscribe",'POST',function(){
-            Create_account();
-        }),
-        new Route("/login",'POST',function(){
-            Login();
-        }),
-        new Route('/logout',"POST",function(){
-            Logout();
-        },require_login:true),
-        new Route('/fileuploadtest',"POST",function(){
-            Secure_file_upload(User_file_storation_path::profiles,[Avaible_extension::jpg]);
-        })
-    );
+    $route = [
+        new Route("/csrf",'POST',Handle_CSRF_GET(...)),
+        new Route("/subscribe",'POST',Create_account(...)),
+        new Route("/login",'POST',Login(...)),
+        new Route('/logout',"POST",Logout(...), require_login:true),
+        new Route('/image/profile',"POST",Upload_profile(...)),
+        new Route('/image/map',"POST",Upload_map_img(...),require_login:true),
+    ];
 
     Route_start($route);
-?>

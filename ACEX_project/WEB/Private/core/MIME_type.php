@@ -31,7 +31,7 @@ namespace ACEX_project\WEB\Private\Core;
         case unknown;
 
         public static function Convert(string $extension) : Avaible_extension{
-            $extension = strtolower(trim($extension));
+            $extension = \strtolower(\trim($extension));
             $all_case = self::cases();
             foreach($all_case as $ext){
                 if($extension === $ext->name) return $ext;
@@ -92,12 +92,12 @@ namespace ACEX_project\WEB\Private\Core;
      * @param string $full_MIME expect TYPE/SUBTYPE, no option is validated
      */
     function Validate_MIME(string $full_MIME):bool{
-        $strip_option_mime = explode(';',$full_MIME)[0];
-        $splited_mime = explode('/',$strip_option_mime);
-        if(count($splited_mime)!=2) return false;
+        $strip_option_mime = \explode(';',$full_MIME)[0];
+        $splited_mime = \explode('/',$strip_option_mime);
+        if(\count($splited_mime)!=2) return false;
 
-        $type = strtolower(trim($splited_mime[0]));
-        $subtype = strtolower(trim($splited_mime[1]));
+        $type = \strtolower(\trim($splited_mime[0]));
+        $subtype = \strtolower(\trim($splited_mime[1]));
 
         return isset(MIME[$type][$subtype]);
     }
@@ -107,8 +107,8 @@ namespace ACEX_project\WEB\Private\Core;
      */
     function Find_MIME_from_extension(Avaible_extension $extension):string|null{
         foreach(MIME2EXT as $type=>$subtypes){
-            $subtype = array_search($extension,$subtypes,true);
-            if($subtype !== false) return $type . '/' . $subtype;
+            $subtype = \array_search($extension,$subtypes,true);
+            if($subtype !== false) return "$type/$subtype";
         }
         return null;
     }
@@ -119,12 +119,11 @@ namespace ACEX_project\WEB\Private\Core;
      * @return string|null success example:application/json. null when type/subtring is not specified
      */
     function Construct_MIME(string $subtype):string|null{
-        $subtype = strtolower(trim($subtype));
+        $subtype = \strtolower(trim($subtype));
 
         foreach(MIME as $type=>$subtypes){
-            if(in_array($subtype,$subtypes,true)) return $type.'/'.$subtype;
+            if(\in_array($subtype,$subtypes,true)) return "$type/$subtype";
         }
 
         return null;
     }
-?>
