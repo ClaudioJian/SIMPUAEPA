@@ -153,7 +153,7 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
 
 
             //copy need to have scaled to final size
-            $ratio = \min(1,$crop_width/$width , $crop_height/$height);
+            $ratio = \max($crop_width/$width , $crop_height/$height);
             $dest_width = \max(1, (int) floor($crop_width / $ratio));
             $dest_height = \max(1, (int) floor($crop_height / $ratio));
 
