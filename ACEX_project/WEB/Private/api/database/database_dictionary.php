@@ -17,9 +17,8 @@ namespace ACEX_project\WEB\Private\Api\database;
     use ACEX_project\WEB\Private\Error\Error_code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
-    use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
-
+    use Monolog\Level;
 
     enum Query_type{
         case insert;
@@ -79,7 +78,7 @@ namespace ACEX_project\WEB\Private\Api\database;
                 if(!$c instanceof \UnitEnum) {
                     Handle_error(
                         new Error_code(Error_domain::database,Resource_code::db_column,Error_condition::type),
-                        Log_level::fatal,
+                        Level::Critical,
                         'Invalid argument in Columns_belong_table:
                         Requested column isnt enum type.'
                     );
@@ -87,7 +86,7 @@ namespace ACEX_project\WEB\Private\Api\database;
             if($c::class !== $table_name){
                 Handle_error(
                     new Error_code(Error_domain::database,Resource_code::db_column,Error_condition::type),
-                    Log_level::fatal,
+                    Level::Critical,
                     "Invalid argument in Columns_belong_table:
                     Requested column dont belong table [$table_name]."
                 );

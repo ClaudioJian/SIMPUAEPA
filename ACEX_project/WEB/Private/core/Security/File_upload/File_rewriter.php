@@ -28,7 +28,7 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
     $options = $json_data['options'] ?? [];
 
     $basename = Strip_all_extension(\basename($requested_file));
-    $storation_path = \realpath(User_file_storation_path::Await_sanitation->value);
+    $storation_path = \realpath(File_storation_path::Await_sanitation->value);
     
 
     if($storation_path ===false || !\is_dir($storation_path)) exit(3);
@@ -49,7 +49,7 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
      * @return void
      */
     function Rewrite_file(string $from,string $extension,string $final_path,array $options){
-        $target_path = User_file_storation_path::Await_validation;
+        $target_path = File_storation_path::Await_validation;
 
         //start rewrite
         $ext = Avaible_extension::Convert($extension);
@@ -58,8 +58,8 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
         if($im === false) exit(6);
 
         $resolution_str = match($final_path) {
-            User_file_storation_path::Maps->value => IMG_MAP_FINAL_RESOLUTION,
-            User_file_storation_path::profiles->value => IMG_PROFILE_FINAL_RESOLUTION,
+            File_storation_path::Maps->value => IMG_MAP_FINAL_RESOLUTION,
+            File_storation_path::profiles->value => IMG_PROFILE_FINAL_RESOLUTION,
             default => exit(2)
         };
         $resolution_str = \strtolower(trim($resolution_str));
@@ -74,7 +74,7 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
         $height = (int)$resolution[1];
         $crop_option = [];
 
-        if($final_path === User_file_storation_path::profiles->value) {
+        if($final_path === File_storation_path::profiles->value) {
             $width = $height = \min($width,$height);
             if($options !== []) $crop_option = $options['crop_img'] ?? [];
         }

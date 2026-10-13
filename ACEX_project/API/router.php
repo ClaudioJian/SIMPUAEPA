@@ -22,6 +22,7 @@ use function ACEX_project\WEB\Private\Auth\User\Upload_profile;
     require_once __DIR__ . "/../WEB/Private/Core/Security/CSRF_manager.php";
     use function ACEX_project\WEB\Private\Core\Security\Handle_CSRF_GET;
 
+
     \ini_set('session.cookie_lifetime',(string)(SESSION_ABSOLUTE_TIME+10));
     \ini_set('session.gc_maxlifetime',(string)(SESSION_ABSOLUTE_TIME+10));
     \header('x-content-type-options:nosniff');

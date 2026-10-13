@@ -15,9 +15,9 @@ namespace ACEX_project\WEB\Private\Api\database;
     use ACEX_project\WEB\Private\Error\Error_Code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
-    use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
     use InvalidArgumentException;
+    use Monolog\Level;
 
     use function ACEX_project\WEB\Private\Error\Handle_error;
 
@@ -60,9 +60,9 @@ namespace ACEX_project\WEB\Private\Api\database;
             foreach ($column as $c) {
                 if (!$c instanceof \UnitEnum || $c::class !== $table_enum_name) {
                     Handle_error(
-                        new Error_Code(Error_domain::database,Resource_code::db_column,Error_condition::type),
-                        Log_level::fatal,
-                        'Invalid argument in Permission::__construct(): Requested table does not have one of the specified columns.'
+                        new Error_Code(Error_domain::database,Resource_code::db_column,Error_condition::missing),
+                        Level::Critical,
+                        "Invalid argument in Permission::__construct(): Requested table $table->name does not have one of the specified columns."
                     );
                 }
             }
@@ -98,8 +98,8 @@ namespace ACEX_project\WEB\Private\Api\database;
 
     function Throw_invalid_query_type(string $func_name){
         Handle_error(
-            new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::type),
-            Log_level::fatal,
-            "Invalid argument in  $func_name : \$query_type must contain only Query_type enum values."
+            new Error_Code(Error_domain::database,Resource_code::invalidArgument,Error_condition::type),
+            Level::Critical,
+            "In $func_name() : \$query_type must contain only [enum]Query_type enum values."
         );
     }

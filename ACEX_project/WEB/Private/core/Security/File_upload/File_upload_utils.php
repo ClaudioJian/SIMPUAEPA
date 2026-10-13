@@ -21,6 +21,7 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
     use ACEX_project\WEB\Private\Error\Error_domain;
     use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
+use Monolog\Level;
 
     require_once __DIR__ . "/../../../Error/Error_manager.php";
     use function ACEX_project\WEB\Private\Error\Handle_error;
@@ -63,8 +64,8 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
         // in end may have 1 or 0 of b
         if(!\preg_match($pattern,$byte_size,$matches)){
             Handle_error(
-                new Error_code(Error_domain::server,Resource_code::syntax,Error_condition::invalid),
-                Log_level::fatal,
+                new Error_code(Error_domain::server,Resource_code::invalidArgument,Error_condition::invalid),
+                Level::Critical,
                 "Invalid byte size when parsing byte: $byte_size"
             );
         }
@@ -158,7 +159,8 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
      *      |__Awaiting_sanitation
      *      |__Awaiting_validation
     */
-    enum User_file_storation_path: string{
+    enum File_storation_path: string{
+        case Error_logs = __DIR__ . "/../../../../../Log";
         case User_uploads = __DIR__ . "/../../../Uploads/";
             case Temp = __DIR__ . "/../../../Uploads/tmp";
                 case Await_sanitation = __DIR__ . "/../../../Uploads/tmp/Awaiting_sanitation";
@@ -167,6 +169,7 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
             case User_images = __DIR__ . "/../../../Uploads/Images";
                 case Maps = __DIR__ . "/../../../Uploads/Images/Maps";
                 case profiles = __DIR__ . "/../../../Uploads/Images/Profiles";
+        
         /**
          * No need create all, only the end of file tree need be created. check mkdir() for more information
          * @link https://www.php.net/manual/en/function.mkdir.php
@@ -188,7 +191,7 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
      * @param bool $internal_move if false or not set, then will check is uploaded via http
      * @return bool|string full path name($to/$name.ext) when sucess else false
      */
-    function Safe_file_store(User_file_storation_path $to,Avaible_extension $ext,string $name,string $from = "",bool $internal_move = false) : bool|string{
+    function Safe_file_store(File_storation_path $to,Avaible_extension $ext,string $name,string $from = "",bool $internal_move = false) : bool|string{
         if($from === '') $from = $_FILES[FILE_UPLOAD_FIELD_NAME]['tmp_name'];
         $name = Strip_all_extension(\basename($name));
         if(empty($name) || \strlen($name)>=250) $name = \uniqid();

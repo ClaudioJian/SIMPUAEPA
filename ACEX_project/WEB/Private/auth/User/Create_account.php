@@ -49,8 +49,8 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 use ACEX_project\WEB\Private\Error\Error_code;
 use ACEX_project\WEB\Private\Error\Error_condition;
 use ACEX_project\WEB\Private\Error\Error_domain;
-use ACEX_project\WEB\Private\Error\Log_level;
 use ACEX_project\WEB\Private\Error\Resource_code;
+use Monolog\Level;
 
 require_once __DIR__ ."/login.php";
 require_once __DIR__ ."/Authentication.php";
@@ -179,9 +179,8 @@ require_once __DIR__ ."/Authentication.php";
 
       Handle_error(
         new Error_code(Error_domain::database,$query,Error_condition::unauthorized),
-        Log_level::fatal,
+        Level::Critical,
         'Account enrollment failed: table: ' .All_tables::user->name. ' | user:'. HOST. $colums_denied
       );
     }
   }
-?>

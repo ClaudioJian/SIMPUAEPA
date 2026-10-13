@@ -12,7 +12,7 @@ namespace ACEX_project\WEB\Private\Auth\User;
     use function ACEX_project\WEB\Private\Core\Security\Get_request_body;
 
     require_once __DIR__ . "/../../Core/Security/File_upload/File_upload_utils.php";
-    use ACEX_project\WEB\Private\Core\Security\File_upload\User_file_storation_path;
+    use ACEX_project\WEB\Private\Core\Security\File_upload\File_storation_path;
 
     require_once __DIR__ . "/../../Core/Security/File_upload/File_upload.php";
     use function ACEX_project\WEB\Private\Core\Security\File_upload\Secure_file_upload;
@@ -27,7 +27,7 @@ namespace ACEX_project\WEB\Private\Auth\User;
         $crop_width =  (int)$request_body["width"];
         $crop_height =  (int)$request_body["height"];
         
-        Secure_file_upload(User_file_storation_path::profiles,
+        Secure_file_upload(File_storation_path::profiles,
             [Avaible_extension::jpg,Avaible_extension::png,Avaible_extension::webp],
             ["crop_img"=>[
                     "start_x"=>$start_x,
@@ -40,6 +40,6 @@ namespace ACEX_project\WEB\Private\Auth\User;
     }
 
     function Upload_map_img(){
-        Secure_file_upload(User_file_storation_path::Maps,[Avaible_extension::jpg,Avaible_extension::png,Avaible_extension::webp]);
+        Secure_file_upload(File_storation_path::Maps,[Avaible_extension::jpg,Avaible_extension::png,Avaible_extension::webp]);
     }
 

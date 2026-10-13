@@ -28,8 +28,8 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 use ACEX_project\WEB\Private\Error\Error_code;
 use ACEX_project\WEB\Private\Error\Error_condition;
 use ACEX_project\WEB\Private\Error\Error_domain;
-use ACEX_project\WEB\Private\Error\Log_level;
 use ACEX_project\WEB\Private\Error\Resource_code;
+use Monolog\Level;
 
     /**
      * get user data: email, name, password[optional] from id
@@ -82,9 +82,8 @@ use ACEX_project\WEB\Private\Error\Resource_code;
         
             Handle_error(
                 new Error_code(Error_domain::database,Resource_code::db_select,Error_condition::unauthorized),
-                Log_level::fatal,
+                Level::Critical,
                 'Login failed: ' .All_tables::user->name. ' | user:'. HOST. $colums_denied
             );
         }
     }
-?>

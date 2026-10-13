@@ -84,3 +84,81 @@ button[type="submit"]:hover {
 .btn-cadastro:hover {
     background-color: #d2d2d2;
 }
+<<<<<<< HEAD
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* DARK MODE ABAIXO: */
+.theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+
+    width: 50px;
+    height: 50px;
+
+    border: none;
+    border-radius: 50%;
+
+    background-color: white;
+
+    cursor: pointer;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 0;
+}
+
+.theme-toggle img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+}
+
+body.dark-mode {
+    background-color: #121212;
+}
+
+body.dark-mode .login-container {
+    background-color: #1e1e1e;
+    border-color: #333;
+}
+
+body.dark-mode input {
+    background-color: #2a2a2a;
+    color: white;
+    border-color: #444;
+}
+
+body.dark-mode input::placeholder {
+    color: #aaa;
+}
+
+body.dark-mode .btn-cadastro {
+    background-color: #333;
+    color: white;
+    border-color: #444;
+}
+
+body.dark-mode .btn-cadastro:hover {
+    background-color: #444;
+}
+
+body.dark-mode .theme-toggle {
+    background-color: #333;
+    color: white;
+}
+=======
+>>>>>>> origin/BackEnd

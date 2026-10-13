@@ -19,8 +19,8 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
     use ACEX_project\WEB\Private\Error\Error_code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
-    use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
+    use Monolog\Level;
 
     require_once __DIR__ . "/../../MIME_type.php";
 
@@ -67,7 +67,7 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
      * @param array $options array contain extra information about file. for example, crop image from (x,y)
      * @return bool sucess or no for file upload, the user of this funtion should handle error response(all error ids logged automatcally once have error)
      */
-    function Secure_file_upload(User_file_storation_path $target_location, array $allowed_ext,array $options = []) : bool{
+    function Secure_file_upload(File_storation_path $target_location, array $allowed_ext,array $options = []) : bool{
         //start buffering the output
         //send to client that is sucessfully received
         \ob_start();
@@ -84,7 +84,7 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
         
         $extension = Avaible_extension::Convert(\pathinfo($og_name,PATHINFO_EXTENSION));
         $new_name = \uniqid();
-        $full_name = Safe_file_store(User_file_storation_path::Await_sanitation,$extension,$new_name);
+        $full_name = Safe_file_store(File_storation_path::Await_sanitation,$extension,$new_name);
         
 
         if($full_name === false){
@@ -134,7 +134,7 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
 
         //ai succesfully validate file! the file will be moved and compressed to webp
         $compressed_ext = IMG_COMPRESS ? Avaible_extension::webp : $extension;
-        $moved_path = User_file_storation_path::Await_validation->value . "/$new_name.".$compressed_ext->name;
+        $moved_path = File_storation_path::Await_validation->value . "/$new_name.".$compressed_ext->name;
 
         Safe_file_store($target_location,$compressed_ext,$new_name,$moved_path,true);
         Send_response(0,2,$og_name);
@@ -145,12 +145,12 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
 
        /**
      * Validate if current uploaded file is valid or no by checking $_FILES
-     * @param User_file_storation_path $file_type category of file will be upload(e.g profile image, map image)
+     * @param File_storation_path $file_type category of file will be upload(e.g profile image, map image)
      * @param bool $exit control whether exit or no when validation failed, the automatic header is send in this case
      * @param array $allowed_ext only last extension is checked, e.g: jpeg, png; the returned Accept-post may be innacuracy
      * @return int 0 for sucess, positive for php's UPLOAD_ERR_* and negative is custom error code
      */
-    function Validate_uploaded_file(User_file_storation_path $file_type,array $allowed_ext, string $og_name,bool $exit = true) : int{
+    function Validate_uploaded_file(File_storation_path $file_type,array $allowed_ext, string $og_name,bool $exit = true) : int{
         if($_SERVER['REQUEST_METHOD']!=='POST'){
             if($exit) Exit_upload_err(Custom_Upload_Err::invalid_upload->value,1,[],$og_name);
             return Custom_Upload_Err::invalid_upload->value;
@@ -225,13 +225,13 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
         return 0;
     }
 
-    function Validate_fsize(User_file_storation_path $file_type) : bool {
+    function Validate_fsize(File_storation_path $file_type) : bool {
         $byte_size = $_FILES[FILE_UPLOAD_FIELD_NAME]['size'];
         
         //type double
         $allowed_byte = match($file_type){
-            User_file_storation_path::Maps => Parse_byte(IMG_MAP_MAX_SIZE),
-            User_file_storation_path::profiles => Parse_byte(IMG_PROFILE_MAX_SIZE),
+            File_storation_path::Maps => Parse_byte(IMG_MAP_MAX_SIZE),
+            File_storation_path::profiles => Parse_byte(IMG_PROFILE_MAX_SIZE),
         };
 
 
@@ -250,9 +250,9 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
             if(!\is_string($header)) {
                 \http_response_code(500);
                 Handle_error(
-                    new Error_Code(Error_domain::server,Resource_code::syntax,Error_condition::invalid),
-                    Log_level::fatal,
-                    'Invalid argument [array]$headers in Exit_upload_err(): value isnt string'
+                    new Error_Code(Error_domain::server,Resource_code::invalidArgument,Error_condition::type),
+                    Level::Critical,
+                    'In Exit_upload_err([array]$headers): value isnt string'
                 );
             }
             \header($header);
@@ -260,8 +260,8 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
 
         Log_internal(
             new Error_code(Error_domain::request,Resource_code::file,Error_condition::failed),
-            Log_level::warning,
-            "File upload failed with code $code->value and message: $err_desc"
+            Level::Warning,
+            "(code: $code->value) $err_desc"
         );
         if($moved_fpath !== "") \unlink($moved_fpath);
         
