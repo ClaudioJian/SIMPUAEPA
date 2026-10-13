@@ -7,24 +7,23 @@
 */
 
 namespace ACEX_project\WEB\Private\Core\Security\File_upload; 
-
-    require_once __DIR__ . "/../../MIME_type.php";
-    use ACEX_project\WEB\Private\Core\Avaible_extension;
-
-    use function ACEX_project\WEB\Private\Core\Construct_MIME;
-    use function ACEX_project\WEB\Private\Core\Find_MIME_from_extension;
-
-
-    require_once __DIR__ . "/../../../Error/Error_code.php";
     use ACEX_project\WEB\Private\Error\Error_code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
-    use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
-use Monolog\Level;
+    use Monolog\Level;
+    use function ACEX_project\WEB\Private\Core\Construct_MIME;
+    use function ACEX_project\WEB\Private\Core\Find_MIME_from_extension;
+    use ACEX_project\WEB\Private\Core\Avaible_extension;
+use ACEX_project\WEB\Private\Core\File_storation_path;
 
-    require_once __DIR__ . "/../../../Error/Error_manager.php";
     use function ACEX_project\WEB\Private\Error\Handle_error;
+
+    require_once __DIR__ . "/../../MIME_type.php";
+    require_once __DIR__ . "/../../../Error/Error_code.php";
+    require_once __DIR__ . "/../../../Error/Error_manager.php";
+    require_once __DIR__ . "/../../File_storation_map.php";
+
 
 
 
@@ -149,39 +148,7 @@ use Monolog\Level;
         case unexpected = -99;
     }
 
-    /** values is relative to current folder, which is ...Core/Security 
-     * The directory structure:
-     * Uploads
-     * |__Images
-     * |    |__Maps
-     * |    |__Profiles
-     * |__tmp
-     *      |__Awaiting_sanitation
-     *      |__Awaiting_validation
-    */
-    enum File_storation_path: string{
-        case Error_logs = __DIR__ . "/../../../../../Log";
-        case User_uploads = __DIR__ . "/../../../Uploads/";
-            case Temp = __DIR__ . "/../../../Uploads/tmp";
-                case Await_sanitation = __DIR__ . "/../../../Uploads/tmp/Awaiting_sanitation";
-                case Await_validation = __DIR__ . "/../../../Uploads/tmp/Awaiting_validation";
 
-            case User_images = __DIR__ . "/../../../Uploads/Images";
-                case Maps = __DIR__ . "/../../../Uploads/Images/Maps";
-                case profiles = __DIR__ . "/../../../Uploads/Images/Profiles";
-        
-        /**
-         * No need create all, only the end of file tree need be created. check mkdir() for more information
-         * @link https://www.php.net/manual/en/function.mkdir.php
-         */
-        public function Initialize_directory() : bool{
-            $dir = $this->value;
-            if(\is_dir($dir)) return true;
-            if(\file_exists($dir)) return false;
-
-            return \mkdir($dir,0700, true) || \is_dir($dir);
-        }
-    }
 
     /**
      * Move the current uploaded file from temp location to correct location, modify the name by param $name or by unique id.

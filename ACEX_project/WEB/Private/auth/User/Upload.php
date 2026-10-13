@@ -11,14 +11,14 @@ namespace ACEX_project\WEB\Private\Auth\User;
     require_once __DIR__ . "/../../Core/Security/Request_manager.php";
     use function ACEX_project\WEB\Private\Core\Security\Get_request_body;
 
-    require_once __DIR__ . "/../../Core/Security/File_upload/File_upload_utils.php";
-    use ACEX_project\WEB\Private\Core\Security\File_upload\File_storation_path;
+    require_once __DIR__ ."/../../Core/File_storation_map.php";
 
     require_once __DIR__ . "/../../Core/Security/File_upload/File_upload.php";
     use function ACEX_project\WEB\Private\Core\Security\File_upload\Secure_file_upload;
 
     require_once __DIR__ . "/../../Core/MIME_type.php";
     use ACEX_project\WEB\Private\Core\Avaible_extension;
+use ACEX_project\WEB\Private\Core\File_storation_path;
 
     function Upload_profile(){
         $request_body = Get_request_body();

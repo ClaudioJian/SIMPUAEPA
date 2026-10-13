@@ -6,7 +6,6 @@
 */
 namespace ACEX_project\WEB\Private\Error;
 
-use Error;
 
     require_once __DIR__ ."/../Core/AppCommonVar.php";
 

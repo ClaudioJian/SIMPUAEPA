@@ -28,9 +28,8 @@ namespace ACEX_project\WEB\Private\Auth;
     use ACEX_project\WEB\Private\Error\Error_code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
-    use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
-use Monolog\Level;
+    use Monolog\Level;
 
     require_once __DIR__ . "/../Core/AppCommonVar.php";
 

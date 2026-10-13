@@ -20,22 +20,23 @@
 namespace ACEX_project\WEB\Private\Core;
     require_once __DIR__ . '/../../vendor/autoload.php';
 
-    require_once __DIR__ . '/../Error/Error_manager.php';
-    require_once __DIR__ . '/../Error/Error_code.php';
-    use function ACEX_project\WEB\Private\Error\Handle_error;
+    require_once __DIR__ .'/File_storation_map.php';
 
-    use ACEX_project\WEB\Private\Core\Security\File_upload\File_storation_path;
     use ACEX_project\WEB\Private\Error\Error_code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
     use ACEX_project\WEB\Private\Error\Resource_code;
     use Dotenv\Dotenv;
     use Monolog\Level;
+    use function ACEX_project\WEB\Private\Error\Handle_error;
+
+    require_once __DIR__ . '/../Error/Error_manager.php';
+    require_once __DIR__ . '/../Error/Error_code.php';
 
     require_once __DIR__ .'/Security/File_upload/File_upload_utils.php';
+
     
     use function \define;
-
     if(!\defined('INITIALIZED')) Initialize_value();
 
 

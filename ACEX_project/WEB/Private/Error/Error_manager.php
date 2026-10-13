@@ -6,9 +6,10 @@
 */
 namespace ACEX_project\WEB\Private\Error;
     require_once __DIR__ ."/../Core/AppCommonVar.php";
+    require_once __DIR__ ."/../Core/File_storation_map.php";
 
-    use ACEX_project\WEB\Private\Core\Security\File_upload\File_storation_path;
-    use Exception;
+use ACEX_project\WEB\Private\Core\File_storation_path;
+use Exception;
     use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\ErrorLogHandler;
 use Monolog\Handler\StreamHandler;

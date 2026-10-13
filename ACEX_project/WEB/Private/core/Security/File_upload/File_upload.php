@@ -8,8 +8,10 @@
 
 namespace ACEX_project\WEB\Private\Core\Security\File_upload; 
     require_once __DIR__ . "/File_upload_utils.php";
+    require_once __DIR__ . "/../../File_storation_map.php";
 
     use ACEX_project\WEB\Private\Core\Avaible_extension;
+use ACEX_project\WEB\Private\Core\File_storation_path;
 
     require_once __DIR__ . "/../../AppCommonVar.php";
 
