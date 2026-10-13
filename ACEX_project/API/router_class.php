@@ -83,6 +83,7 @@ namespace ACEX_project\API;
                 if($route->execute($method, $required_resource)) return;
             }
         }
+        
         \http_response_code(404);
-        \exit();
+        exit();
     }
