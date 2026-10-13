@@ -2,6 +2,7 @@
 .env.*
 vendor/
 .vscode
+Log/*
 .log
 
 WEB/Private/Uploads/**/**/*
