@@ -11,6 +11,7 @@ namespace ACEX_project\WEB\Private\Auth\User;
 
 
 
+use ACEX_project\WEB\Private\Error\Error_code;
 use Exception;
 use Throwable;
 
@@ -21,7 +22,10 @@ use function ACEX_project\WEB\Private\Api\database\Handle_query_fail;
 require_once __DIR__ . "/../../Api/database/database_dictionary.php";
 use ACEX_project\WEB\Private\Api\database\All_tables;
 use ACEX_project\WEB\Private\Api\database\tb_user_columns;
-
+use ACEX_project\WEB\Private\Error\Error_condition;
+use ACEX_project\WEB\Private\Error\Error_domain;
+use ACEX_project\WEB\Private\Error\Resource_code;
+use Monolog\Level;
 
 require_once __DIR__ ."/../../Core/MIME_type.php";
 use function ACEX_project\WEB\Private\Core\Construct_MIME;
@@ -34,6 +38,7 @@ use function ACEX_project\WEB\Private\Auth\New_session;
 
 require_once __DIR__ . '/../password_handler.php';
 use function ACEX_project\WEB\Private\Auth\Secure_password_verify;
+use function ACEX_project\WEB\Private\Error\Handle_error;
 
 require_once __DIR__ . "/User_data.php";
 
@@ -69,6 +74,12 @@ require_once __DIR__ . "/User_data.php";
     function Validate_login_credential(string $email, string $raw_passwd):int{
         $response = ['success'=>0,'email'=>4,'password'=>4];
         $conn = Connect_database();
+        if($conn === null) {
+            Handle_error(new Error_code(Error_domain::credential,Resource_code::db_select,Error_condition::failed),
+                Level::Critical,
+                "Validatiation failed because cannot connect to database"
+            );
+        }
 
         $query = "SELECT " .
             \implode(", ",[tb_user_columns::id_user->name, tb_user_columns::email->name, tb_user_columns::password->name]).

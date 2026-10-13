@@ -48,6 +48,7 @@ use Monolog\Level;
 
 
             $conn = Connect_database();
+            if($conn === null) return null;
 
             $selected_columns = [tb_user_columns::name_user->name, tb_user_columns::email->name];
             if($passwd) $selected_columns[] = tb_user_columns::password->name;

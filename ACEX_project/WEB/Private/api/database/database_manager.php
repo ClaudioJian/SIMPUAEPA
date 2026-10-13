@@ -48,7 +48,7 @@ namespace ACEX_project\WEB\Private\Api\database;
             try{
                 $conn = new PDO($dns,SERVER_USER,DB_PASSWORD);
             }catch(PDOException $e){
-                Log_internal(
+                Handle_error(
                     new Error_Code(Error_domain::database,Resource_code::connection,Error_condition::unknown),
                     Level::Warning,
                     err_msg:$e->getMessage()
@@ -75,16 +75,12 @@ namespace ACEX_project\WEB\Private\Api\database;
      */
     function Database_simple_insert(array $query_arr,bool $use_transaction = false) :bool|array{
         $conn = null;
-        try{            
+        try{
             $conn = Connect_database();
             $id_list = [];
-            if($conn === null){
-                Handle_error(
-                    new Error_Code(Error_domain::database,Resource_code::connection,Error_condition::unknown),
-                    Level::Error,
-                    'Database connection failed when trying create account'
-                );
-            }
+
+            if($conn === null) Handle_error(new Error_Code(Error_domain::request,Resource_code::credential,Error_condition::failed),Level::Critical,"Cannot create account because database failed to connect");
+            
 
             if($use_transaction) $conn->beginTransaction();
 
