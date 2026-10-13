@@ -8,17 +8,26 @@
 */
 
 namespace ACEX_project\WEB\Private\Api\database;
+<<<<<<< HEAD
     use PDO;
     use PDOException;
 
     require_once __DIR__ . "/../../Core/AppCommonVar.php";
     require_once __DIR__ . "/../../Error/Error_code.php";
     require_once __DIR__ . "/../../Error/Error_manager.php";
+=======
+
+
+    require_once __DIR__ . "/../../Core/AppCommonVar.php";
+
+    require_once __DIR__ . "/../../Error/Error_code.php";
+>>>>>>> origin/BackEnd
     use ACEX_project\WEB\Private\Error\Error_Code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
     use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
+<<<<<<< HEAD
     use Exception;
 use PDOStatement;
 use Throwable;
@@ -27,6 +36,22 @@ use Throwable;
     use function ACEX_project\WEB\Private\Error\MyArray_missing_key;
     use function ACEX_project\WEB\Private\Error\Handle_error;
 use function ACEX_project\WEB\Private\Error\Log_internal;
+=======
+
+    require_once __DIR__ . "/../../Error/Error_manager.php";
+    use function ACEX_project\WEB\Private\Error\Handle_error;
+    use function ACEX_project\WEB\Private\Error\Log_internal;
+    
+    use Exception;
+    use PDOStatement;
+    use Throwable;
+    use PDO;
+    use PDOException;
+
+    use function ACEX_project\WEB\Private\Error\MyArray_check;
+    use function ACEX_project\WEB\Private\Error\MyArray_missing_key;
+
+>>>>>>> origin/BackEnd
 
     /**
      * connect to database.
@@ -62,7 +87,11 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
      *     table: All_tables,
      *     insert: list<array{
      *         column: \UnitEnum,
+<<<<<<< HEAD
      *         value: List<mixed>
+=======
+     *         value: list<mixed>
+>>>>>>> origin/BackEnd
      *     }>
      * }> $query_arr
      * @return bool|list<array{table:All_tables,id:string}> false if failed else return inserted id(multi row return FIRST id)
@@ -88,8 +117,13 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
                     Handle_error(
                         new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::type),
                         Log_level::fatal,
+<<<<<<< HEAD
                         'Invalid argument $query_arr in Database_simple_insert(): '
                         . 'the value of "table" isnt All_tables.'
+=======
+                        'Invalid argument $query_arr in Database_simple_insert():
+                        the value of "table" isnt All_tables.'
+>>>>>>> origin/BackEnd
                     );
                 }
 
@@ -129,7 +163,11 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
         );
 
         $conn=null;
+<<<<<<< HEAD
         http_response_code(500);
+=======
+        \http_response_code(500);
+>>>>>>> origin/BackEnd
         exit();
     }
 
@@ -176,12 +214,20 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
             $all_column_value = $column_arr['value'] ?? MyArray_missing_key('value','Query_insert_wrapper','all_param');
             MyArray_check($all_column_value ,'Invalid argument $all_param: the value isnt array');
 
+<<<<<<< HEAD
             $row_count = count($all_column_value);
+=======
+            $row_count = \count($all_column_value);
+>>>>>>> origin/BackEnd
             if($max_row_count === 0) $max_row_count = $row_count;
             else if($max_row_count !== $row_count) Handle_error(
                 new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::incorrect),
                 Log_level::fatal,
+<<<<<<< HEAD
                 'Invalid argument in Query_insert_wrapper(): expected '.$max_row_count.' values for column ' . $column->name . ', but only ' . $row_count . ' were provided.' 
+=======
+                "Invalid argument in Query_insert_wrapper(): expected $max_row_count values for column $column->name, but only $row_count were provided." 
+>>>>>>> origin/BackEnd
             );
 
             //current array:
@@ -204,12 +250,21 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
         }
         
         // [[x,y,z],[x,y,z]] => [(x,y,z),(x,y,z)]
+<<<<<<< HEAD
         foreach($value_names as $row) {$row_names[] = '(' . implode(",",$row) . ')';}
         
         //[(x,y,z),(x,y,z)]=>(x,y,z),(x,y,z)
         return [
             'column'=> '(' . implode(",",$column_names) . ')',
             'value'=> implode(",",$row_names),
+=======
+        foreach($value_names as $row) {$row_names[] = '(' . \implode(",",$row) . ')';}
+        
+        //[(x,y,z),(x,y,z)]=>(x,y,z),(x,y,z)
+        return [
+            'column'=> '(' . \implode(",",$column_names) . ')',
+            'value'=> \implode(",",$row_names),
+>>>>>>> origin/BackEnd
             'binded_value'=> $binded_values
         ];
     }
@@ -224,7 +279,11 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
 
     /**if type is null, type should using default type */
     function Find_php_param_from_value(mixed $value) : null|int{
+<<<<<<< HEAD
         $type = gettype($value);
+=======
+        $type = \gettype($value);
+>>>>>>> origin/BackEnd
         switch($type){
             case 'boolean': case 'bool': 
                 return PDO::PARAM_BOOL;

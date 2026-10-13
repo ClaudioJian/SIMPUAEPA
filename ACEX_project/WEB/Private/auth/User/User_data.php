@@ -39,6 +39,7 @@ use ACEX_project\WEB\Private\Error\Resource_code;
      */
     function Get_user_data(bool $passwd = false, string $id = "") : \PDOStatement | null{
         try{
+<<<<<<< HEAD
         Get_user_data_authorized();
 
         if($id===''){
@@ -64,6 +65,34 @@ use ACEX_project\WEB\Private\Error\Resource_code;
         return $smtm;
         }catch(Throwable $e){
         return null;
+=======
+            Get_user_data_authorized();
+
+            if($id===''){
+                if(\session_status()!==PHP_SESSION_ACTIVE) throw new Exception('No active session');
+                else $id = $_SESSION['uid'];
+            }
+
+
+            $conn = Connect_database();
+
+            $selected_columns = [tb_user_columns::name_user->name, tb_user_columns::email->name];
+            if($passwd) $selected_columns[] = tb_user_columns::password->name;
+
+            $query = "SELECT " .
+                \implode(", ",$selected_columns).
+                " FROM ". All_tables::user->name. 
+                " WHERE ". tb_user_columns::id_user->name ." = :uid"
+            ;
+            $smtm = $conn->prepare($query);
+            if($smtm===false) throw new Exception('in Create_account(): Database server failed to prepare statement for select query');
+
+            $smtm->execute([':uid'=>$id]);
+            
+            return $smtm;
+        }catch(Throwable $e){
+            return null;
+>>>>>>> origin/BackEnd
         }
     }
 

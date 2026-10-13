@@ -19,6 +19,30 @@
 */
 
 namespace ACEX_project\WEB\Private\Core;
+<<<<<<< HEAD
+=======
+
+    enum Avaible_extension{
+        case png ;
+        case jpg;
+        case json;
+        case html;
+        case txt;
+        case css;
+        case webp;
+        case unknown;
+
+        public static function Convert(string $extension) : Avaible_extension{
+            $extension = \strtolower(\trim($extension));
+            $all_case = self::cases();
+            foreach($all_case as $ext){
+                if($extension === $ext->name) return $ext;
+            }
+            return self::unknown;
+        }
+    };
+
+>>>>>>> origin/BackEnd
     /**
      * define all usable mime type and corresponded subtype.
      * The key is subtype and value is extension
@@ -36,26 +60,67 @@ namespace ACEX_project\WEB\Private\Core;
             ],
             'image' => [
                 'png'=>'png',
+<<<<<<< HEAD
                 'jpeg'=>'jpg'
             ],
             'text'=>[
                 'html'=>'html',
                 'css' => 'css'
+=======
+                'jpeg'=>'jpeg'
+            ],
+            'text'=>[
+                'html'=>'jpeg',
+                'css'=>'css',
+                'plain'=>'plain'
+>>>>>>> origin/BackEnd
             ]
         ]
     );
 
+<<<<<<< HEAD
+=======
+    define('MIME2EXT',
+        [
+            'application'=>[
+                'json'=>Avaible_extension::json
+            ],
+            'image' => [
+                'png'=>Avaible_extension::png,
+                'jpeg'=>Avaible_extension::jpg,
+                'webp'=>Avaible_extension::webp
+            ],
+            'text'=>[
+                'html'=>Avaible_extension::html,
+                'css' => Avaible_extension::css,
+                'plain' => Avaible_extension::txt
+            ]
+        ]
+    );
+
+
+
+>>>>>>> origin/BackEnd
     /**
      * validate if mime is registered in constant MIME, have valid format and the subtype is in type.
      * @param string $full_MIME expect TYPE/SUBTYPE, no option is validated
      */
     function Validate_MIME(string $full_MIME):bool{
+<<<<<<< HEAD
         $strip_option_mime = explode(';',$full_MIME)[0];
         $splited_mime = explode('/',$strip_option_mime);
         if(count($splited_mime)!=2) return false;
 
         $type = strtolower(trim($splited_mime[0]));
         $subtype = strtolower(trim($splited_mime[1]));
+=======
+        $strip_option_mime = \explode(';',$full_MIME)[0];
+        $splited_mime = \explode('/',$strip_option_mime);
+        if(\count($splited_mime)!=2) return false;
+
+        $type = \strtolower(\trim($splited_mime[0]));
+        $subtype = \strtolower(\trim($splited_mime[1]));
+>>>>>>> origin/BackEnd
 
         return isset(MIME[$type][$subtype]);
     }
@@ -63,12 +128,19 @@ namespace ACEX_project\WEB\Private\Core;
     /**
      * return the full mime from extension
      */
+<<<<<<< HEAD
     function Find_MIME_from_extension(string $extension):string|null{
         $extension = strtolower(trim($extension));
 
         foreach(MIME as $type=>$subtypes){
             $subtype = array_search($extension,$subtypes,true);
             if($subtype !== false) return $type . '/' . $subtype;
+=======
+    function Find_MIME_from_extension(Avaible_extension $extension):string|null{
+        foreach(MIME2EXT as $type=>$subtypes){
+            $subtype = \array_search($extension,$subtypes,true);
+            if($subtype !== false) return "$type/$subtype";
+>>>>>>> origin/BackEnd
         }
         return null;
     }
@@ -79,6 +151,7 @@ namespace ACEX_project\WEB\Private\Core;
      * @return string|null success example:application/json. null when type/subtring is not specified
      */
     function Construct_MIME(string $subtype):string|null{
+<<<<<<< HEAD
         $subtype = strtolower(trim($subtype));
 
         foreach(MIME as $type=>$_subtype){
@@ -87,3 +160,13 @@ namespace ACEX_project\WEB\Private\Core;
         return null;
     }
 ?>
+=======
+        $subtype = \strtolower(trim($subtype));
+
+        foreach(MIME as $type=>$subtypes){
+            if(\in_array($subtype,$subtypes,true)) return "$type/$subtype";
+        }
+
+        return null;
+    }
+>>>>>>> origin/BackEnd

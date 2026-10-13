@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 * {
     box-sizing: border-box;
     margin: 0;
@@ -5,6 +6,13 @@
 }
 
 body {
+=======
+
+body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+>>>>>>> origin/BackEnd
     font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
@@ -12,11 +20,18 @@ body {
     min-height: 100vh;
     background-color: #f4f4f9;
 
+<<<<<<< HEAD
     background-image: url('../images/img.3.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     background-attachment: fixed;
+=======
+    background-image: url(../images/img.3.png);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+>>>>>>> origin/BackEnd
 }
 
 
@@ -27,7 +42,10 @@ body {
     border: 1px solid #ddd;
     width: 100%;
     max-width: 320px;
+<<<<<<< HEAD
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+=======
+>>>>>>> origin/BackEnd
 }
 
 
@@ -44,31 +62,45 @@ input[type="password"] {
     font-size: 16px;
     border-radius: 5px;
     border: 1px solid #ccc;
+<<<<<<< HEAD
     outline: none;
 }
 
 input:focus {
     border-color: #007BFF;
+=======
+>>>>>>> origin/BackEnd
 }
 
 
 .btn-pequeno {
+<<<<<<< HEAD
     padding: 10px;
+=======
+    padding: 8px;
+>>>>>>> origin/BackEnd
     font-size: 14px;
     font-weight: bold;
     border-radius: 5px;
     cursor: pointer;
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/BackEnd
 button[type="submit"] {
     background-color: #007BFF;
     color: white;
     border: none;   
 }
 
+<<<<<<< HEAD
 button[type="submit"]:hover {
     background-color: #0056b3;
 }
+=======
+>>>>>>> origin/BackEnd
 
 .btn-cadastro {
     text-align: center;
@@ -77,6 +109,7 @@ button[type="submit"]:hover {
     color: #333;
     border: 1px solid #ccc;
 }
+<<<<<<< HEAD
 
 .btn-cadastro:hover {
     background-color: #d2d2d2;
@@ -152,3 +185,5 @@ body.dark-mode .btn-cadastro:hover {
 body.dark-mode .theme-toggle {
     background-color: #333;
 }
+=======
+>>>>>>> origin/BackEnd

@@ -27,6 +27,10 @@ use Exception;
         case server        = -7;
         case configuration = -8;
         case object = -9;
+<<<<<<< HEAD
+=======
+        case child_proccess = -10;
+>>>>>>> origin/BackEnd
     };
 
     /**
@@ -88,6 +92,10 @@ use Exception;
         case configuration = -15;
         case denied        = -16;
         case abnomaly      = -17;
+<<<<<<< HEAD
+=======
+        case failed        = -18;
+>>>>>>> origin/BackEnd
     }
 
     enum Log_level{

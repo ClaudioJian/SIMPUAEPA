@@ -98,7 +98,11 @@ require_once __DIR__ ."/Authentication.php";
             ]
           ]]);
 
+<<<<<<< HEAD
       if($id_list===false) http_response_code(500);
+=======
+      if($id_list===false) \http_response_code(500);
+>>>>>>> origin/BackEnd
       else
       foreach($id_list as $uid){
         if($uid['table'] === All_tables::user) {
@@ -113,9 +117,15 @@ require_once __DIR__ ."/Authentication.php";
 
     Internal_login($id);
 
+<<<<<<< HEAD
     header('Content-Type: '.Construct_MIME(MIME['application']['json']));
     echo json_encode(['success'=>0,'uid'=>$id]);
     http_response_code(201);
+=======
+    \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+    echo json_encode(['success'=>0,'uid'=>$id]);
+    \http_response_code(201);
+>>>>>>> origin/BackEnd
     exit();
   }
 
@@ -137,7 +147,11 @@ require_once __DIR__ ."/Authentication.php";
       ";
       $conn = Connect_database();
       if($conn === null) {
+<<<<<<< HEAD
         http_response_code(500);
+=======
+        \http_response_code(500);
+>>>>>>> origin/BackEnd
         echo json_encode(['success'=>-3]);
       }
       
@@ -153,8 +167,13 @@ require_once __DIR__ ."/Authentication.php";
       $email_exist = $row['email_exist'];
       $name_exist = $row['uname_exist'];
       if($email_exist || $name_exist){
+<<<<<<< HEAD
         http_response_code(400);
         header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+=======
+        \http_response_code(400);
+        \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+>>>>>>> origin/BackEnd
         echo json_encode(['success'=>-1,'name'=> $name_exist? 2 : 4,'email'=> $email_exist? 2 : 4,'password'=>4]);
         exit();
       }

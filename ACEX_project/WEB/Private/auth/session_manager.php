@@ -60,14 +60,22 @@ namespace ACEX_project\WEB\Private\Auth;
     */
     function session_initialize(){
         if(session_status()===PHP_SESSION_NONE && !session_start()) {
+<<<<<<< HEAD
             http_response_code(500);
+=======
+            \http_response_code(500);
+>>>>>>> origin/BackEnd
             exit();
         }
 
 
         if(Session_initialized() && Filter_session()) Update_session();
         else if(!New_session()){
+<<<<<<< HEAD
             http_response_code(500);
+=======
+            \http_response_code(500);
+>>>>>>> origin/BackEnd
             exit();
         }
     }
@@ -80,10 +88,10 @@ namespace ACEX_project\WEB\Private\Auth;
     }
 
     function Validate_session() : Session_status{
-        if(session_status()===PHP_SESSION_DISABLED) return Session_status::disabled;
-        if(session_status()===PHP_SESSION_NONE) return Session_status::inactive;
+        if(\session_status()===PHP_SESSION_DISABLED) return Session_status::disabled;
+        if(\session_status()===PHP_SESSION_NONE) return Session_status::inactive;
         if(isset($_SESSION['obsolete_time'])){
-            if(time() - $_SESSION['obsolete_time'] > SESSION_OBSOLETE_MAXLIFE) return Session_status::abandoned;
+            if(\time() - $_SESSION['obsolete_time'] > SESSION_OBSOLETE_MAXLIFE) return Session_status::abandoned;
             else return Session_status::obsolete;
         }
         return Session_status::active;
@@ -94,10 +102,14 @@ namespace ACEX_project\WEB\Private\Auth;
      * @return bool if valid then true else false
      */
     function Filter_session():bool{
-        if(session_status()===PHP_SESSION_DISABLED || session_status()===PHP_SESSION_NONE) return false;
+        if(\session_status()===PHP_SESSION_DISABLED || \session_status()===PHP_SESSION_NONE) return false;
         $status = Validate_session();
 
+<<<<<<< HEAD
         $expired = isset($_SESSION['expired']) && $_SESSION['expired'] !== 0 && defined('REQUIRE_LOGIN') && REQUIRE_LOGIN;
+=======
+        $expired = isset($_SESSION['expired']) && $_SESSION['expired'] !== 0 && \defined('REQUIRE_LOGIN') && REQUIRE_LOGIN;
+>>>>>>> origin/BackEnd
 
         if($expired || $status===Session_status::abandoned) Nuke_session();
 
@@ -112,7 +124,11 @@ namespace ACEX_project\WEB\Private\Auth;
      * if is not disabled/inactive or is alredy obsolete/abandoned then renew time of active time
      */
     function Update_session():void{
+<<<<<<< HEAD
         $_SESSION['last_active_time'] = time();
+=======
+        $_SESSION['last_active_time'] = \time();
+>>>>>>> origin/BackEnd
         $ip = $_SERVER['REMOTE_ADDR'];
         $user_agent = $_SERVER['HTTP_USER_AGENT'];
         
@@ -127,7 +143,11 @@ namespace ACEX_project\WEB\Private\Auth;
             Log_internal(
                 new Error_code(Error_domain::request,Resource_code::user,Error_condition::abnomaly),
                 Log_level::warning,
+<<<<<<< HEAD
                 "Abnomaly detect: " . $name . " is different in middle of session - [previous:$_SESSION[$name] | current : $compared_value]"
+=======
+                "Abnomaly detect: $name is different in middle of session - [previous:$_SESSION[$name] | current : $compared_value]"
+>>>>>>> origin/BackEnd
             );
         }
         $_SESSION[$name] = $compared_value;
@@ -139,19 +159,24 @@ namespace ACEX_project\WEB\Private\Auth;
      */
     function New_session(array $options=[]) : bool{
         if(session_status()===PHP_SESSION_DISABLED) return false;
+<<<<<<< HEAD
         $replace = session_status()===PHP_SESSION_ACTIVE && Session_initialized();
+=======
+        $replace = \session_status()===PHP_SESSION_ACTIVE && Session_initialized();
+>>>>>>> origin/BackEnd
         if($replace){
             //replace old id to new id
-            session_regenerate_id(false);
+            \session_regenerate_id(false);
             //force mark
             $_SESSION['obsolete_time'] = time();
 
             $current_sid = session_id();
-            session_commit();
+           \session_commit();
 
-            session_id($current_sid);
+            \session_id($current_sid);
         }
         $sucess = true;
+<<<<<<< HEAD
         if(session_status()===PHP_SESSION_NONE) $sucess = session_start($options);
         if($replace) CSRF_generate();
 
@@ -159,6 +184,15 @@ namespace ACEX_project\WEB\Private\Auth;
         $_SESSION['last_active_time'] = time();
         
         $_SESSION['absolute_time'] = time();
+=======
+        if(session_status()===PHP_SESSION_NONE) $sucess = \session_start($options);
+        if($replace) CSRF_generate();
+
+        //set new timestamp tracker for new session
+        $_SESSION['last_active_time'] = \time();
+        
+        $_SESSION['absolute_time'] = \time();
+>>>>>>> origin/BackEnd
         if(isset($_SESSION['obsolete_time'])) unset($_SESSION['obsolete_time']);          
         
         return $sucess;
@@ -176,7 +210,7 @@ namespace ACEX_project\WEB\Private\Auth;
         $reason = Session_expired();
         if($reason===1 || $reason===2)
         {
-            $_SESSION['obsolete_time'] = time();
+            $_SESSION['obsolete_time'] = \time();
             return true;
         }
         return false;
@@ -196,7 +230,11 @@ namespace ACEX_project\WEB\Private\Auth;
         
         
         $_SESSION = [];
+<<<<<<< HEAD
         session_destroy();
+=======
+        \session_destroy();
+>>>>>>> origin/BackEnd
         Log_internal(
             new Error_code(Error_domain::request,Resource_code::session,Error_condition::expired),
             Log_level::warning,
@@ -210,10 +248,17 @@ namespace ACEX_project\WEB\Private\Auth;
      * exit if is end point require login, renewing session without clean data and logout user.  Since non logged session have no value to steal, the request is still done with renewing the session
      */
     function Exit_session(bool $new_session = true):void{
+<<<<<<< HEAD
         if(session_status()!== PHP_SESSION_ACTIVE) return;
         $_SESSION['expired'] = Session_expired();
         
         if(!defined('REQUIRE_LOGIN') || !REQUIRE_LOGIN) {
+=======
+        if(\session_status()!== PHP_SESSION_ACTIVE) return;
+        $_SESSION['expired'] = Session_expired();
+        
+        if(!\defined('REQUIRE_LOGIN') || !REQUIRE_LOGIN) {
+>>>>>>> origin/BackEnd
             if($new_session) New_session();
             return;
         }
@@ -222,14 +267,24 @@ namespace ACEX_project\WEB\Private\Auth;
         //track here in log which is destroyed: user,ip,time
 
 
+<<<<<<< HEAD
         header('Cache-Control: no-cache, no-store, must-revalidate, private');
         header('Clear-Site-Data: cache');
+=======
+        \header('Cache-Control: no-cache, no-store, must-revalidate, private');
+        \header('Clear-Site-Data: cache');
+>>>>>>> origin/BackEnd
 
 
         if($response===null) return;
 
+<<<<<<< HEAD
         header('Content-Type: '.Construct_MIME(MIME['application']['json']));
         http_response_code(401);
+=======
+        \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+        \http_response_code(401);
+>>>>>>> origin/BackEnd
         echo json_encode($response);
         exit();
     }
@@ -252,8 +307,13 @@ namespace ACEX_project\WEB\Private\Auth;
         $lastActive = $_SESSION['last_active_time'] ?? 0;
         $absTime = $_SESSION['absolute_time'] ?? 0;
         
+<<<<<<< HEAD
         if(time() - $lastActive > SESSION_ACTIVE_TIME) return 1;
         if(time() - $absTime > SESSION_ABSOLUTE_TIME) return 2;
+=======
+        if(\time() - $lastActive > SESSION_ACTIVE_TIME) return 1;
+        if(\time() - $absTime > SESSION_ABSOLUTE_TIME) return 2;
+>>>>>>> origin/BackEnd
 
         return 0;
     }

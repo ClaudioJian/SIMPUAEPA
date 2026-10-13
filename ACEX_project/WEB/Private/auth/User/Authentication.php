@@ -62,7 +62,11 @@ require_once __DIR__ . '/../session_manager.php';
         
         Handle_error(
           new Error_code(Error_domain::request,Resource_code::credential,Error_condition::missing),
+<<<<<<< HEAD
           err_msg: $err_txt . ' failed: '. $missing_txt . ' is/are missing from request data'
+=======
+          err_msg: "$err_txt failed: $missing_txt is/are missing from request data"
+>>>>>>> origin/BackEnd
         );
       }
 
@@ -70,7 +74,11 @@ require_once __DIR__ . '/../session_manager.php';
         $response['email'] = 1;
         Handle_error(
           new Error_code(Error_domain::request,Resource_code::credential,Error_condition::missing),
+<<<<<<< HEAD
           err_msg: $err_txt .' failed: invalid email'
+=======
+          err_msg: "$err_txt failed: invalid email"
+>>>>>>> origin/BackEnd
         );
       }
 
@@ -78,14 +86,24 @@ require_once __DIR__ . '/../session_manager.php';
         $response['password'] = 1;
         Handle_error(
           new Error_code(Error_domain::request,Resource_code::credential,Error_condition::missing),
+<<<<<<< HEAD
           err_msg: $err_txt . ' failed: password is too weak'
+=======
+          err_msg: "$err_txt failed: password is too weak"
+>>>>>>> origin/BackEnd
         );
       }
     }catch(Throwable $e){
       $response['success'] = -1;
+<<<<<<< HEAD
       $json = json_encode($response);
       header('Content-Type: '.Construct_MIME(MIME['application']['json']));
       http_response_code(400);
+=======
+      $json = \json_encode($response);
+      \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+      \http_response_code(400);
+>>>>>>> origin/BackEnd
       
       echo $json;
       

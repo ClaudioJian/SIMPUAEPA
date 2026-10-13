@@ -41,10 +41,13 @@ namespace ACEX_project\WEB\Private\Api\database;
      */
     class Permission{
         public readonly string $user_name;
+<<<<<<< HEAD
         public readonly All_tables $table;
         public readonly array $column;
         public readonly array $query_type;
         public readonly bool $whitelist_column;
+=======
+>>>>>>> origin/BackEnd
 
         /**
          * @param Query_type[] $query_type
@@ -52,7 +55,11 @@ namespace ACEX_project\WEB\Private\Api\database;
          *
          * Empty $column means all columns.
          */
+<<<<<<< HEAD
         public function __construct(string $user_name, All_tables $table,array $query_type, array $column=[], bool $whitelist_column= false)
+=======
+        public function __construct(string $user_name,public readonly All_tables $table,public readonly array $query_type, public readonly array $column=[], public readonly bool $whitelist_column= false)
+>>>>>>> origin/BackEnd
         {
             if($query_type === []) throw new InvalidArgumentException('At least one query type is required');
             foreach($query_type as $type){
@@ -71,11 +78,15 @@ namespace ACEX_project\WEB\Private\Api\database;
                 }
             }
 
+<<<<<<< HEAD
             $this->user_name = strtolower($user_name);
             $this->table = $table;
             $this->column = $column;
             $this->query_type = $query_type;
             $this->whitelist_column = $whitelist_column;
+=======
+            $this->user_name = \strtolower($user_name);
+>>>>>>> origin/BackEnd
         }
 
 
@@ -86,12 +97,20 @@ namespace ACEX_project\WEB\Private\Api\database;
             if($table !== $this->table || $query_type ===[]) return false;
             foreach($query_type as $type){
                 if(!$type instanceof Query_type) Throw_invalid_query_type("Permission::Is_permitted");
+<<<<<<< HEAD
                 if(!in_array($type,$this->query_type,true)) {
+=======
+                if(!\in_array($type,$this->query_type,true)) {
+>>>>>>> origin/BackEnd
                     return false;
                 }
             }
 
+<<<<<<< HEAD
             $user_name = strtolower($user_name);
+=======
+            $user_name = \strtolower($user_name);
+>>>>>>> origin/BackEnd
             if($user_name !== $this->user_name) return false;
             
 
@@ -108,6 +127,7 @@ namespace ACEX_project\WEB\Private\Api\database;
         Handle_error(
             new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::type),
             Log_level::fatal,
+<<<<<<< HEAD
             'Invalid argument in '. $func_name .': $query_type must contain only Query_type enum values.'
         );
     }
@@ -116,3 +136,8 @@ namespace ACEX_project\WEB\Private\Api\database;
 
 
 ?>
+=======
+            "Invalid argument in  $func_name : \$query_type must contain only Query_type enum values."
+        );
+    }
+>>>>>>> origin/BackEnd
