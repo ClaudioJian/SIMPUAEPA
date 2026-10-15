@@ -59,6 +59,18 @@ namespace ACEX_project\WEB\Private\Core;
 
         $dotenv = Dotenv::createImmutable(__DIR__. "/../../",);
         $dotenv->safeLoad();
+
+        $app_log_fname = $_ENV["LOG_FILE_NAME"] ?? "SIUMP_log";
+        define("LOG_FILE_NAME", $app_log_fname);
+
+        define("LOG_DB_NAME", $_ENV["LOG_DB_NAME"] ?? LOG_FILE_NAME);
+        define("LOG_REQUEST_NAME", $_ENV["LOG_REQUEST_NAME"] ?? LOG_FILE_NAME);
+
+        $php_log_name = $_ENV['LOG_PHP_ERROR'] ?? '';
+        define("LOG_PHP_ERROR",empty($php_log_name) ? "php_errors": $php_log_name);
+
+        if($php_log_name !== '') ini_set("error_log",File_storation_path::Error_logs->value . DIRECTORY_SEPARATOR . LOG_PHP_ERROR . ".log");
+
         try{
             if(\defined('FILE_REWRITE') && FILE_REWRITE === true){
                 $required_env =  
@@ -117,16 +129,7 @@ namespace ACEX_project\WEB\Private\Core;
         //global
         define('IMG_COMPRESS', $_ENV['IMG_COMPRESS'] === "false" ? false : true);
 
-        $app_log_fname = $_ENV["LOG_FILE_NAME"];
-        define("LOG_FILE_NAME", empty($app_log_fname) ? "SIUMP_log": $app_log_fname);
 
-        define("LOG_DB_NAME", $_ENV["LOG_DB_NAME"] ?? LOG_FILE_NAME);
-        define("LOG_REQUEST_NAME", $_ENV["LOG_REQUEST_NAME"] ?? LOG_FILE_NAME);
-
-        $php_log_name = $_ENV['LOG_PHP_ERROR'] ?? '';
-        define("LOG_PHP_ERROR",empty($php_log_name) ? "php_errors": $php_log_name);
-
-        if($php_log_name !== '') ini_set("error_log",File_storation_path::Error_logs->value . DIRECTORY_SEPARATOR . LOG_PHP_ERROR . ".log");
 
         //child rewriter
         if(\defined('FILE_REWRITE') && FILE_REWRITE === true){
