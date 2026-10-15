@@ -1,8 +1,9 @@
 .env
 .env.*
+!.env.example
 vendor/
 .vscode
 Log/*
 .log
 
-WEB/Private/Uploads/**/**/*
+WEB/Private/Uploads/
