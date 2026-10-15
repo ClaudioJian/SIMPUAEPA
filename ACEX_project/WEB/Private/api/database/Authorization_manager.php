@@ -36,9 +36,6 @@ namespace ACEX_project\WEB\Private\Api\database;
         return false;
     }
     
-    /**
-     * TODO: make colmn,user,table into enum
-     */
     class Permission{
         public readonly string $user_name;
 

@@ -108,23 +108,25 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
             ];
         }
 
-        public function get_error_message(array $allowed_mimes): array{
+        public function get_error_message(array $allowed_mimes, string $internal_name = ""): array{
+            $name = Get_file_log_format($internal_name);
+
             return match($this){
                 Custom_Upload_Err::no_gd_support => $this->map(500,FrontEnd_upload_err::cannot_start,"Required php library isn't avaible, either don't have enabled or haven't instaled php_gd.dll in default extension folder."),
                 Custom_Upload_Err::cannot_start => $this->map(500,FrontEnd_upload_err::cannot_start,"The request failed because lack of required library to work or failed to start validation proccess."),
-                Custom_Upload_Err::cannot_move_file => $this->map(500,FrontEnd_upload_err::validation_failed,"File upload failed in Secure_file_upload(): the file isn't valid or cannot be moved! Please check if directory exist and have correct permission set."),
+                Custom_Upload_Err::cannot_move_file => $this->map(500,FrontEnd_upload_err::validation_failed,"File upload failed in Secure_file_upload(): the file $name isn't valid or cannot be moved! Please check if directory exist and have correct permission set."),
                 Custom_Upload_Err::invalid_argument => $this->map(500,FrontEnd_upload_err::validation_failed,"Invalid argument error when pass to file_rewriter. Expect 3 argument(open file, request file name, file extension)"),
                 Custom_Upload_Err::cannot_find_requested_file => $this->map(500,FrontEnd_upload_err::validation_failed,"Invalid argument error when pass to file_rewriter. cannot find file requested in Uploads/images/tmp/Awaiting_sanitation"),
                 Custom_Upload_Err::directory_not_exist => $this->map(500,FrontEnd_upload_err::validation_failed,"Directory doesnt exist in one of: Uploads/images/tmp/*"),
-                Custom_Upload_Err::rewrite_failed => $this->map(500,FrontEnd_upload_err::validation_failed,"Rewriting the uploaded file failed."),
-                Custom_Upload_Err::invalid_extension => $this->map(400,FrontEnd_upload_err::invalid_file_type,"The content of file doesn't match or not allowed extension expected",["Accept-Post: ". implode(', ',$allowed_mimes)]),
-                Custom_Upload_Err::invalid_mime => $this->map(400,FrontEnd_upload_err::invalid_file_type,"Provided mime type given by browser or extension from raw name of file isn't allowed",["Accept-Post: ". implode(', ',$allowed_mimes)]),
-                Custom_Upload_Err::invalid_upload => $this->map(409,FrontEnd_upload_err::invalid_file_type,"Invalid upload",["Accept-Post: ". implode(', ',$allowed_mimes),"allow: post"]),
-                Custom_Upload_Err::unable_spot_file_type => $this->map(400,FrontEnd_upload_err::invalid_file_type,"cannot find correct extension of uploaded file",["Accept-Post: ". implode(', ',$allowed_mimes)]),
-                Custom_Upload_Err::too_many_request => $this->map(429,FrontEnd_upload_err::too_many_request,"The server is busy now."),
-                Custom_Upload_Err::timeout => $this->map(408,FrontEnd_upload_err::timeout,"The request uses too many time to process uploaded file, current request will be abandoned"),
-                Custom_Upload_Err::unsupported_extension => $this->map(415,FrontEnd_upload_err::unsupported_extension,"The uploaded file extension isn't supported by server.",["Accept-Post: ". implode(', ',$allowed_mimes)]),
-                Custom_Upload_Err::size_too_big => $this->map(413,FrontEnd_upload_err::size_too_big,'size of uploaded file is too big!'),
+                Custom_Upload_Err::rewrite_failed => $this->map(500,FrontEnd_upload_err::validation_failed,"Rewriting the uploaded file $name failed."),
+                Custom_Upload_Err::invalid_extension => $this->map(400,FrontEnd_upload_err::invalid_file_type,"The content of file $name doesn't match or not allowed extension expected",["Accept-Post: ". implode(', ',$allowed_mimes)]),
+                Custom_Upload_Err::invalid_mime => $this->map(400,FrontEnd_upload_err::invalid_file_type,"Provided mime type given by browser or extension from raw name of file $name isn't allowed",["Accept-Post: ". implode(', ',$allowed_mimes)]),
+                Custom_Upload_Err::invalid_upload => $this->map(409,FrontEnd_upload_err::invalid_file_type,"Invalid upload of file $name",["Accept-Post: ". implode(', ',$allowed_mimes),"allow: post"]),
+                Custom_Upload_Err::unable_spot_file_type => $this->map(400,FrontEnd_upload_err::invalid_file_type,"cannot find correct extension of uploaded file $name",["Accept-Post: ". implode(', ',$allowed_mimes)]),
+                Custom_Upload_Err::too_many_request => $this->map(429,FrontEnd_upload_err::too_many_request,"The server is busy now. Denied file $name"),
+                Custom_Upload_Err::timeout => $this->map(408,FrontEnd_upload_err::timeout,"The request uses too many time to process uploaded file, current file $name will be abandoned"),
+                Custom_Upload_Err::unsupported_extension => $this->map(415,FrontEnd_upload_err::unsupported_extension,"The uploaded file $name extension isn't supported by server.",["Accept-Post: ". implode(', ',$allowed_mimes)]),
+                Custom_Upload_Err::size_too_big => $this->map(413,FrontEnd_upload_err::size_too_big,"size of uploaded file $name is too big!"),
             };
         }
     }
@@ -179,7 +181,7 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
      *      client_code: FrontEnd_upload_err
      * } | null if dont match any or have no error
      */
-    function Get_descriptive_ERRupload(Custom_Upload_Err|int $php_err_code, array $accept_ext = []){
+    function Get_descriptive_ERRupload(Custom_Upload_Err|int $php_err_code, array $accept_ext = [], string $internal_name = ""){
         //fast mime check
         $allowed_mimes = [];
         $result = ['client_code' => 0];
@@ -195,7 +197,9 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
         $err_description = "";
         $client_code = 0;
         
-        
+        $name = Get_file_log_format($internal_name);
+        $size = $_FILES[FILE_UPLOAD_FIELD_NAME]['size'] ?? 0;
+
         $headers = [];
 
         if(\is_int($php_err_code)) {
@@ -204,12 +208,12 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
                 case UPLOAD_ERR_INI_SIZE:
                 case UPLOAD_ERR_FORM_SIZE:
                     $http_code =  413;
-                    $err_description = "The uploaded file size is too big";
+                    $err_description = "The uploaded file $name size is too big [$size bytes]";
                     $client_code = FrontEnd_upload_err::size_too_big;
                     break;
                 case UPLOAD_ERR_PARTIAL:
                     $http_code =  400;
-                    $err_description = "The uploaded file is only uploaded partially";
+                    $err_description = "The uploaded file $name is only uploaded partially";
                     $client_code = FrontEnd_upload_err::invalid_upload;
                     break;
                 case UPLOAD_ERR_NO_FILE:
@@ -239,7 +243,7 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
                     'headers'=>[...$headers,"content-type: ".Construct_MIME(MIME['application']['json'])],
                     'client_code'=>$client_code];
             }
-        }else $result = $php_err_code->get_error_message($allowed_mimes);
+        }else $result = $php_err_code->get_error_message($allowed_mimes, $internal_name);
 
         if($result['client_code'] === 0){
             $http_code = 500;
@@ -248,4 +252,19 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
 
         }
         return $result;
+    }
+
+    function Get_file_log_format(string $internal_name = '') : string{
+        $user_id = $_SESSION['uid'] ?? 'unknown';
+        $name = "";
+        $size = $_FILES[FILE_UPLOAD_FIELD_NAME]['size'] ?? 0;
+           
+        if($_FILES[FILE_UPLOAD_FIELD_NAME]['name'] !== null) {
+            $name = $internal_name !== '' ? "Original " : "";
+            $name .= "name-\"" . $_FILES[FILE_UPLOAD_FIELD_NAME]['name']. "\"";
+        }
+        if($internal_name !== '') $name .= " |Internal name -\"$internal_name\"";
+        if($name !== "") $name .= " |";
+        
+        return "[uid-\"$user_id\"|$name $size byte(s)]";
     }

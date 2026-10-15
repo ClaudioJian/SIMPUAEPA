@@ -6,6 +6,7 @@
 */
 namespace ACEX_project\WEB\Private\Error;
 
+use function ACEX_project\WEB\Private\Core\Security\File_upload\Strip_all_extension;
 
     require_once __DIR__ ."/../Core/AppCommonVar.php";
 
@@ -29,6 +30,7 @@ namespace ACEX_project\WEB\Private\Error;
         case configuration = -8;
         case object = -9;
         case child_proccess = -10;
+        case upload = -11;
     };
 
     /**
@@ -66,6 +68,7 @@ namespace ACEX_project\WEB\Private\Error;
         case db_select        = -500;
         case db_insert        = -501;
         case connection       = -60;
+        case creation         = -61;
         case invalidArgument  = -70;
     };
 
@@ -74,6 +77,9 @@ namespace ACEX_project\WEB\Private\Error;
      * e.g: missing, don't match
      */
     enum Error_condition:int{
+        case attempt       = 2;
+        case received      = 1;
+        case success       = 0;
         case missing       = -1;
         case unknown       = -2;
         case invalid       = -3;
@@ -99,7 +105,16 @@ namespace ACEX_project\WEB\Private\Error;
     final class Error_code{
         public function __construct(public Error_domain $type,public Resource_code $res,public Error_condition $detail){}
         public function Get_log_name() : string{
-            if($this->res === Resource_code::php) return ini_get("error_log") ?? LOG_FILE_NAME. ".log";
+            if($this->res === Resource_code::php || !\defined('LOG_FILE_NAME')) {
+                $log_name = \ini_get("error_log");
+                if($log_name === null && !\defined('LOG_FILE_NAME')) {
+                    http_response_code(500);
+                    exit();
+                }
+
+                return (Strip_all_extension($log_name) ?? LOG_FILE_NAME) . ".log";
+            }
+
             return match($this->type) {
                 Error_domain::configuration, Error_domain::unknown,
                 Error_domain::object, Error_domain::server, 
@@ -107,7 +122,7 @@ namespace ACEX_project\WEB\Private\Error;
                 => LOG_FILE_NAME .".log",
 
                 Error_domain::database => LOG_DB_NAME. ".log",
-                Error_domain::credential, Error_domain::request, Error_domain::email => LOG_REQUEST_NAME. ".log",
+                Error_domain::credential, Error_domain::request, Error_domain::email, Error_domain::upload => LOG_REQUEST_NAME. ".log",
                 default => LOG_FILE_NAME. ".log"
             };
         }

@@ -24,13 +24,26 @@ use function ACEX_project\WEB\Private\Auth\New_session;
 
     require_once __DIR__ ."/Authentication.php";
 
+require_once __DIR__ .'/../../Error/Error_manager.php';
 
+    require_once __DIR__ .'/../../Error/Error_code.php';
+    use function ACEX_project\WEB\Private\Error\Log_internal;
+    use ACEX_project\WEB\Private\Error\Error_code;
+    use ACEX_project\WEB\Private\Error\Error_condition;
+    use ACEX_project\WEB\Private\Error\Error_domain;
+    use ACEX_project\WEB\Private\Error\Resource_code;
+    use Monolog\Level;
 
     function Logout(){
         if(!Is_logged()) return;
 
         $response = Internal_Logout();
         if($response===null) return;
+
+        Log_internal(new Error_code(Error_domain::request,Resource_code::user,Error_condition::success),
+            Level::Info,
+            "Logout successfully for user[name=\"". $response['logout_user_name'] . "\"|email=\"" .$response['logout_user_email'] . '"]'
+        );
 
         \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
         \http_response_code(200);

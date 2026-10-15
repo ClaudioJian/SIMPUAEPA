@@ -38,7 +38,12 @@ use function ACEX_project\WEB\Private\Auth\New_session;
 
 require_once __DIR__ . '/../password_handler.php';
 use function ACEX_project\WEB\Private\Auth\Secure_password_verify;
+
+require_once __DIR__ .'/../../Error/Error_manager.php';
+
+require_once __DIR__ .'/../../Error/Error_code.php';
 use function ACEX_project\WEB\Private\Error\Handle_error;
+use function ACEX_project\WEB\Private\Error\Log_internal;
 
 require_once __DIR__ . "/User_data.php";
 
@@ -49,6 +54,8 @@ require_once __DIR__ . "/User_data.php";
             echo json_encode(['success'=>1,'uid'=>$_SESSION['uid']]);
             exit();
         }
+
+        
         
         $conn = null;
         try{
@@ -56,6 +63,12 @@ require_once __DIR__ . "/User_data.php";
 
             $email = $request_body['email'] ?? '';
             $password = $request_body['password'] ?? '';
+
+            Log_internal(
+                new Error_code(Error_domain::request,Resource_code::user,Error_condition::attempt),
+                Level::Notice,
+                "Login with email:[$email]"
+            );
 
             Validate_enroll_data($email,$password);
             Get_user_data_authorized();
@@ -66,8 +79,16 @@ require_once __DIR__ . "/User_data.php";
             Handle_query_fail($e,$conn);
         }
 
+        $uid = $_SESSION['uid'];
         \header('Content-type: '.Construct_MIME(MIME['application']['json']));
-        echo json_encode(['success'=>0,'uid'=>$_SESSION['uid']]);
+        echo json_encode(['success'=>0,'uid'=>$uid]);
+
+        Log_internal(
+            new Error_code(Error_domain::request,Resource_code::user,Error_condition::success),
+            Level::Notice,
+            "Logged sucessfully with id:[$uid]"
+        );
+
         exit();
     }
 

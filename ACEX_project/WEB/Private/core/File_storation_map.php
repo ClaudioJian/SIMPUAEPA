@@ -10,16 +10,17 @@ namespace ACEX_project\WEB\Private\Core;
      *      |__Awaiting_sanitation
      *      |__Awaiting_validation
     */
-    enum File_storation_path: string{
-        case Error_logs = __DIR__ . "/../../../../../Log";
-        case User_uploads = __DIR__ . "/../../../Uploads/";
-            case Temp = __DIR__ . "/../../../Uploads/tmp";
-                case Await_sanitation = __DIR__ . "/../../../Uploads/tmp/Awaiting_sanitation";
-                case Await_validation = __DIR__ . "/../../../Uploads/tmp/Awaiting_validation";
 
-            case User_images = __DIR__ . "/../../../Uploads/Images";
-                case Maps = __DIR__ . "/../../../Uploads/Images/Maps";
-                case profiles = __DIR__ . "/../../../Uploads/Images/Profiles";
+    enum File_storation_path: string{
+        case Error_logs = __DIR__ . "/../../../Log";
+            case User_uploads = __DIR__ . "/../Uploads/";
+                case Temp = __DIR__ . "/../Uploads/tmp";
+                    case Await_sanitation = __DIR__ . "/../Uploads/tmp/Awaiting_sanitation";
+                    case Await_validation = __DIR__ . "/../Uploads/tmp/Awaiting_validation";
+
+                case User_images = __DIR__ . "/../Uploads/Images";
+                    case Maps = __DIR__ . "/../Uploads/Images/Maps";
+                    case profiles = __DIR__ . "/../Uploads/Images/Profiles";
         
         /**
          * No need create all, only the end of file tree need be created. check mkdir() for more information

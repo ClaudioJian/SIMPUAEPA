@@ -22,9 +22,14 @@
 namespace ACEX_project\WEB\Private\Auth;
 
     require_once __DIR__ . "/../Error/Error_manager.php";
-    use function ACEX_project\WEB\Private\Error\Log_internal;
+
+    require_once __DIR__ ."/../../../Privacity/Sensitive_data_list.php";
+    use function ACEX_project\Privacity\Is_sensitive_data;
+
+
 
     require_once __DIR__ . "/../Error/Error_code.php";
+    use function ACEX_project\WEB\Private\Error\Log_internal;
     use ACEX_project\WEB\Private\Error\Error_code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
@@ -119,14 +124,22 @@ namespace ACEX_project\WEB\Private\Auth;
         Monitor_session('user_agent',$user_agent);
     }
 
-    function Monitor_session(string $name,mixed $compared_value){
+    /**
+     * Compare value inside of session if has chaged from previous session, if changed, log info anomaly and change to new.
+     * @param string $name the information name stored in session
+     * @param mixed $compared_value new value to be assigned
+     * @return void
+     */
+    function Monitor_session(string $name,mixed $compared_value) : void{
         $_SESSION['session_anomaly'] ??= [];
         if(isset($_SESSION[$name]) && $_SESSION[$name]!== $compared_value) {
             $_SESSION['anomaly'][] = $name;
+            $info = Is_sensitive_data($name) ? '': "[previous:$_SESSION[$name] | current : $compared_value]";
+            
             Log_internal(
                 new Error_code(Error_domain::request,Resource_code::user,Error_condition::abnomaly),
                 Level::Warning,
-                "Abnomaly detect: $name is different in middle of session - [previous:$_SESSION[$name] | current : $compared_value]"
+                "'$name' changed during an active session $info"
             );
         }
         $_SESSION[$name] = $compared_value;
@@ -175,6 +188,12 @@ namespace ACEX_project\WEB\Private\Auth;
         $reason = Session_expired();
         if($reason===1 || $reason===2)
         {
+            //TODO: may add more information about
+            Log_internal(
+                new Error_code(Error_domain::request,Resource_code::session,Error_condition::expired),
+                Level::Info,
+                "Marking request as obsolete"
+            );
             $_SESSION['obsolete_time'] = \time();
             return true;
         }
@@ -188,7 +207,7 @@ namespace ACEX_project\WEB\Private\Auth;
         if(session_status()!== PHP_SESSION_ACTIVE) return;
         $_SESSION['expired'] = Session_expired();
         
-        if(!defined('REQUIRE_LOGIN') || !REQUIRE_LOGIN) {
+        if(!\defined('REQUIRE_LOGIN') || !REQUIRE_LOGIN) {
             New_session();
             return;
         }
@@ -196,6 +215,7 @@ namespace ACEX_project\WEB\Private\Auth;
         
         $_SESSION = [];
         \session_destroy();
+        //TODO: may add more information about request
         Log_internal(
             new Error_code(Error_domain::request,Resource_code::session,Error_condition::expired),
             Level::Warning,
@@ -217,8 +237,6 @@ namespace ACEX_project\WEB\Private\Auth;
             return;
         }
         $response = Session_logout();
-
-        //track here in log which is destroyed: user,ip,time
 
 
         \header('Cache-Control: no-cache, no-store, must-revalidate, private');

@@ -77,6 +77,8 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
         echo json_encode(['success'=>0,'stage'=>0]);
         \ob_flush();
         
+        $finfo_txt = Get_file_log_format();
+        Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[Type - $target_location->name]Upload file $finfo_txt");
 
         $og_name = \basename(\mb_strtolower(\trim($_FILES[FILE_UPLOAD_FIELD_NAME]['name'])));
 
@@ -90,7 +92,7 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
         
 
         if($full_name === false){
-            Exit_upload_err(Custom_Upload_Err::cannot_move_file,1,$allowed_ext,$og_name);
+            Exit_upload_err(Custom_Upload_Err::cannot_move_file,1,$allowed_ext,$og_name,'',$new_name);
             return false;
         }
 
@@ -112,17 +114,21 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
         $argvs = \escapeshellarg(base64_encode($datas));
 
         $command = "$php_exe $flags $open $argvs";
+
+        $internal_fname = $new_name. '.'.$extension->name;
+        $finfo_txt = Get_file_log_format($internal_fname);
+        Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[Type - $target_location->name]Rewriting and compressing file $finfo_txt");
         \exec($command,$output, $return_code);
 
         switch($return_code){
             case 0:  break;
-            case 1:  Exit_upload_err(Custom_Upload_Err::no_gd_support,1,$allowed_ext,$og_name,$full_name);
-            case 2:  Exit_upload_err(Custom_Upload_Err::invalid_argument,1,$allowed_ext,$og_name,$full_name);
-            case 3:  Exit_upload_err(Custom_Upload_Err::directory_not_exist,1,$allowed_ext,$og_name,$full_name);
-            case 4:  Exit_upload_err(Custom_Upload_Err::cannot_find_requested_file,1,$allowed_ext,$og_name,$full_name);
-            case 5:  Exit_upload_err(Custom_Upload_Err::cannot_move_file,1,$allowed_ext,$og_name,$full_name);
-            case 6:  Exit_upload_err(Custom_Upload_Err::rewrite_failed,1,$allowed_ext,$og_name,$full_name);
-            default: Exit_upload_err(Custom_Upload_Err::cannot_start,1,$allowed_ext,$og_name,$full_name); break;
+            case 1:  Exit_upload_err(Custom_Upload_Err::no_gd_support,1,$allowed_ext,$og_name,$full_name,$internal_fname);
+            case 2:  Exit_upload_err(Custom_Upload_Err::invalid_argument,1,$allowed_ext,$og_name,$full_name,$internal_fname);
+            case 3:  Exit_upload_err(Custom_Upload_Err::directory_not_exist,1,$allowed_ext,$og_name,$full_name,$internal_fname);
+            case 4:  Exit_upload_err(Custom_Upload_Err::cannot_find_requested_file,1,$allowed_ext,$og_name,$full_name,$internal_fname);
+            case 5:  Exit_upload_err(Custom_Upload_Err::cannot_move_file,1,$allowed_ext,$og_name,$full_name,$internal_fname);
+            case 6:  Exit_upload_err(Custom_Upload_Err::rewrite_failed,1,$allowed_ext,$og_name,$full_name,$internal_fname);
+            default: Exit_upload_err(Custom_Upload_Err::cannot_start,1,$allowed_ext,$og_name,$full_name,$internal_fname); break;
         }
 
 
@@ -138,9 +144,21 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
         $compressed_ext = IMG_COMPRESS ? Avaible_extension::webp : $extension;
         $moved_path = File_storation_path::Await_validation->value . "/$new_name.".$compressed_ext->name;
 
-        Safe_file_store($target_location,$compressed_ext,$new_name,$moved_path,true);
+        $full_name = Safe_file_store($target_location,$compressed_ext,$new_name,$moved_path,true);
+
+
+        if($full_name === false){
+            Exit_upload_err(Custom_Upload_Err::cannot_move_file,1,$allowed_ext,$og_name,'',$new_name);
+            return false;
+        }
+
         Send_response(0,2,$og_name);
         \ob_end_clean();
+
+        $internal_fname = $new_name. '.'.$compressed_ext->name;
+        $finfo_txt = Get_file_log_format($internal_fname);
+
+        Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[Type - $target_location->name]Sucessfully store file $finfo_txt");
         return true;
     }
 
@@ -240,9 +258,9 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
         return $byte_size <= $allowed_byte;
     }
 
-    function Exit_upload_err(Custom_Upload_Err|int $code, int $stage,array $allowed_ext,string $og_name,string $moved_fpath = "") : never
+    function Exit_upload_err(Custom_Upload_Err|int $code, int $stage,array $allowed_ext,string $og_name,string $moved_fpath = "", string $internal_name = "") : never
     {
-        $desc = Get_descriptive_ERRupload($code,$allowed_ext);
+        $desc = Get_descriptive_ERRupload($code,$allowed_ext,$internal_name);
         $headers = $desc['headers'];
         $frontend_code = $desc['client_code'];
         $http_code = $desc['http_code'];
@@ -260,15 +278,17 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
             \header($header);
         }
 
+        $code_args = $code instanceof Custom_Upload_Err ? $code->value : $code;
+
         Log_internal(
             new Error_code(Error_domain::request,Resource_code::file,Error_condition::failed),
             Level::Warning,
-            "(code: $code->value) $err_desc"
+            "(code: $code_args) $err_desc"
         );
         if($moved_fpath !== "") \unlink($moved_fpath);
         
         
-        Send_response(-1,$stage,$og_name,$http_code,$frontend_code,$err_desc);
+        Send_response(-1,$stage,$og_name,$http_code,$frontend_code);
         
         \ob_end_clean();
         exit();

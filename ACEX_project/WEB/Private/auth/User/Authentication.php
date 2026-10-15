@@ -64,7 +64,8 @@ require_once __DIR__ . '/../session_manager.php';
         Handle_error(
           new Error_code(Error_domain::request,Resource_code::credential,Error_condition::missing),
           Level::Warning,
-          "$err_txt failed: $missing_txt is/are missing from request data"
+          "$err_txt failed: $missing_txt is/are missing from request data",
+          throw:true
         );
       }
 
@@ -73,7 +74,8 @@ require_once __DIR__ . '/../session_manager.php';
         Handle_error(
           new Error_code(Error_domain::request,Resource_code::credential,Error_condition::missing),
           Level::Warning,
-          "$err_txt failed: invalid email"
+          "$err_txt failed: invalid email",
+          throw:true
         );
       }
 
@@ -81,8 +83,9 @@ require_once __DIR__ . '/../session_manager.php';
         $response['password'] = 1;
         Handle_error(
           new Error_code(Error_domain::request,Resource_code::credential,Error_condition::missing),
-          Level::Warning,
-          "$err_txt failed: password is too weak"
+          Level::Error,
+          "$err_txt failed: password is too weak",
+          throw:true
         );
       }
     }catch(Throwable $e){

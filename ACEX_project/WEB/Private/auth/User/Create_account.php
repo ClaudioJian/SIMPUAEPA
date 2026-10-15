@@ -46,6 +46,8 @@ use function ACEX_project\WEB\Private\Core\Security\Get_request_body;
 
 require_once __DIR__ . "/../../Error/Error_manager.php";
 use function ACEX_project\WEB\Private\Error\Handle_error;
+use function ACEX_project\WEB\Private\Error\Log_internal;
+
 use ACEX_project\WEB\Private\Error\Error_code;
 use ACEX_project\WEB\Private\Error\Error_condition;
 use ACEX_project\WEB\Private\Error\Error_domain;
@@ -62,15 +64,22 @@ require_once __DIR__ ."/Authentication.php";
     $conn = null;
     $id = null;
     try{
-      if(Is_logged()) Redirect();
-      Require_nonce();
-
       if($request_body===[]) $request_body = Get_request_body();
-
-
       $email = $request_body['email'] ?? '';
       $user_name = $request_body['name'] ?? '';
       $password = $request_body['password'] ?? '';
+
+      if(Is_logged()) Redirect();
+      Require_nonce();
+
+      Log_internal(
+        new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::attempt),
+        Level::Notice,
+        "Email:[$email] | public name:[$user_name]"
+      );
+
+
+
 
       Validate_enroll_data($email,$password,$user_name);
       Is_enroll_authorized();
@@ -113,6 +122,12 @@ require_once __DIR__ ."/Authentication.php";
 
     Internal_login($id);
 
+    Log_internal(
+      new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::success),
+      Level::Info,
+      "User id:[$id]"
+    );
+
     \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
     echo json_encode(['success'=>0,'uid'=>$id]);
     \http_response_code(201);
@@ -153,6 +168,13 @@ require_once __DIR__ ."/Authentication.php";
       $email_exist = $row['email_exist'];
       $name_exist = $row['uname_exist'];
       if($email_exist || $name_exist){
+        Log_internal(
+          new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::duplicated),
+          Level::Notice,
+          "Name: [$name] | email: [$email]"
+        );
+
+
         \http_response_code(400);
         \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
         echo json_encode(['success'=>-1,'name'=> $name_exist? 2 : 4,'email'=> $email_exist? 2 : 4,'password'=>4]);
@@ -180,7 +202,7 @@ require_once __DIR__ ."/Authentication.php";
       Handle_error(
         new Error_code(Error_domain::database,$query,Error_condition::unauthorized),
         Level::Critical,
-        'Account enrollment failed: table: ' .All_tables::user->name. ' | user:'. HOST. $colums_denied
+        'Account enrollment failed: table = ' .All_tables::user->name. ' | user ='. HOST. $colums_denied
       );
     }
   }
