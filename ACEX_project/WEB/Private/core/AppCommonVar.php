@@ -60,11 +60,6 @@ namespace ACEX_project\WEB\Private\Core;
         $dotenv = Dotenv::createImmutable(__DIR__. "/../../",);
         $dotenv->safeLoad();
         try{
-            //global
-            $required_env = [...$required_env,'IMG_COMPRESS','LOG_FILE_NAME','LOG_PHP_ERROR'];
-            $required_bool_env = [...$required_bool_env,'IMG_COMPRESS'];
-
-
             if(\defined('FILE_REWRITE') && FILE_REWRITE === true){
                 $required_env =  
                 [
@@ -102,6 +97,10 @@ namespace ACEX_project\WEB\Private\Core;
                     'REQUEST_MAX_LIFE',
                 ];
             }
+
+            //global
+            $required_env = [...$required_env,'IMG_COMPRESS','LOG_FILE_NAME','LOG_PHP_ERROR'];
+            $required_bool_env = [...$required_bool_env,'IMG_COMPRESS'];
 
             $dotenv->required($required_env)->notEmpty();
 
