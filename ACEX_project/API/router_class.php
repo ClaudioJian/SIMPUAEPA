@@ -84,7 +84,7 @@ use function ACEX_project\WEB\Private\Core\Construct_MIME;
                 if($route->execute($method, $required_resource)) return;
             }
         }
-        http_response_code(404);
+        
+        \http_response_code(404);
         exit();
     }
-?>

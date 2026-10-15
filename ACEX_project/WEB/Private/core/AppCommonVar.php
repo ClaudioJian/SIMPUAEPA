@@ -20,37 +20,89 @@
 namespace ACEX_project\WEB\Private\Core;
     require_once __DIR__ . '/../../vendor/autoload.php';
 
-use ACEX_project\WEB\Private\Error\Error_code;
-use ACEX_project\WEB\Private\Error\Error_condition;
-use ACEX_project\WEB\Private\Error\Error_domain;
-use ACEX_project\WEB\Private\Error\Log_level;
-use ACEX_project\WEB\Private\Error\Resource_code;
-use Dotenv\Dotenv;
+    require_once __DIR__ .'/File_storation_map.php';
 
-use function ACEX_project\WEB\Private\Error\Handle_error;
+    use ACEX_project\WEB\Private\Error\Error_code;
+    use ACEX_project\WEB\Private\Error\Error_condition;
+    use ACEX_project\WEB\Private\Error\Error_domain;
+    use ACEX_project\WEB\Private\Error\Resource_code;
+    use Dotenv\Dotenv;
+    use Monolog\Level;
+    use function ACEX_project\WEB\Private\Error\Handle_error;
 
+    require_once __DIR__ . '/../Error/Error_manager.php';
+    require_once __DIR__ . '/../Error/Error_code.php';
 
-    if(!defined('INITIALIZED')) Initialize_value();
+    require_once __DIR__ .'/Security/File_upload/File_upload_utils.php';
+
+    
+    use function \define;
+    if(!\defined('INITIALIZED')) Initialize_value();
 
 
     function Initialize_value(){
-        $dotenv = Dotenv::createImmutable(__DIR__. "/../../",[".env",'.env.development','.env.production']);
+        //Create directory if not exist
+        if(
+            !File_storation_path::Await_sanitation->Initialize_directory() ||
+            !File_storation_path::Await_validation->Initialize_directory() ||
+            !File_storation_path::profiles->Initialize_directory() ||
+            !File_storation_path::Maps->Initialize_directory() ||
+            !File_storation_path::Error_logs->Initialize_directory()
+        ) {
+            Handle_error(
+                new Error_code(Error_domain::server,Resource_code::directory,Error_condition::missing),
+                Level::Critical,
+                "Failed to create directory! Please check permission."
+            );
+        }
+        $required_env = $required_int_env = $required_bool_env = [];
+
+
+        $dotenv = Dotenv::createImmutable(__DIR__. "/../../",);
         $dotenv->safeLoad();
         try{
-            $dotenv->required([
-                'DATABASE_NAME',
-                'DATABASE_PASSWORD',
-                'DATABASE_HOST',
-                'DATABASE_USER',
-                'DATABASE_PORT',
-                'SESSION_OBSOLETE_MAXLIFE',
-                'SESSION_ACTIVE_TIME',
-                'SESSION_ABSOLUTE_TIME',
-                'CSRF_TOKEN_MAXLIFE',
-                'CSRF_TOKEN_HEADER_NAME',
-                'REQUEST_MAX_LIFE',
-                'HOME_PAGE_LOCATION',
-            ])->notEmpty();
+            //global
+            $required_env = [...$required_env,'IMG_COMPRESS','LOG_FILE_NAME'];
+            $required_bool_env = [...$required_bool_env,'IMG_COMPRESS'];
+
+
+            if(\defined('FILE_REWRITE') && FILE_REWRITE === true){
+                $required_env =  
+                [
+                    "IMG_PROFILE_FINAL_RESOLUTION",
+                    'IMG_MAP_FINAL_RESOLUTION',
+                    'IMG_FINAL_QUALITY',
+                ];
+                $required_int_env = [
+                    'IMG_FINAL_QUALITY'
+                ];
+            }else{
+                $required_env = [
+                    'DATABASE_NAME',
+                    'DATABASE_PASSWORD',
+                    'DATABASE_HOST',
+                    'DATABASE_USER',
+                    'DATABASE_PORT',
+                    'SESSION_OBSOLETE_MAXLIFE',
+                    'SESSION_ACTIVE_TIME',
+                    'SESSION_ABSOLUTE_TIME',
+                    'CSRF_TOKEN_MAXLIFE',
+                    'CSRF_TOKEN_HEADER_NAME',
+                    'REQUEST_MAX_LIFE',
+                    'HOME_PAGE_LOCATION',
+                    'PHP_PATH',
+                    'IMG_PROFILE_MAX_SIZE',
+                    'IMG_MAP_MAX_SIZE',
+                ];
+                $required_int_env = [
+                    'DATABASE_PORT',
+                    'SESSION_OBSOLETE_MAXLIFE',
+                    'SESSION_ACTIVE_TIME',
+                    'SESSION_ABSOLUTE_TIME',
+                    'CSRF_TOKEN_MAXLIFE',
+                    'REQUEST_MAX_LIFE',
+                ];
+            }
 
             $dotenv->required([
                 'DATABASE_PORT',
@@ -63,25 +115,31 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         }catch(\Dotenv\Exception\ValidationException $e){
             Handle_error(
                 new Error_code(Error_domain::configuration,Resource_code::env,Error_condition::missing),
-                Log_level::fatal,
+                Level::Critical,
                 $e->getMessage()
             );
         }
 
-        define('DB_NAME', $_ENV['DATABASE_NAME']);
-        define('DB_PASSWORD', $_ENV['DATABASE_PASSWORD']);
-        define('HOST', $_ENV['DATABASE_HOST']);
-        define('SERVER_USER', $_ENV['DATABASE_USER']);
-        define('DB_PORT', (int)$_ENV['DATABASE_PORT']);
+        //global
+        define('IMG_COMPRESS', $_ENV['IMG_COMPRESS'] === "false" ? false : true);
+        define("LOG_FILE_NAME", $_ENV["LOG_FILE_NAME"]);
 
-        define('SESSION_OBSOLETE_MAXLIFE', (int)$_ENV['SESSION_OBSOLETE_MAXLIFE']);
-        define('SESSION_ACTIVE_TIME', (int)$_ENV['SESSION_ACTIVE_TIME']);
-        define('SESSION_ABSOLUTE_TIME', (int)$_ENV['SESSION_ABSOLUTE_TIME']);
+        define("LOG_DB_NAME", $_ENV["LOG_DB_NAME"] ?? LOG_FILE_NAME);
+        define("LOG_REQUEST_NAME", $_ENV["LOG_REQUEST_NAME"] ?? LOG_FILE_NAME);
 
-        define('CSRF_TOKEN_MAXLIFE', (int)$_ENV['CSRF_TOKEN_MAXLIFE']);
-        define('CSRF_TOKEN_VALIDATE_METHOD', ['POST','PATCH','DELETE','PUT']);
-        define('CSRF_TOKEN_HEADER_NAME', $_ENV['CSRF_TOKEN_HEADER_NAME']);
-        define('CSRF_TOKEN_GENERATE_SEPARATOR', '__');
+
+        //child rewriter
+        if(\defined('FILE_REWRITE') && FILE_REWRITE === true){
+            define("IMG_PROFILE_FINAL_RESOLUTION",$_ENV['IMG_PROFILE_FINAL_RESOLUTION']);
+            define("IMG_MAP_FINAL_RESOLUTION",$_ENV['IMG_MAP_FINAL_RESOLUTION']);
+            define('IMG_FINAL_QUALITY',min(100,$_ENV['IMG_FINAL_QUALITY']));
+        }else{
+            define('PHP_PATH',$_ENV['PHP_PATH']);
+            define('DB_NAME', $_ENV['DATABASE_NAME']);
+            define('DB_PASSWORD', $_ENV['DATABASE_PASSWORD']);
+            define('HOST', $_ENV['DATABASE_HOST']);
+            define('SERVER_USER', $_ENV['DATABASE_USER']);
+            define('DB_PORT', (int)$_ENV['DATABASE_PORT']);
 
         define('REQUEST_MAX_LIFE',$_ENV['REQUEST_MAX_LIFE']);
         define('NONCE_SEP','#');
@@ -94,13 +152,24 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         $home_location = ltrim($_ENV['HOME_PAGE_LOCATION'],'/');
         
 
-        define('HOME_PAGE_LOCATION',$home_location);
-        if(!file_exists(__DIR__ . "/../../Public_html/".$home_location)){
-            Handle_error(
-                new Error_code(Error_domain::configuration,Resource_code::env,Error_condition::missing),
-                Log_level::fatal,
-                "Missing home page - doesnt exist or not found[".__DIR__ . "/../../Public_html/".$home_location."]"
-            );
+            define('UNSUPPORTED_METHOD',['CONNECT','TRACE']);
+            define('VALID_HTTP_METHOD',['POST','GET','HEAD','CONNECT','TRACE','DELETE','PUT','PATCH']);
+
+            //files
+            define('FILE_UPLOAD_FIELD_NAME','userfile');
+            define("IMG_MAP_MAX_SIZE",$_ENV["IMG_MAP_MAX_SIZE"]);
+            define("IMG_PROFILE_MAX_SIZE",$_ENV['IMG_PROFILE_MAX_SIZE']);                
+             
+
+            $home_location = ltrim($_ENV['HOME_PAGE_LOCATION'],'/');
+            define('HOME_PAGE_LOCATION',$home_location);
+            if(!file_exists(__DIR__ . "/../../Public_html/".$home_location)){
+                Handle_error(
+                    new Error_code(Error_domain::configuration,Resource_code::env,Error_condition::missing),
+                    Level::Critical,
+                    "Missing home page - doesnt exist or not found[".__DIR__ . "/../../Public_html/".$home_location."]"
+                );
+            }
         }
 
         //avoid define/load env twice to opmization, note this is per request

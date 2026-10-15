@@ -8,14 +8,17 @@
 */
 
 namespace ACEX_project\WEB\Private\Api\database;
-require_once __DIR__ . "/Authorization_manager.php";
-use ACEX_project\WEB\Private\Error\Error_code;
-use ACEX_project\WEB\Private\Error\Error_condition;
-use ACEX_project\WEB\Private\Error\Error_domain;
-use ACEX_project\WEB\Private\Error\Log_level;
-use ACEX_project\WEB\Private\Error\Resource_code;
+    require_once __DIR__ . "/Authorization_manager.php";
 
-use function ACEX_project\WEB\Private\Error\Handle_error;
+    require_once __DIR__ ."/../../Error/Error_manager.php";
+    use function ACEX_project\WEB\Private\Error\Handle_error;
+
+    require_once __DIR__ ."/../../Error/Error_code.php";
+    use ACEX_project\WEB\Private\Error\Error_code;
+    use ACEX_project\WEB\Private\Error\Error_condition;
+    use ACEX_project\WEB\Private\Error\Error_domain;
+    use ACEX_project\WEB\Private\Error\Resource_code;
+    use Monolog\Level;
 
     enum Query_type{
         case insert;
@@ -75,7 +78,7 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
                 if(!$c instanceof \UnitEnum) {
                     Handle_error(
                         new Error_code(Error_domain::database,Resource_code::db_column,Error_condition::type),
-                        Log_level::fatal,
+                        Level::Critical,
                         'Invalid argument in Columns_belong_table:
                         Requested column isnt enum type.'
                     );
@@ -83,9 +86,9 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
             if($c::class !== $table_name){
                 Handle_error(
                     new Error_code(Error_domain::database,Resource_code::db_column,Error_condition::type),
-                    Log_level::fatal,
-                    'Invalid argument in Columns_belong_table:
-                    Requested column dont belong table['.$table_name.'].'
+                    Level::Critical,
+                    "Invalid argument in Columns_belong_table:
+                    Requested column dont belong table [$table_name]."
                 );
             }
         }

@@ -16,12 +16,10 @@ namespace ACEX_project\API;
     require_once __DIR__ . "/../WEB/Private/Core/Security/CSRF_manager.php";
     use function ACEX_project\WEB\Private\Core\Security\Handle_CSRF_GET;
 
-    require_once __DIR__ . "/../WEB/Private/Core/Security/File_upload.php";
-use function ACEX_project\WEB\Private\Core\Security\Validate_uploaded_file;
 
-    ini_set('session.cookie_lifetime',(string)(SESSION_ABSOLUTE_TIME+10));
-    ini_set('session.gc_maxlifetime',(string)(SESSION_ABSOLUTE_TIME+10));
-    header('x-content-type-options:nosniff');
+    \ini_set('session.cookie_lifetime',(string)(SESSION_ABSOLUTE_TIME+10));
+    \ini_set('session.gc_maxlifetime',(string)(SESSION_ABSOLUTE_TIME+10));
+    \header('x-content-type-options:nosniff');
 
 
     //routing logic

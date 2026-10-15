@@ -23,6 +23,7 @@ namespace ACEX_project\WEB\Private\Core\Security;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
     use ACEX_project\WEB\Private\Error\Resource_code;
+use Monolog\Level;
 
     use function ACEX_project\WEB\Private\Error\Log_internal;
 
@@ -142,6 +143,7 @@ namespace ACEX_project\WEB\Private\Core\Security;
     function CSRF_invalidation(string $msg,Error_condition $condition){
         Log_internal(
             new Error_code(Error_domain::request,Resource_code::csrf,$condition),
+            Level::Warning,
             err_msg:$msg
         );
         //immedially expire front end cookie

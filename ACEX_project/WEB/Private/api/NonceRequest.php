@@ -41,7 +41,9 @@ namespace ACEX_project\WEB\Private\Api;
         $is_none = session_status() === PHP_SESSION_NONE;
         if($is_none) session_start();
 
-        if(!isset($_SESSION['nonce_request']) || !is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
+
+
+        if(!isset($_SESSION['nonce_request']) || !\is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
 
         foreach($_SESSION['nonce_request'] as $snonce=>$request) {
             Clean_expired_snonce($request['sgen_time'],$snonce);
@@ -147,8 +149,9 @@ namespace ACEX_project\WEB\Private\Api;
     function Clean_expired_snonce(int $generated_time,string $target_snonce) :bool{
         $now = (int) floor(microtime(true) * 1000);
         $age = $now - $generated_time;
-        if($age<0 || $age <= REQUEST_MAX_LIFE) return false;
-        
+        if($age<0 || $age <= REQUEST_MAX_LIFE * 1000) return false;
+        $r = REQUEST_MAX_LIFE;
+
         if(isset($_SESSION['nonce_request'][$target_snonce])) unset($_SESSION['nonce_request'][$target_snonce]);      
         
         return true;

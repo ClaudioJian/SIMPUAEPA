@@ -19,7 +19,6 @@ body {
     background-attachment: fixed;
 }
 
-
 .login-container {
     background: white;
     padding: 30px;
@@ -30,13 +29,11 @@ body {
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
-
 form {
     display: flex;
     flex-direction: column;
     gap: 15px; 
 }
-
 
 input[type="email"], 
 input[type="password"] {
@@ -50,7 +47,6 @@ input[type="password"] {
 input:focus {
     border-color: #007BFF;
 }
-
 
 .btn-pequeno {
     padding: 10px;
@@ -85,15 +81,6 @@ button[type="submit"]:hover {
 
 
 
-
-
-
-
-
-
-
-
-
 /* DArk mode abaixo: */
 .theme-toggle {
     position: fixed;
@@ -118,7 +105,6 @@ button[type="submit"]:hover {
     height: 30px;
     object-fit: contain;
 }
-
 
 body.dark-mode {
     background-color: #121212;
