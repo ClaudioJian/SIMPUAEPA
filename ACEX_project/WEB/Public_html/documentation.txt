@@ -1,0 +1,5 @@
+Here is front end
+
+api is for communicate to server
+UI is mainly for interaction, animation and etc
+locale is for multi languague. delete this if no need

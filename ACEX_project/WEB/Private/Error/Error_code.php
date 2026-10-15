@@ -6,8 +6,7 @@
 */
 namespace ACEX_project\WEB\Private\Error;
 
-
-    require_once __DIR__ ."/../Core/AppCommonVar.php";
+use Exception;
 
     //here put some error code
     // . PHP_EOL is a constant in PHP that represents the end of a line.
@@ -38,7 +37,6 @@ namespace ACEX_project\WEB\Private\Error;
     enum Resource_code : int{
         case general          = -1;
         case unknown          = -2;
-        case php              = -3;
 
         //resource
         case resource         = -10;
@@ -53,7 +51,6 @@ namespace ACEX_project\WEB\Private\Error;
         case session          = -19;
         case db_query         = -20;
         case file             = -21;
-        case directory        = -22;
 
         //action
         case action           = -50;
@@ -65,7 +62,7 @@ namespace ACEX_project\WEB\Private\Error;
         case db_select        = -500;
         case db_insert        = -501;
         case connection       = -60;
-        case invalidArgument  = -70;
+        case syntax           = -70;
     };
 
     /**
@@ -91,23 +88,21 @@ namespace ACEX_project\WEB\Private\Error;
         case configuration = -15;
         case denied        = -16;
         case abnomaly      = -17;
-        case failed        = -18;
-        case quantity      = -19;
+    }
+
+    enum Log_level{
+        case warning;
+        case fatal;
+        case error;
+        case info;
     }
 
     final class Error_code{
-        public function __construct(public Error_domain $type,public Resource_code $res,public Error_condition $detail){}
-        public function Get_log_name() : string{
-            if($this->res === Resource_code::php) return ini_get("error_log") ?? LOG_FILE_NAME. ".log";
-            return match($this->type) {
-                Error_domain::configuration, Error_domain::unknown,
-                Error_domain::object, Error_domain::server, 
-                Error_domain::child_proccess, Error_domain::general 
-                => LOG_FILE_NAME .".log",
-
-                Error_domain::database => LOG_DB_NAME. ".log",
-                Error_domain::credential, Error_domain::request, Error_domain::email => LOG_REQUEST_NAME. ".log",
-                default => LOG_FILE_NAME. ".log"
-            };
+        function __construct(public Error_domain $type,public Resource_code $res,public Error_condition $detail){}
+    
+        public function __toString()
+        {
+            return $this->type->name . "." . $this->res->name . "." . $this->detail->name;
         }
     }
+?>

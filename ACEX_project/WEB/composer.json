@@ -4,7 +4,6 @@
     "license": "MIT",
     "description": "Sistema Inteligente de Monitoramento Participativo Urbano com Análise Espacial e Priorização Algorítmica",
     "require": {
-        "vlucas/phpdotenv" : "^5.5",
-        "monolog/monolog" : "^3.0"
+        "vlucas/phpdotenv" : "^5.5"
     }
 }

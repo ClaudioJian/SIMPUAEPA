@@ -28,9 +28,10 @@ namespace ACEX_project\WEB\Private\Auth;
     use ACEX_project\WEB\Private\Error\Error_code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
+    use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
-    use Monolog\Level;
 
+    
     require_once __DIR__ . "/../Core/AppCommonVar.php";
 
     require_once __DIR__ . "/User/Logout.php";
@@ -125,8 +126,8 @@ namespace ACEX_project\WEB\Private\Auth;
             $_SESSION['anomaly'][] = $name;
             Log_internal(
                 new Error_code(Error_domain::request,Resource_code::user,Error_condition::abnomaly),
-                Level::Warning,
-                "Abnomaly detect: $name is different in middle of session - [previous:$_SESSION[$name] | current : $compared_value]"
+                Log_level::warning,
+                "Abnomaly detect: " . $name . " is different in middle of session - [previous:$_SESSION[$name] | current : $compared_value]"
             );
         }
         $_SESSION[$name] = $compared_value;
@@ -198,7 +199,7 @@ namespace ACEX_project\WEB\Private\Auth;
         session_destroy();
         Log_internal(
             new Error_code(Error_domain::request,Resource_code::session,Error_condition::expired),
-            Level::Warning,
+            Log_level::warning,
             "Invalid request to obsolete session"
         );
         

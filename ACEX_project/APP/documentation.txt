@@ -1,0 +1,5 @@
+Here put script for computer or mobile
+
+bin - put actual .exe .dll to export to users
+src - source code for generate real .dll .exe like .c .py .java
+lib - library to be used in src

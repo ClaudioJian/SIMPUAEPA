@@ -17,13 +17,11 @@ namespace ACEX_project\WEB\Private\Api\database;
     use ACEX_project\WEB\Private\Error\Error_Code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
+    use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
     use Exception;
-    use Monolog\Level;
-    use PDOStatement;
-    use Throwable;
-    use PDO;
-    use PDOException;
+use PDOStatement;
+use Throwable;
 
     use function ACEX_project\WEB\Private\Error\MyArray_check;
     use function ACEX_project\WEB\Private\Error\MyArray_missing_key;
@@ -45,9 +43,8 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
             try{
                 $conn = new PDO($dns,SERVER_USER,DB_PASSWORD);
             }catch(PDOException $e){
-                Handle_error(
+                Log_internal(
                     new Error_Code(Error_domain::database,Resource_code::connection,Error_condition::unknown),
-                    Level::Warning,
                     err_msg:$e->getMessage()
                 );
                 $conn = NULL;
@@ -72,12 +69,16 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
      */
     function Database_simple_insert(array $query_arr,bool $use_transaction = false) :bool|array{
         $conn = null;
-        try{
+        try{            
             $conn = Connect_database();
             $id_list = [];
-
-            if($conn === null) Handle_error(new Error_Code(Error_domain::request,Resource_code::credential,Error_condition::failed),Level::Critical,"Cannot create account because database failed to connect");
-            
+            if($conn === null){
+                Handle_error(
+                    new Error_Code(Error_domain::database,Resource_code::connection,Error_condition::unknown),
+                    Log_level::error,
+                    'Database connection failed when trying create account'
+                );
+            }
 
             if($use_transaction) $conn->beginTransaction();
 
@@ -85,10 +86,10 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
                 $table = $tb_query['table'] ?? MyArray_missing_key('table','Database_simple_insert','query_arr');
                 if(!$table instanceof All_tables){
                     Handle_error(
-                        new Error_Code(Error_domain::database,Resource_code::invalidArgument,Error_condition::type),
-                        Level::Critical,
-                        'In Database_simple_insert($query_arr):
-                        the value of "table" isnt [enum]All_tables.'
+                        new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::type),
+                        Log_level::fatal,
+                        'Invalid argument $query_arr in Database_simple_insert(): '
+                        . 'the value of "table" isnt All_tables.'
                     );
                 }
 
@@ -123,7 +124,7 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
 
         Log_internal(
             new Error_Code(Error_domain::database,$query,Error_condition::unknown),
-            Level::Error,
+            Log_level::error,
             $e->getMessage()
         );
 
@@ -178,9 +179,9 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
             $row_count = count($all_column_value);
             if($max_row_count === 0) $max_row_count = $row_count;
             else if($max_row_count !== $row_count) Handle_error(
-                new Error_Code(Error_domain::database,Resource_code::invalidArgument,Error_condition::quantity),
-                Level::Critical,
-                "In Query_insert_wrapper(): expected $max_row_count values for column $column->name, but only $row_count were provided." 
+                new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::incorrect),
+                Log_level::fatal,
+                'Invalid argument in Query_insert_wrapper(): expected '.$max_row_count.' values for column ' . $column->name . ', but only ' . $row_count . ' were provided.' 
             );
 
             //current array:
