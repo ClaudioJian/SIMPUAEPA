@@ -1,0 +1,4 @@
+aut - authentication for user
+api - script for connection to database
+core - script for generate html/js dependent of context and datas
+error - script that handle, define errors

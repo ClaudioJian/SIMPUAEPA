@@ -8,7 +8,6 @@
 */
 
 namespace ACEX_project\WEB\Private\Api\database;
-<<<<<<< HEAD
 require_once __DIR__ . "/Authorization_manager.php";
 use ACEX_project\WEB\Private\Error\Error_code;
 use ACEX_project\WEB\Private\Error\Error_condition;
@@ -17,20 +16,6 @@ use ACEX_project\WEB\Private\Error\Log_level;
 use ACEX_project\WEB\Private\Error\Resource_code;
 
 use function ACEX_project\WEB\Private\Error\Handle_error;
-=======
-    require_once __DIR__ . "/Authorization_manager.php";
-
-    require_once __DIR__ ."/../../Error/Error_manager.php";
-    use function ACEX_project\WEB\Private\Error\Handle_error;
-
-    require_once __DIR__ ."/../../Error/Error_code.php";
-    use ACEX_project\WEB\Private\Error\Error_code;
-    use ACEX_project\WEB\Private\Error\Error_condition;
-    use ACEX_project\WEB\Private\Error\Error_domain;
-    use ACEX_project\WEB\Private\Error\Log_level;
-    use ACEX_project\WEB\Private\Error\Resource_code;
-
->>>>>>> origin/BackEnd
 
     enum Query_type{
         case insert;
@@ -55,15 +40,9 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
      * be aware when duplicated or have whitelist and blacklist in same column: only last one validated
      *  TODO: redefine table name after model is done
     */
-<<<<<<< HEAD
     if(!defined("DATABASE_PERMISSION")){
         /** array of object permission */
         define("DATABASE_PERMISSION",
-=======
-    if(!\defined("DATABASE_PERMISSION")){
-        /** array of object permission */
-        \define("DATABASE_PERMISSION",
->>>>>>> origin/BackEnd
             [
                 new Permission(HOST,All_tables::user,[Query_type::select,Query_type::insert]),
             ]
@@ -81,11 +60,7 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         Column_belong_to_table($table,$input_columns);
         
         foreach($input_columns as $c) {
-<<<<<<< HEAD
             $listed = in_array($c,$origin_columns,true);
-=======
-            $listed = \in_array($c,$origin_columns,true);
->>>>>>> origin/BackEnd
             if((!$listed && $whitelist_column) || ($listed && !$whitelist_column)) return false;
         }
         return true;
@@ -109,13 +84,8 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
                 Handle_error(
                     new Error_code(Error_domain::database,Resource_code::db_column,Error_condition::type),
                     Log_level::fatal,
-<<<<<<< HEAD
                     'Invalid argument in Columns_belong_table:
                     Requested column dont belong table['.$table_name.'].'
-=======
-                    "Invalid argument in Columns_belong_table:
-                    Requested column dont belong table [$table_name]."
->>>>>>> origin/BackEnd
                 );
             }
         }

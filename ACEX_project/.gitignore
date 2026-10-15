@@ -1,5 +1,3 @@
 .env
 .env.*
 vendor/
-
-WEB/Private/Uploads/**/**/*

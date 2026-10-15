@@ -15,24 +15,13 @@ use Exception;
      * fatal   - Log the error, return HTTP 500 and terminate the request.
      * error   - Log the error and throw an exception.
      * @param Log_level $lvl fatal: end request | error: throw new Exception() | others: only log the message
-<<<<<<< HEAD
      */
     function Handle_error(Error_code $code,Log_level $lvl = Log_level::error,string $err_msg = "") : void{
-=======
-     * @param string $data the data to send to browser when is fatal error
-     */
-    function Handle_error(Error_code $code,Log_level $lvl = Log_level::error,string $err_msg = "", string $data = "") : void{
->>>>>>> origin/BackEnd
         Log_internal($code,$lvl,$err_msg);
 
         switch($lvl){
             case Log_level::fatal :{
-<<<<<<< HEAD
                 http_response_code(500);
-=======
-                \http_response_code(500);
-                if($data!=="") echo $data;
->>>>>>> origin/BackEnd
                 exit();                
             }
             case Log_level::error :{
@@ -55,21 +44,12 @@ use Exception;
      */
     function Log_internal(Error_code $code,Log_level $lvl = Log_level::error,string $err_msg = ""){
         //day day/month/year time in milisec(hour:min:sec.ms)
-<<<<<<< HEAD
         $curr_t = date('D d/M/Y H:i:s'). sprintf('.%03d', (int)((microtime(true) * 1000) % 1000));
         
         $extra_msg = $err_msg === '' ? '' : "- <<".$err_msg.">>";
 
         //log this error somewhere
         $log_msg = sprintf('[%s] [%s] %s %s',$curr_t,$lvl->name,(string)$code,$extra_msg);
-=======
-        $curr_t = \date('D d/M/Y H:i:s'). \sprintf('.%03d', (int)((\microtime(true) * 1000) % 1000));
-        
-        $extra_msg = $err_msg === '' ? '' : "- <<$err_msg>>";
-
-        //log this error somewhere
-        $log_msg = \sprintf('[%s] [%s] %s %s',$curr_t,$lvl->name,(string)$code,$extra_msg);
->>>>>>> origin/BackEnd
         //not implanted yet
     }
 
@@ -91,11 +71,7 @@ use Exception;
     };
 
     function MyArray_check(mixed $target, string $msg):void{
-<<<<<<< HEAD
         if(!is_array($target)){
-=======
-        if(!\is_array($target)){
->>>>>>> origin/BackEnd
             Handle_error(
                 new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::type),
                 Log_level::fatal,

@@ -8,15 +8,12 @@
 namespace ACEX_project\WEB\Private\Auth\User;
 
 
-<<<<<<< HEAD
 
 
 
 use Exception;
 use Throwable;
 
-=======
->>>>>>> origin/BackEnd
 require_once __DIR__ . "/../../Api/database/database_manager.php";
 
 require_once __DIR__ . "/../../Api/database/database_dictionary.php";
@@ -41,13 +38,8 @@ use function ACEX_project\WEB\Private\Auth\New_session;
         $response = Internal_Logout();
         if($response===null) return;
 
-<<<<<<< HEAD
         header('Content-Type: '.Construct_MIME(MIME['application']['json']));
         http_response_code(200);
-=======
-        \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
-        \http_response_code(200);
->>>>>>> origin/BackEnd
         echo json_encode([...$response,'reason'=>0,'success'=>0]);
     }
 
@@ -83,9 +75,5 @@ use function ACEX_project\WEB\Private\Auth\New_session;
         New_session();
         unset($_SESSION['uid']);
         return $response;
-<<<<<<< HEAD
     }
 ?>
-=======
-    }
->>>>>>> origin/BackEnd
