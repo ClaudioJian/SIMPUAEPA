@@ -11,6 +11,7 @@ namespace ACEX_project\WEB\Private\Auth\User;
 
 
 
+use ACEX_project\WEB\Private\Error\Error_code;
 use Exception;
 use Throwable;
 
@@ -21,7 +22,10 @@ use function ACEX_project\WEB\Private\Api\database\Handle_query_fail;
 require_once __DIR__ . "/../../Api/database/database_dictionary.php";
 use ACEX_project\WEB\Private\Api\database\All_tables;
 use ACEX_project\WEB\Private\Api\database\tb_user_columns;
-
+use ACEX_project\WEB\Private\Error\Error_condition;
+use ACEX_project\WEB\Private\Error\Error_domain;
+use ACEX_project\WEB\Private\Error\Resource_code;
+use Monolog\Level;
 
 require_once __DIR__ ."/../../Core/MIME_type.php";
 use function ACEX_project\WEB\Private\Core\Construct_MIME;
@@ -35,15 +39,23 @@ use function ACEX_project\WEB\Private\Auth\New_session;
 require_once __DIR__ . '/../password_handler.php';
 use function ACEX_project\WEB\Private\Auth\Secure_password_verify;
 
+require_once __DIR__ .'/../../Error/Error_manager.php';
+
+require_once __DIR__ .'/../../Error/Error_code.php';
+use function ACEX_project\WEB\Private\Error\Handle_error;
+use function ACEX_project\WEB\Private\Error\Log_internal;
+
 require_once __DIR__ . "/User_data.php";
 
 
     function Login(array $request_body = []){
         if(Is_logged()) {
-            header('Content-type: '.Construct_MIME(MIME['application']['json']));
+            \header('Content-type: '.Construct_MIME(MIME['application']['json']));
             echo json_encode(['success'=>1,'uid'=>$_SESSION['uid']]);
             exit();
         }
+
+        
         
         $conn = null;
         try{
@@ -51,6 +63,12 @@ require_once __DIR__ . "/User_data.php";
 
             $email = $request_body['email'] ?? '';
             $password = $request_body['password'] ?? '';
+
+            Log_internal(
+                new Error_code(Error_domain::request,Resource_code::user,Error_condition::attempt),
+                Level::Notice,
+                "Login with email:[$email]"
+            );
 
             Validate_enroll_data($email,$password);
             Get_user_data_authorized();
@@ -61,17 +79,31 @@ require_once __DIR__ . "/User_data.php";
             Handle_query_fail($e,$conn);
         }
 
-        header('Content-type: '.Construct_MIME(MIME['application']['json']));
-        echo json_encode(['success'=>0,'uid'=>$_SESSION['uid']]);
+        $uid = $_SESSION['uid'];
+        \header('Content-type: '.Construct_MIME(MIME['application']['json']));
+        echo json_encode(['success'=>0,'uid'=>$uid]);
+
+        Log_internal(
+            new Error_code(Error_domain::request,Resource_code::user,Error_condition::success),
+            Level::Notice,
+            "Logged sucessfully with id:[$uid]"
+        );
+
         exit();
     }
 
     function Validate_login_credential(string $email, string $raw_passwd):int{
         $response = ['success'=>0,'email'=>4,'password'=>4];
         $conn = Connect_database();
+        if($conn === null) {
+            Handle_error(new Error_code(Error_domain::credential,Resource_code::db_select,Error_condition::failed),
+                Level::Critical,
+                "Validatiation failed because cannot connect to database"
+            );
+        }
 
         $query = "SELECT " .
-            implode(", ",[tb_user_columns::id_user->name, tb_user_columns::email->name, tb_user_columns::password->name]).
+            \implode(", ",[tb_user_columns::id_user->name, tb_user_columns::email->name, tb_user_columns::password->name]).
             " FROM ". All_tables::user->name. 
             " WHERE ". tb_user_columns::email->name ." = :email"
         ;
@@ -81,8 +113,8 @@ require_once __DIR__ . "/User_data.php";
         $smtm->execute([':email'=>$email]);
 
         if($smtm->rowCount()<1) {
-            http_response_code(400);
-            header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+            \http_response_code(400);
+            \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
             echo json_encode([...$response,'email'=>2,'success'=>-1]);
             exit();
         }
@@ -91,8 +123,8 @@ require_once __DIR__ . "/User_data.php";
         $stored_passwd = $row[tb_user_columns::password->name];
 
         if(!Secure_password_verify($raw_passwd,$stored_passwd)){
-            http_response_code(400);
-            header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+            \http_response_code(400);
+            \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
             echo json_encode([...$response,'success'=>-1,'password'=>2]);
             exit();
         }
@@ -109,4 +141,3 @@ require_once __DIR__ . "/User_data.php";
     function Is_logged():bool{
         return isset($_SESSION['uid']);
     }
-?>

@@ -28,8 +28,8 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 use ACEX_project\WEB\Private\Error\Error_code;
 use ACEX_project\WEB\Private\Error\Error_condition;
 use ACEX_project\WEB\Private\Error\Error_domain;
-use ACEX_project\WEB\Private\Error\Log_level;
 use ACEX_project\WEB\Private\Error\Resource_code;
+use Monolog\Level;
 
     /**
      * get user data: email, name, password[optional] from id
@@ -39,31 +39,33 @@ use ACEX_project\WEB\Private\Error\Resource_code;
      */
     function Get_user_data(bool $passwd = false, string $id = "") : \PDOStatement | null{
         try{
-        Get_user_data_authorized();
+            Get_user_data_authorized();
 
-        if($id===''){
-            if(session_status()!==PHP_SESSION_ACTIVE) throw new Exception('No active session');
-            else $id = $_SESSION['uid'];
-        }
+            if($id===''){
+                if(\session_status()!==PHP_SESSION_ACTIVE) throw new Exception('No active session');
+                else $id = $_SESSION['uid'];
+            }
 
 
-        $conn = Connect_database();
+            $conn = Connect_database();
+            if($conn === null) return null;
 
-        $selected_columns = [tb_user_columns::name_user->name, tb_user_columns::email->name];
-        if($passwd) $selected_columns[] = tb_user_columns::password->name;
+            $selected_columns = [tb_user_columns::name_user->name, tb_user_columns::email->name];
+            if($passwd) $selected_columns[] = tb_user_columns::password->name;
 
-        $query = "SELECT " .
-            implode(", ",$selected_columns).
-            " FROM ". All_tables::user->name. 
-            " WHERE ". tb_user_columns::id_user->name ." = :uid"
-        ;
-        $smtm = $conn->prepare($query);
-        if($smtm===false) throw new Exception('in Create_account(): Database server failed to prepare statement for select query');
+            $query = "SELECT " .
+                \implode(", ",$selected_columns).
+                " FROM ". All_tables::user->name. 
+                " WHERE ". tb_user_columns::id_user->name ." = :uid"
+            ;
+            $smtm = $conn->prepare($query);
+            if($smtm===false) throw new Exception('in Create_account(): Database server failed to prepare statement for select query');
 
-        $smtm->execute([':uid'=>$id]);
-        return $smtm;
+            $smtm->execute([':uid'=>$id]);
+            
+            return $smtm;
         }catch(Throwable $e){
-        return null;
+            return null;
         }
     }
 
@@ -81,9 +83,8 @@ use ACEX_project\WEB\Private\Error\Resource_code;
         
             Handle_error(
                 new Error_code(Error_domain::database,Resource_code::db_select,Error_condition::unauthorized),
-                Log_level::fatal,
+                Level::Critical,
                 'Login failed: ' .All_tables::user->name. ' | user:'. HOST. $colums_denied
             );
         }
     }
-?>

@@ -8,25 +8,30 @@
 */
 
 namespace ACEX_project\WEB\Private\Api\database;
-    use PDO;
-    use PDOException;
+
 
     require_once __DIR__ . "/../../Core/AppCommonVar.php";
+
     require_once __DIR__ . "/../../Error/Error_code.php";
-    require_once __DIR__ . "/../../Error/Error_manager.php";
     use ACEX_project\WEB\Private\Error\Error_Code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
-    use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
+
+    require_once __DIR__ . "/../../Error/Error_manager.php";
+    use function ACEX_project\WEB\Private\Error\Handle_error;
+    use function ACEX_project\WEB\Private\Error\Log_internal;
+    
     use Exception;
-use PDOStatement;
-use Throwable;
+    use Monolog\Level;
+    use PDOStatement;
+    use Throwable;
+    use PDO;
+    use PDOException;
 
     use function ACEX_project\WEB\Private\Error\MyArray_check;
     use function ACEX_project\WEB\Private\Error\MyArray_missing_key;
-    use function ACEX_project\WEB\Private\Error\Handle_error;
-use function ACEX_project\WEB\Private\Error\Log_internal;
+
 
     /**
      * connect to database.
@@ -43,8 +48,9 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
             try{
                 $conn = new PDO($dns,SERVER_USER,DB_PASSWORD);
             }catch(PDOException $e){
-                Log_internal(
+                Handle_error(
                     new Error_Code(Error_domain::database,Resource_code::connection,Error_condition::unknown),
+                    Level::Warning,
                     err_msg:$e->getMessage()
                 );
                 $conn = NULL;
@@ -62,23 +68,19 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
      *     table: All_tables,
      *     insert: list<array{
      *         column: \UnitEnum,
-     *         value: List<mixed>
+     *         value: list<mixed>
      *     }>
      * }> $query_arr
      * @return bool|list<array{table:All_tables,id:string}> false if failed else return inserted id(multi row return FIRST id)
      */
     function Database_simple_insert(array $query_arr,bool $use_transaction = false) :bool|array{
         $conn = null;
-        try{            
+        try{
             $conn = Connect_database();
             $id_list = [];
-            if($conn === null){
-                Handle_error(
-                    new Error_Code(Error_domain::database,Resource_code::connection,Error_condition::unknown),
-                    Log_level::error,
-                    'Database connection failed when trying create account'
-                );
-            }
+
+            if($conn === null) Handle_error(new Error_Code(Error_domain::request,Resource_code::credential,Error_condition::failed),Level::Critical,"Cannot create account because database failed to connect");
+            
 
             if($use_transaction) $conn->beginTransaction();
 
@@ -86,10 +88,10 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
                 $table = $tb_query['table'] ?? MyArray_missing_key('table','Database_simple_insert','query_arr');
                 if(!$table instanceof All_tables){
                     Handle_error(
-                        new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::type),
-                        Log_level::fatal,
-                        'Invalid argument $query_arr in Database_simple_insert(): '
-                        . 'the value of "table" isnt All_tables.'
+                        new Error_Code(Error_domain::database,Resource_code::invalidArgument,Error_condition::type),
+                        Level::Critical,
+                        'In Database_simple_insert($query_arr):
+                        the value of "table" isnt [enum]All_tables.'
                     );
                 }
 
@@ -124,12 +126,12 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
 
         Log_internal(
             new Error_Code(Error_domain::database,$query,Error_condition::unknown),
-            Log_level::error,
+            Level::Error,
             $e->getMessage()
         );
 
         $conn=null;
-        http_response_code(500);
+        \http_response_code(500);
         exit();
     }
 
@@ -176,12 +178,12 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
             $all_column_value = $column_arr['value'] ?? MyArray_missing_key('value','Query_insert_wrapper','all_param');
             MyArray_check($all_column_value ,'Invalid argument $all_param: the value isnt array');
 
-            $row_count = count($all_column_value);
+            $row_count = \count($all_column_value);
             if($max_row_count === 0) $max_row_count = $row_count;
             else if($max_row_count !== $row_count) Handle_error(
-                new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::incorrect),
-                Log_level::fatal,
-                'Invalid argument in Query_insert_wrapper(): expected '.$max_row_count.' values for column ' . $column->name . ', but only ' . $row_count . ' were provided.' 
+                new Error_Code(Error_domain::database,Resource_code::invalidArgument,Error_condition::quantity),
+                Level::Critical,
+                "In Query_insert_wrapper(): expected $max_row_count values for column $column->name, but only $row_count were provided." 
             );
 
             //current array:
@@ -204,12 +206,12 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
         }
         
         // [[x,y,z],[x,y,z]] => [(x,y,z),(x,y,z)]
-        foreach($value_names as $row) {$row_names[] = '(' . implode(",",$row) . ')';}
+        foreach($value_names as $row) {$row_names[] = '(' . \implode(",",$row) . ')';}
         
         //[(x,y,z),(x,y,z)]=>(x,y,z),(x,y,z)
         return [
-            'column'=> '(' . implode(",",$column_names) . ')',
-            'value'=> implode(",",$row_names),
+            'column'=> '(' . \implode(",",$column_names) . ')',
+            'value'=> \implode(",",$row_names),
             'binded_value'=> $binded_values
         ];
     }
@@ -224,7 +226,7 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
 
     /**if type is null, type should using default type */
     function Find_php_param_from_value(mixed $value) : null|int{
-        $type = gettype($value);
+        $type = \gettype($value);
         switch($type){
             case 'boolean': case 'bool': 
                 return PDO::PARAM_BOOL;

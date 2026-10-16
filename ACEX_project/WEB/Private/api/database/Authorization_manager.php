@@ -15,9 +15,9 @@ namespace ACEX_project\WEB\Private\Api\database;
     use ACEX_project\WEB\Private\Error\Error_Code;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
-    use ACEX_project\WEB\Private\Error\Log_level;
     use ACEX_project\WEB\Private\Error\Resource_code;
     use InvalidArgumentException;
+    use Monolog\Level;
 
     use function ACEX_project\WEB\Private\Error\Handle_error;
 
@@ -36,15 +36,8 @@ namespace ACEX_project\WEB\Private\Api\database;
         return false;
     }
     
-    /**
-     * TODO: make colmn,user,table into enum
-     */
     class Permission{
         public readonly string $user_name;
-        public readonly All_tables $table;
-        public readonly array $column;
-        public readonly array $query_type;
-        public readonly bool $whitelist_column;
 
         /**
          * @param Query_type[] $query_type
@@ -52,7 +45,7 @@ namespace ACEX_project\WEB\Private\Api\database;
          *
          * Empty $column means all columns.
          */
-        public function __construct(string $user_name, All_tables $table,array $query_type, array $column=[], bool $whitelist_column= false)
+        public function __construct(string $user_name,public readonly All_tables $table,public readonly array $query_type, public readonly array $column=[], public readonly bool $whitelist_column= false)
         {
             if($query_type === []) throw new InvalidArgumentException('At least one query type is required');
             foreach($query_type as $type){
@@ -64,18 +57,14 @@ namespace ACEX_project\WEB\Private\Api\database;
             foreach ($column as $c) {
                 if (!$c instanceof \UnitEnum || $c::class !== $table_enum_name) {
                     Handle_error(
-                        new Error_Code(Error_domain::database,Resource_code::db_column,Error_condition::type),
-                        Log_level::fatal,
-                        'Invalid argument in Permission::__construct(): Requested table does not have one of the specified columns.'
+                        new Error_Code(Error_domain::database,Resource_code::db_column,Error_condition::missing),
+                        Level::Critical,
+                        "Invalid argument in Permission::__construct(): Requested table $table->name does not have one of the specified columns."
                     );
                 }
             }
 
-            $this->user_name = strtolower($user_name);
-            $this->table = $table;
-            $this->column = $column;
-            $this->query_type = $query_type;
-            $this->whitelist_column = $whitelist_column;
+            $this->user_name = \strtolower($user_name);
         }
 
 
@@ -86,12 +75,12 @@ namespace ACEX_project\WEB\Private\Api\database;
             if($table !== $this->table || $query_type ===[]) return false;
             foreach($query_type as $type){
                 if(!$type instanceof Query_type) Throw_invalid_query_type("Permission::Is_permitted");
-                if(!in_array($type,$this->query_type,true)) {
+                if(!\in_array($type,$this->query_type,true)) {
                     return false;
                 }
             }
 
-            $user_name = strtolower($user_name);
+            $user_name = \strtolower($user_name);
             if($user_name !== $this->user_name) return false;
             
 
@@ -106,13 +95,8 @@ namespace ACEX_project\WEB\Private\Api\database;
 
     function Throw_invalid_query_type(string $func_name){
         Handle_error(
-            new Error_Code(Error_domain::database,Resource_code::syntax,Error_condition::type),
-            Log_level::fatal,
-            'Invalid argument in '. $func_name .': $query_type must contain only Query_type enum values.'
+            new Error_Code(Error_domain::database,Resource_code::invalidArgument,Error_condition::type),
+            Level::Critical,
+            "In $func_name() : \$query_type must contain only [enum]Query_type enum values."
         );
     }
-
-
-
-
-?>
