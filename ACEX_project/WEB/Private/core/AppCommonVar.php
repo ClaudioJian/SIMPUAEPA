@@ -46,7 +46,8 @@ namespace ACEX_project\WEB\Private\Core;
             !File_storation_path::Await_validation->Initialize_directory() ||
             !File_storation_path::profiles->Initialize_directory() ||
             !File_storation_path::Maps->Initialize_directory() ||
-            !File_storation_path::Error_logs->Initialize_directory()
+            !File_storation_path::Error_logs->Initialize_directory() ||
+            !File_storation_path::Rate_track_ip->Initialize_directory()
         ) {
             Handle_error(
                 new Error_code(Error_domain::server,Resource_code::directory,Error_condition::missing),
@@ -99,6 +100,7 @@ namespace ACEX_project\WEB\Private\Core;
                     'PHP_PATH',
                     'IMG_PROFILE_MAX_SIZE',
                     'IMG_MAP_MAX_SIZE',
+                    'RATE_FILE_MAX_QUANT',
                 ];
                 $required_int_env = [
                     'DATABASE_PORT',
@@ -107,6 +109,7 @@ namespace ACEX_project\WEB\Private\Core;
                     'SESSION_ABSOLUTE_TIME',
                     'CSRF_TOKEN_MAXLIFE',
                     'REQUEST_MAX_LIFE',
+                    'RATE_FILE_MAX_QUANT',
                 ];
             }
 
@@ -166,6 +169,10 @@ namespace ACEX_project\WEB\Private\Core;
             define("IMG_MAP_MAX_SIZE",$_ENV["IMG_MAP_MAX_SIZE"]);
             define("IMG_PROFILE_MAX_SIZE",$_ENV['IMG_PROFILE_MAX_SIZE']);                
              
+            //rate limit
+            $rate_fquant = (int)$_ENV['RATE_FILE_MAX_QUANT'];
+            if($rate_fquant <=0) $rate_fquant = 1;
+            define('RATE_FILE_MAX_QUANT',$rate_fquant);
 
             $home_location = ltrim($_ENV['HOME_PAGE_LOCATION'],'/');
             define('HOME_PAGE_LOCATION',$home_location);

@@ -13,6 +13,9 @@ namespace ACEX_project\WEB\Private\Core;
 
     enum File_storation_path: string{
         case Error_logs = __DIR__ . "/../../../Log";
+        case Rate_track_logs = __DIR__ . "/Rate_track";
+            case Rate_track_ip = __DIR__ . "/Rate_track/IP";
+            
             case User_uploads = __DIR__ . "/../Uploads/";
                 case Temp = __DIR__ . "/../Uploads/tmp";
                     case Await_sanitation = __DIR__ . "/../Uploads/tmp/Awaiting_sanitation";

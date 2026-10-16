@@ -11,10 +11,17 @@ namespace ACEX_project\WEB\Private\Core\Security;
   require_once __DIR__ . '/../../Api/NonceRequest.php';
   require_once __DIR__ . '/../../Auth/session_manager.php';
 
-  use function ACEX_project\WEB\Private\Api\Nonce_request_clean;
+  use ACEX_project\WEB\Private\Error\Error_code;
+use ACEX_project\WEB\Private\Error\Error_condition;
+use ACEX_project\WEB\Private\Error\Error_domain;
+use ACEX_project\WEB\Private\Error\Resource_code;
+use Monolog\Level;
+
+use function ACEX_project\WEB\Private\Api\Nonce_request_clean;
 
   require_once __DIR__ ."/../../Core/MIME_type.php";
   use function ACEX_project\WEB\Private\Core\Construct_MIME;
+use function ACEX_project\WEB\Private\Error\Handle_error;
 
   function Validate_request(){
     Nonce_request_clean();
@@ -48,12 +55,44 @@ namespace ACEX_project\WEB\Private\Core\Security;
       exit();
     };    
 
+    //get ip and reject invalid ip
+    $ip = $_SERVER['REMOTE_ADDR'];
+    if(!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+
+      if(!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
+        Handle_error(
+          new Error_code(Error_domain::request,Resource_code::connection,Error_condition::invalid),
+          Level::Warning,
+          "Invalid ip detected[$ip]",
+          '');
+          \http_response_code(400);
+          exit();
+      }
+
     //CSRF protection
     $headers = \array_change_key_case(\getallheaders(), CASE_LOWER);
     if($headers===false) $headers=[];
     
     CSRF_handle_fetch_API();
     CSRF_validate();
+  }
+
+  /**
+   * Exit if ip is invalid, returning 400
+   * @return void
+   */
+  function Validate_ip():void{
+    if(!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+
+      if(!filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
+        Handle_error(
+          new Error_code(Error_domain::request,Resource_code::connection,Error_condition::invalid),
+          Level::Warning,
+          "Invalid ip detected[$ip]",
+        );
+        \http_response_code(400);
+        exit();
+      }
   }
 
 

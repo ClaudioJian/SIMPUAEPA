@@ -118,6 +118,9 @@ namespace ACEX_project\WEB\Private\Auth;
     function Update_session():void{
         $_SESSION['last_active_time'] = \time();
         $ip = $_SERVER['REMOTE_ADDR'];
+        if(!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+
+        
         $user_agent = $_SERVER['HTTP_USER_AGENT'];
         
         Monitor_session('ip',$ip);
