@@ -1,6 +1,9 @@
 <?php 
 
 namespace ACEX_project\API;
+    require_once __DIR__ . "/../WEB/Private/Core/AppCommonVar.php";  
+
+
     require_once __DIR__ ."/router_class.php";
     require_once __DIR__ . "/../WEB/Private/Core/AppCommonVar.php";  
 
@@ -12,6 +15,11 @@ namespace ACEX_project\API;
 
     require_once __DIR__ . "/../WEB/Private/Auth/User/Logout.php";
     use function ACEX_project\WEB\Private\Auth\User\Logout;
+    use function ACEX_project\WEB\Private\Auth\User\Upload_map_img;
+    use function ACEX_project\WEB\Private\Auth\User\Upload_profile;
+
+    require_once __DIR__ . "/../WEB/Private/Auth/User/Upload.php";
+
 
     require_once __DIR__ . "/../WEB/Private/Core/Security/CSRF_manager.php";
     use function ACEX_project\WEB\Private\Core\Security\Handle_CSRF_GET;
@@ -25,24 +33,14 @@ use function ACEX_project\WEB\Private\Core\Security\Validate_uploaded_file;
 
 
     //routing logic
-    $route = array(
-        new Route("/csrf",'POST',function(){
-            Handle_CSRF_GET();
-        }),
-        new Route("/subscribe",'POST',function(){
-            Create_account();
-        }),
-        new Route("/login",'POST',function(){
-            Login();
-        }),
-        new Route('/logout',"POST",function(){
-            Logout();
-        },require_login:true),
+    $route = [
+        new Route("/csrf",'POST',Handle_CSRF_GET(...)),
+        new Route("/subscribe",'POST',Create_account(...)),
+        new Route("/login",'POST',Login(...)),
+        new Route('/logout',"POST",Logout(...), require_login:true),
+        new Route('/image/profile',"POST",Upload_profile(...),require_login:true),
+        new Route('/image/map',"POST",Upload_map_img(...),require_login:true),
+    ];
 
-        new Route('/fileuploadtest',"POST",function(){
-            Validate_uploaded_file(['png']);
-        })
-    );
 
     Route_start($route);
-?>

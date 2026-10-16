@@ -32,34 +32,68 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 
     if(!defined('INITIALIZED')) Initialize_value();
 
-
     function Initialize_value(){
         $dotenv = Dotenv::createImmutable(__DIR__. "/../../",[".env",'.env.development','.env.production']);
         $dotenv->safeLoad();
-        try{
-            $dotenv->required([
-                'DATABASE_NAME',
-                'DATABASE_PASSWORD',
-                'DATABASE_HOST',
-                'DATABASE_USER',
-                'DATABASE_PORT',
-                'SESSION_OBSOLETE_MAXLIFE',
-                'SESSION_ACTIVE_TIME',
-                'SESSION_ABSOLUTE_TIME',
-                'CSRF_TOKEN_MAXLIFE',
-                'CSRF_TOKEN_HEADER_NAME',
-                'REQUEST_MAX_LIFE',
-                'HOME_PAGE_LOCATION',
-            ])->notEmpty();
 
-            $dotenv->required([
-                'DATABASE_PORT',
-                'SESSION_OBSOLETE_MAXLIFE',
-                'SESSION_ACTIVE_TIME',
-                'SESSION_ABSOLUTE_TIME',
-                'CSRF_TOKEN_MAXLIFE',
-                'REQUEST_MAX_LIFE'
-            ])->isInteger();        
+        $app_log_fname = $_ENV["LOG_FILE_NAME"] ?? "SIUMP_log";
+        define("LOG_FILE_NAME", $app_log_fname);
+
+        define("LOG_DB_NAME", $_ENV["LOG_DB_NAME"] ?? LOG_FILE_NAME);
+        define("LOG_REQUEST_NAME", $_ENV["LOG_REQUEST_NAME"] ?? LOG_FILE_NAME);
+
+        $php_log_name = $_ENV['LOG_PHP_ERROR'] ?? '';
+        define("LOG_PHP_ERROR",empty($php_log_name) ? "php_errors": $php_log_name);
+
+        if($php_log_name !== '') ini_set("error_log",File_storation_path::Error_logs->value . DIRECTORY_SEPARATOR . LOG_PHP_ERROR . ".log");
+
+        try{
+            if(\defined('FILE_REWRITE') && FILE_REWRITE === true){
+                $required_env =  
+                [
+                    "IMG_PROFILE_FINAL_RESOLUTION",
+                    'IMG_MAP_FINAL_RESOLUTION',
+                    'IMG_FINAL_QUALITY',
+                ];
+                $required_int_env = [
+                    'IMG_FINAL_QUALITY'
+                ];
+            }else{
+                $required_env = [
+                    'DATABASE_NAME',
+                    'DATABASE_PASSWORD',
+                    'DATABASE_HOST',
+                    'DATABASE_USER',
+                    'DATABASE_PORT',
+                    'SESSION_OBSOLETE_MAXLIFE',
+                    'SESSION_ACTIVE_TIME',
+                    'SESSION_ABSOLUTE_TIME',
+                    'CSRF_TOKEN_MAXLIFE',
+                    'CSRF_TOKEN_HEADER_NAME',
+                    'REQUEST_MAX_LIFE',
+                    'HOME_PAGE_LOCATION',
+                    'PHP_PATH',
+                    'IMG_PROFILE_MAX_SIZE',
+                    'IMG_MAP_MAX_SIZE',
+                ];
+                $required_int_env = [
+                    'DATABASE_PORT',
+                    'SESSION_OBSOLETE_MAXLIFE',
+                    'SESSION_ACTIVE_TIME',
+                    'SESSION_ABSOLUTE_TIME',
+                    'CSRF_TOKEN_MAXLIFE',
+                    'REQUEST_MAX_LIFE',
+                ];
+            }
+
+            //global
+            $required_env = [...$required_env,'IMG_COMPRESS','LOG_FILE_NAME','LOG_PHP_ERROR'];
+            $required_bool_env = [...$required_bool_env,'IMG_COMPRESS'];
+
+            $dotenv->required($required_env)->notEmpty();
+
+            if($required_int_env !== []) $dotenv->required($required_int_env)->isInteger();    
+            if($required_bool_env !== []) $dotenv->required($required_bool_env)->isBoolean();      
         }catch(\Dotenv\Exception\ValidationException $e){
             Handle_error(
                 new Error_code(Error_domain::configuration,Resource_code::env,Error_condition::missing),
@@ -68,15 +102,9 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
             );
         }
 
-        define('DB_NAME', $_ENV['DATABASE_NAME']);
-        define('DB_PASSWORD', $_ENV['DATABASE_PASSWORD']);
-        define('HOST', $_ENV['DATABASE_HOST']);
-        define('SERVER_USER', $_ENV['DATABASE_USER']);
-        define('DB_PORT', (int)$_ENV['DATABASE_PORT']);
+        //global
+        define('IMG_COMPRESS', $_ENV['IMG_COMPRESS'] === "false" ? false : true);
 
-        define('SESSION_OBSOLETE_MAXLIFE', (int)$_ENV['SESSION_OBSOLETE_MAXLIFE']);
-        define('SESSION_ACTIVE_TIME', (int)$_ENV['SESSION_ACTIVE_TIME']);
-        define('SESSION_ABSOLUTE_TIME', (int)$_ENV['SESSION_ABSOLUTE_TIME']);
 
         define('CSRF_TOKEN_MAXLIFE', (int)$_ENV['CSRF_TOKEN_MAXLIFE']);
         define('CSRF_TOKEN_VALIDATE_METHOD', ['POST','PATCH','DELETE','PUT']);

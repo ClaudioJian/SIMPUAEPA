@@ -7,6 +7,10 @@ php_value session.cookie_samesite "Strict"
 php_value session.sid_length 32
 php_value session.cookie_path "/"
 
+php_value display_errors Off
+php_value display_startup_errors Off
+php_value log_errors On
+
 #every request is treat as if it want to go Public_html folder, so the folder like ACEX_Project is hidden from client
 RewriteEngine On
 

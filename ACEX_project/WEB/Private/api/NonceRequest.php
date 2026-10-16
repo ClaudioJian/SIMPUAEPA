@@ -1,6 +1,16 @@
 <?php 
 namespace ACEX_project\WEB\Private\Api;
 
+    require_once __DIR__ ."/../Error/Error_manager.php";
+    require_once __DIR__ ."/../Error/Error_code.php";
+    use ACEX_project\WEB\Private\Error\Error_code;
+use ACEX_project\WEB\Private\Error\Error_condition;
+use ACEX_project\WEB\Private\Error\Error_domain;
+use ACEX_project\WEB\Private\Error\Resource_code;
+use Monolog\Level;
+
+    use function ACEX_project\WEB\Private\Error\Log_internal;
+
     /**
      * Make the current request nonce. if the client doesn't provide cnonce, then server will send 401 unathourized and send snonce, then client should resend same request but with cnonce, snonce, time token
      * If client send request with nonce, the validation will be executed.
@@ -60,8 +70,8 @@ namespace ACEX_project\WEB\Private\Api;
 
         $message = $cnonce . NONCE_SEP . $snonce . NONCE_SEP . $cgen_time . NONCE_SEP . $A2;
         $expected = hash('SHA256',$message);
-        if(!hash_equals($expected,$client_response)) {
-            Nonce_token_invalid(false);
+        if(!\hash_equals($expected,$client_response)) {
+            Nonce_token_invalid(false,false,"Received nonce doesn't match the value calculated by the server");
         }
     }
     /**
@@ -98,9 +108,9 @@ namespace ACEX_project\WEB\Private\Api;
         $expected_time = $_SESSION['nonce_request'][$request_snonce]['cgen_time'];
         $now = (int) floor(microtime(true) * 1000);
         $age =  $now - $cgen_time;
-        if($age <0 || $age > REQUEST_MAX_LIFE || $expected_time != $cgen_time) {
-            header('vary:x-cgen-time');
-            Nonce_token_invalid(true);
+        if($age <0 || $age > REQUEST_MAX_LIFE*1000 || $expected_time != $cgen_time) {
+            \header('vary: x-cgen-time');
+            Nonce_token_invalid(true,false,"Invalid client request timestamp: is outside the permitted lifetime(greater than REQUEST_MAX_LIFE), negative client time or does not match the original request timestamp");
         }
     }
 
@@ -111,8 +121,8 @@ namespace ACEX_project\WEB\Private\Api;
     function Validate_request_snonce(string $snonce){
         if($snonce === '' || $snonce === null) Nonce_token_invalid(false,true);
         //ensure exist
-        if(!isset($_SESSION['nonce_request']) || !is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
-        if(!isset($_SESSION['nonce_request'][$snonce])) Nonce_token_invalid(false);
+        if(!isset($_SESSION['nonce_request']) || !\is_array($_SESSION['nonce_request'])) $_SESSION['nonce_request'] = [];
+        if(!isset($_SESSION['nonce_request'][$snonce])) Nonce_token_invalid(false,false,"Requested challenge doesn't exist in server");
 
         $random = $_SESSION['nonce_request'][$snonce]['random_val'];
         $snonce_gen_time = $_SESSION['nonce_request'][$snonce]['sgen_time'];
@@ -120,9 +130,9 @@ namespace ACEX_project\WEB\Private\Api;
 
 
         if(Clean_expired_snonce($snonce_gen_time,$snonce) ||
-            !hash_equals($snonce,$expected_snonce)
-        ) Nonce_token_invalid(false);
-        if($_SESSION['nonce_request'][$snonce]['used'] === true) Nonce_token_invalid(true);
+            !\hash_equals($snonce,$expected_snonce)
+        ) Nonce_token_invalid(false, false, "requested snonce token has expired or does not match expected value");
+        if($_SESSION['nonce_request'][$snonce]['used'] === true) Nonce_token_invalid(true,false,"Request was alredy used");
     }
 
     /**
@@ -158,19 +168,33 @@ namespace ACEX_project\WEB\Private\Api;
      * @param bool $stale true mean the request is invalid because is expired
      * @param bool $challenge if set true, then the new generated snonce is returned and stored in server
      */
-    function Nonce_token_invalid(bool $stale,bool $challenge = false){
+    function Nonce_token_invalid(bool $stale,bool $challenge = false, string $msg = ""){
+        $condition = Error_condition::denied;
+        $lvl = Level::Warning;
         if($challenge){ 
-            if(session_status() === PHP_SESSION_NONE) session_start();
-            Store_nonce();
+            if(\session_status() === PHP_SESSION_NONE) \session_start();
+            $snonce = Store_nonce();
+            $cgen_time = $_SESSION['nonce_request'][$snonce]['cgen_time'];
+            $sgen_time = $_SESSION['nonce_request'][$snonce]['sgen_time'];
+
+            $condition = Error_condition::attempt;
+            $lvl = Level::Info;
+            $msg = "Returning to client challenge[snonce-\"$snonce\"|client time-\"$cgen_time\"|server time-$sgen_time]";
         }
         header('x-request-stale:'.$stale);
 
-        http_response_code(401);
+        Log_internal(
+            new Error_code(Error_domain::request,Resource_code::general,$condition),
+            $lvl,
+            $msg
+        );
+
+        \http_response_code(401);
         exit();
     }
 
-    function Store_nonce(){
-        $headers = array_change_key_case(getallheaders(), CASE_LOWER);
+    function Store_nonce() : string{
+        $headers = \array_change_key_case(getallheaders(), CASE_LOWER);
         if($headers===false) $headers=[];
 
         $cgen_time = $headers['x-cgen-time'] ?? 0;
@@ -186,7 +210,6 @@ namespace ACEX_project\WEB\Private\Api;
             'sgen_time'=>$stime,
         ];
 
-        header('x-snonce:'.$snonce);
+        \header("x-snonce: $snonce");
+        return $snonce;
     }
-
-?>
