@@ -47,6 +47,7 @@ namespace ACEX_project\WEB\Private\Auth;
 
     require_once __DIR__ . "/../Core/MIME_type.php";
     use function ACEX_project\WEB\Private\Core\Construct_MIME;
+use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 
     $sequence = [];
     //header('Cache-Control: no-cache, no-store, must-revalidate, private'); -> should put last moment when sending back
@@ -134,6 +135,7 @@ namespace ACEX_project\WEB\Private\Auth;
      * @return void
      */
     function Monitor_session(string $name,mixed $compared_value) : void{
+        $ip = Get_IP_address_txt();
         $_SESSION['session_anomaly'] ??= [];
         if(isset($_SESSION[$name]) && $_SESSION[$name]!== $compared_value) {
             $_SESSION['anomaly'][] = $name;
@@ -142,7 +144,7 @@ namespace ACEX_project\WEB\Private\Auth;
             Log_internal(
                 new Error_code(Error_domain::request,Resource_code::user,Error_condition::abnomaly),
                 Level::Warning,
-                "'$name' changed during an active session $info"
+                "[IP-\"$ip\"] '$name' changed during an active session $info"
             );
         }
         $_SESSION[$name] = $compared_value;
@@ -191,11 +193,12 @@ namespace ACEX_project\WEB\Private\Auth;
         $reason = Session_expired();
         if($reason===1 || $reason===2)
         {
+            $ip = Get_IP_address_txt();
             //TODO: may add more information about
             Log_internal(
                 new Error_code(Error_domain::request,Resource_code::session,Error_condition::expired),
                 Level::Info,
-                "Marking request as obsolete"
+                "[IP-\"$ip\"] Marking current request as obsolete"
             );
             $_SESSION['obsolete_time'] = \time();
             return true;
@@ -215,6 +218,7 @@ namespace ACEX_project\WEB\Private\Auth;
             return;
         }
         
+        $ip = Get_IP_address_txt();
         
         $_SESSION = [];
         \session_destroy();
@@ -222,7 +226,7 @@ namespace ACEX_project\WEB\Private\Auth;
         Log_internal(
             new Error_code(Error_domain::request,Resource_code::session,Error_condition::expired),
             Level::Warning,
-            "Invalid request to obsolete session"
+            "[IP-\"$ip\"] Unauthorized attempt to access obsolete/expired session"
         );
         
         Exit_session(false);

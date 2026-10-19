@@ -28,7 +28,8 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
 
     use function ACEX_project\WEB\Private\Core\Construct_MIME;
     use function ACEX_project\WEB\Private\Core\Find_MIME_from_extension;
-    use function ACEX_project\WEB\Private\Error\Handle_error;
+use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
+use function ACEX_project\WEB\Private\Error\Handle_error;
     use function ACEX_project\WEB\Private\Error\Log_internal;
 
     require_once __DIR__ . "/File_upload_utils.php";
@@ -78,7 +79,8 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
         \ob_flush();
         
         $finfo_txt = Get_file_log_format();
-        Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[Type - $target_location->name]Upload file $finfo_txt");
+        $ip = Get_IP_address_txt();
+        Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[IP-\"$ip\" | File Type - $target_location->name] Upload file $finfo_txt");
 
         $og_name = \basename(\mb_strtolower(\trim($_FILES[FILE_UPLOAD_FIELD_NAME]['name'])));
 
@@ -117,7 +119,8 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
 
         $internal_fname = $new_name. '.'.$extension->name;
         $finfo_txt = Get_file_log_format($internal_fname);
-        Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[Type - $target_location->name]Rewriting and compressing file $finfo_txt");
+        $ip = Get_IP_address_txt();
+        Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[IP-\"$ip\" | File type - $target_location->name] Rewriting and compressing file $finfo_txt");
         \exec($command,$output, $return_code);
 
         switch($return_code){
@@ -158,7 +161,7 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
         $internal_fname = $new_name. '.'.$compressed_ext->name;
         $finfo_txt = Get_file_log_format($internal_fname);
 
-        Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[Type - $target_location->name]Sucessfully store file $finfo_txt");
+        Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[IP-\"$ip\" | File type - $target_location->name] File stored sucessfully: $finfo_txt");
         return true;
     }
 
@@ -260,6 +263,7 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
 
     function Exit_upload_err(Custom_Upload_Err|int $code, int $stage,array $allowed_ext,string $og_name,string $moved_fpath = "", string $internal_name = "") : never
     {
+        $ip = Get_IP_address_txt();
         $desc = Get_descriptive_ERRupload($code,$allowed_ext,$internal_name);
         $headers = $desc['headers'];
         $frontend_code = $desc['client_code'];
@@ -283,7 +287,7 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
         Log_internal(
             new Error_code(Error_domain::request,Resource_code::file,Error_condition::failed),
             Level::Warning,
-            "(code: $code_args) $err_desc"
+            "[IP-\"$ip\"](code: $code_args) $err_desc"
         );
         if($moved_fpath !== "") \unlink($moved_fpath);
         

@@ -34,6 +34,7 @@ namespace ACEX_project\WEB\Private\Core;
     require_once __DIR__ . '/../Error/Error_code.php';
 
     require_once __DIR__ .'/Security/File_upload/File_upload_utils.php';
+    require_once __DIR__ . '/Parse_time.php';
 
     
     use function \define;
@@ -47,7 +48,8 @@ namespace ACEX_project\WEB\Private\Core;
             !File_storation_path::profiles->Initialize_directory() ||
             !File_storation_path::Maps->Initialize_directory() ||
             !File_storation_path::Error_logs->Initialize_directory() ||
-            !File_storation_path::Rate_track_ip->Initialize_directory()
+            !File_storation_path::Rate_track_ip->Initialize_directory() ||
+            !File_storation_path::Rate_track_account->Initialize_directory()
         ) {
             Handle_error(
                 new Error_code(Error_domain::server,Resource_code::directory,Error_condition::missing),
@@ -101,6 +103,14 @@ namespace ACEX_project\WEB\Private\Core;
                     'IMG_PROFILE_MAX_SIZE',
                     'IMG_MAP_MAX_SIZE',
                     'RATE_FILE_MAX_QUANT',
+                    'RATE_IP_MINIUM_INTERVAL',
+                    'RATE_IP_MAX_REQUEST_PER_INTERVAL',
+                    'RATE_RECORD_EXPIRATION',
+                    'RATE_IP_LOGIN_MAX_ATTEMPT',
+                    'RATE_IP_LOGIN_PENALITY',
+                    'RATE_IP_LOGIN_CLEANUP_TIME',
+                    'RATE_ACCOUNT_LOGIN_MINIUM_INTERVAL',
+                    'RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL',
                 ];
                 $required_int_env = [
                     'DATABASE_PORT',
@@ -110,6 +120,7 @@ namespace ACEX_project\WEB\Private\Core;
                     'CSRF_TOKEN_MAXLIFE',
                     'REQUEST_MAX_LIFE',
                     'RATE_FILE_MAX_QUANT',
+                    'RATE_IP_LOGIN_MAX_ATTEMPT',
                 ];
             }
 
@@ -174,6 +185,27 @@ namespace ACEX_project\WEB\Private\Core;
             if($rate_fquant <=0) $rate_fquant = 1;
             define('RATE_FILE_MAX_QUANT',$rate_fquant);
 
+            /*** In ms*/
+            define('RATE_IP_MINIUM_INTERVAL',Parse_time($_ENV['RATE_IP_MINIUM_INTERVAL']));
+            /*** In ms*/
+            define('RATE_RECORD_EXPIRATION',Parse_time($_ENV['RATE_RECORD_EXPIRATION']));
+
+            Define_RATE_IP_MAX_REQUEST_PER_INTERVAL();
+
+            /*** maxium number of failed login attempt one ip can do */
+            define('RATE_IP_LOGIN_MAX_ATTEMPT',(int)$_ENV['RATE_IP_LOGIN_MAX_ATTEMPT']);
+            /*** time of penality when hit login rate limit in ms */
+            define('RATE_IP_LOGIN_PENALITY',Parse_time($_ENV['RATE_IP_LOGIN_PENALITY']));
+            /*** time for clean failed login attempt on single ip in ms */
+            define('RATE_IP_LOGIN_CLEANUP_TIME',Parse_time($_ENV['RATE_IP_LOGIN_CLEANUP_TIME']));
+            /*** minium interval between failed login from same account */
+            define('RATE_ACCOUNT_LOGIN_MINIUM_INTERVAL',Parse_time($_ENV['RATE_ACCOUNT_LOGIN_MINIUM_INTERVAL']));
+            /** maxium number of login can be done in one interval for same account */
+            Define_RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL();
+
+
+
+
             $home_location = ltrim($_ENV['HOME_PAGE_LOCATION'],'/');
             define('HOME_PAGE_LOCATION',$home_location);
             if(!file_exists(__DIR__ . "/../../Public_html/".$home_location)){
@@ -191,4 +223,58 @@ namespace ACEX_project\WEB\Private\Core;
 
         //avoid define/load env twice to opmization, note this is per request
         define('INITIALIZED',true);
+    }
+
+    function Define_RATE_IP_MAX_REQUEST_PER_INTERVAL(){
+        $raw_text = $_ENV['RATE_IP_MAX_REQUEST_PER_INTERVAL'];
+        $ip_rate_arr = explode(':',$raw_text);
+        if(\count($ip_rate_arr)!==2) {
+            Handle_error(
+                new Error_code(Error_domain::server,Resource_code::invalidArgument,Error_condition::format),
+                Level::Critical,
+                "format of RATE_IP_MAX_REQUEST_PER_INTERVAL from .env is invalid, should be number:time but $raw_text found"
+            );
+        }
+
+        $max_request = \intval($ip_rate_arr[0] <=0 ? 1 : $ip_rate_arr[0]);
+        $interval = Parse_time($ip_rate_arr[1]);
+
+        /**
+         * @var array{max_request:int,interval:int} in ms
+         */
+        define('RATE_IP_MAX_REQUEST_PER_INTERVAL',['max_request'=>$max_request,'interval'=>$interval]);
+    }
+
+    function Define_RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL(){
+        $raw_text = $_ENV['RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL'];
+        $acc_rate_arr = explode(':',$raw_text);
+        if(\count($acc_rate_arr)!==2) {
+            Handle_error(
+                new Error_code(Error_domain::server,Resource_code::invalidArgument,Error_condition::format),
+                Level::Critical,
+                "format of RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL from .env is invalid, should be number:time but $raw_text found"
+            );
+        }
+
+        $max_request = \intval($acc_rate_arr[0] <=0 ? 1 : $acc_rate_arr[0]);
+        $interval = Parse_time($acc_rate_arr[1]);
+
+        /**
+         * @var array{max_request:int,interval:int} in ms
+         */
+        define('RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL',['max_request'=>$max_request,'interval'=>$interval]);
+    }
+
+    function Get_IP_address_txt() : string{
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        $extra_info = [];
+        if($ip !== '' && filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_IPV6)) $extra_info[] = 'IPV6';
+        else if($ip === '' || !filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)) $ip = 'invalid'; 
+
+        if(isset($_SERVER['HTTP_X_FORWARDED_FOR'])){ 
+            $extra_info[] = 'Proxy involved';
+            $ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+        }
+        $extra_txt = $extra_info === [] ? '' : '('.implode(' | ',$extra_info).')';
+        return $extra_txt.$ip;
     }

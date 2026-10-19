@@ -40,6 +40,7 @@ use function ACEX_project\WEB\Private\Auth\Secure_hash_password;
 
 require_once __DIR__ ."/../../Core/MIME_type.php";
 use function ACEX_project\WEB\Private\Core\Construct_MIME;
+use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 
 require_once __DIR__ . "/../../Core/Security/Request_manager.php";
 use function ACEX_project\WEB\Private\Core\Security\Get_request_body;
@@ -61,6 +62,7 @@ require_once __DIR__ ."/Authentication.php";
    * when redirect involved, may have no body so you should store elsewhere and could put in passed parameter. if no data supplied, it will try to get from request body.
    */
   function Create_account(array $request_body=[]){
+    $ip = Get_IP_address_txt();
     $conn = null;
     $id = null;
     try{
@@ -70,12 +72,11 @@ require_once __DIR__ ."/Authentication.php";
       $password = $request_body['password'] ?? '';
 
       if(Is_logged()) Redirect();
-      Require_nonce();
 
       Log_internal(
         new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::attempt),
         Level::Notice,
-        "Email:[$email] | public name:[$user_name]"
+        "[IP-\"$ip\"] Email=[$email], user_name=[$user_name]"
       );
 
 
@@ -125,7 +126,7 @@ require_once __DIR__ ."/Authentication.php";
     Log_internal(
       new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::success),
       Level::Info,
-      "User id:[$id]"
+      "[IP-\"$ip\"] Account created sucessfully: User id=[$id]"
     );
 
     \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
@@ -138,6 +139,7 @@ require_once __DIR__ ."/Authentication.php";
    * Exit immedially if find duplicate and return json response, not may still have race condition so be sure insert is upsert.
    */
   function Exit_if_duplicated(string $email,string $name) : void{
+    $ip = Get_IP_address_txt();
     $query = "SELECT
         EXISTS (
             SELECT 1
@@ -171,7 +173,7 @@ require_once __DIR__ ."/Authentication.php";
         Log_internal(
           new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::duplicated),
           Level::Notice,
-          "Name: [$name] | email: [$email]"
+          "[IP-\"$ip\"] Duplicated user name or email: Name=[$name], email=[$email]"
         );
 
 

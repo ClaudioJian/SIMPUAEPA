@@ -9,7 +9,8 @@ use ACEX_project\WEB\Private\Error\Error_domain;
 use ACEX_project\WEB\Private\Error\Resource_code;
 use Monolog\Level;
 
-    use function ACEX_project\WEB\Private\Error\Log_internal;
+use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
+use function ACEX_project\WEB\Private\Error\Log_internal;
 
     /**
      * Make the current request nonce. if the client doesn't provide cnonce, then server will send 401 unathourized and send snonce, then client should resend same request but with cnonce, snonce, time token
@@ -108,7 +109,7 @@ use Monolog\Level;
         
 
         $expected_time = $_SESSION['nonce_request'][$request_snonce]['cgen_time'];
-        $now = (int) \floor(microtime(true) * 1000);
+        $now = (int)\floor(microtime(true) * 1000);
         $age =  $now - $cgen_time;
         if($age <0 || $age > REQUEST_MAX_LIFE*1000 || $expected_time != $cgen_time) {
             \header('vary: x-cgen-time');
@@ -157,7 +158,7 @@ use Monolog\Level;
      * @return bool true if data cleaned
      */
     function Clean_expired_snonce(int $generated_time,string $target_snonce) :bool{
-        $now = (int) \floor(microtime(true) * 1000);
+        $now = (int)\floor(microtime(true) * 1000);
         $age = $now - $generated_time;
         if($age<0 || $age <= REQUEST_MAX_LIFE * 1000) return false;
         $r = REQUEST_MAX_LIFE;
@@ -172,6 +173,7 @@ use Monolog\Level;
      * @param bool $challenge if set true, then the new generated snonce is returned and stored in server
      */
     function Nonce_token_invalid(bool $stale,bool $challenge = false, string $msg = ""){
+        $ip = Get_IP_address_txt();
         $condition = Error_condition::denied;
         $lvl = Level::Warning;
         if($challenge){ 
@@ -182,14 +184,14 @@ use Monolog\Level;
 
             $condition = Error_condition::attempt;
             $lvl = Level::Info;
-            $msg = "Returning to client challenge[snonce-\"$snonce\"|client time-\"$cgen_time\"|server time-$sgen_time]";
+            $msg = "Returning to client challenge[client time-\"$cgen_time\"|server time-$sgen_time]";
         }
         \header("x-request-stale: $stale");
 
         Log_internal(
             new Error_code(Error_domain::request,Resource_code::general,$condition),
             $lvl,
-            $msg
+            "[IP-\"$ip\"] $msg"
         );
 
         \http_response_code(401);
@@ -203,7 +205,7 @@ use Monolog\Level;
         $cgen_time = $headers['x-cgen-time'] ?? 0;
 
         $random_val = \bin2hex(random_bytes(64));
-        $stime = (int) \floor(microtime(true) * 1000);
+        $stime = (int)\floor(microtime(true) * 1000);
         $snonce = Snonce_generate($random_val,$stime);
         $_SESSION['nonce_request'][$snonce] = [
             'cgen_time'=>$cgen_time,

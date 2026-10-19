@@ -21,6 +21,7 @@ require_once __DIR__ . "/login.php";
 
 require_once __DIR__ . '/../session_manager.php';
 use function ACEX_project\WEB\Private\Auth\New_session;
+use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 
     require_once __DIR__ ."/Authentication.php";
 
@@ -40,9 +41,11 @@ require_once __DIR__ .'/../../Error/Error_manager.php';
         $response = Internal_Logout();
         if($response===null) return;
 
+        $ip = Get_IP_address_txt();
+
         Log_internal(new Error_code(Error_domain::request,Resource_code::user,Error_condition::success),
             Level::Info,
-            "Logout successfully for user[name=\"". $response['logout_user_name'] . "\"|email=\"" .$response['logout_user_email'] . '"]'
+            "[IP-\"$ip\"] Logout successfull: user_name=\"". $response['logout_user_name'] . "\", email=\"" .$response['logout_user_email'] . '"'
         );
 
         \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
