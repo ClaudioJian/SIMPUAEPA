@@ -42,6 +42,10 @@ require_once __DIR__ . '/../password_handler.php';
 use function ACEX_project\WEB\Private\Auth\Secure_password_verify;
 use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 
+require_once __DIR__ .'/../../Core/Security/Rate_limit_handler.php';
+use function ACEX_project\WEB\Private\Core\Security\Bucket_info_from_fixed_window;
+use function ACEX_project\WEB\Private\Core\Security\Fixed_window_to_bucket_algo;
+
 require_once __DIR__ .'/../../Error/Error_manager.php';
 
 require_once __DIR__ .'/../../Error/Error_code.php';
@@ -86,7 +90,7 @@ require_once __DIR__ . "/User_data.php";
             
             $first_fail = true;
             $key = hexdec(substr(hash('xxh32', $ip), 0, 8));
-            $result = IP_login_at_limit($IP_rate_limiter, $key,$first_fail);
+            $result = IP_login_at_limit($IP_rate_limiter, $key);
 
             Validate_enroll_data($email,$password);
             Get_user_data_authorized();
@@ -100,7 +104,7 @@ require_once __DIR__ . "/User_data.php";
                     "[IP-\"$ip_txt\"] Login attemption failed: Reason - [$msg], Email=[$email]"
                 );
 
-                if($IP_rate_limiter !== null) IP_failed_login_update($IP_rate_limiter, $key, $result, $first_fail);
+                if($IP_rate_limiter !== null) IP_failed_login_update($IP_rate_limiter, $key, $result);
                 Account_rate_limiter($email);
                 exit();
             }
@@ -180,61 +184,37 @@ require_once __DIR__ . "/User_data.php";
      * @param int $key
      * @return bool|null false when not hit limit else null when is completly new record. True when error happen
      */
-    function IP_login_at_limit(Rate_limiter $IP_rate_limiter, int $key, bool &$first_fail) : bool|null{
-        $first_fail = true;
+    function IP_login_at_limit(Rate_limiter $IP_rate_limiter, int $key) : bool|null{
         try{        
             $result = $IP_rate_limiter->At_limit($key,
-                function(array &$data) use (&$first_fail){
-                    $cleanup_time = RATE_IP_LOGIN_CLEANUP_TIME;
-                    $current_t = (int)(\microtime(true) * 1000);
-
-                    $failed_login_at = $data['failed_login_at'] ?? null;
-                    if($failed_login_at === null) return false;
-                    
-
-                    //null mean it never penalized at all
-                    $penality_at = $data['penality_at'] ?? null;
+                function(array &$data){
+                    $current_t = \intdiv(\hrtime(true),1000000);
                     $ip = Get_IP_address_txt();
 
-                    $penality_time = RATE_IP_LOGIN_PENALITY;
-                    if($penality_at !== null && ($current_t - $penality_at) < $penality_time) {
-                        $msg = "Current IP Login rate limit exceeded: penalty active [duration: {$penality_time} ms](start at: {$penality_at})";
-                        Log_internal(
-                            new Error_code(Error_domain::authentication, Resource_code::rate, Error_condition::surpass_limit),
-                            Level::Info,
-                            "[IP-\"$ip\"] $msg"
-                        );
-                        return true;
+                    $limit = RATE_IP_LOGIN_PER_INTERVAL['max_request'];
+                    $interval = RATE_IP_LOGIN_PER_INTERVAL['interval'];
+
+                    if(!isset($data['last_refill_login'])) $data['last_refill_login'] = $current_t;
+                    if(!isset($data['login_token'])){
+                        $b_info_login = Bucket_info_from_fixed_window($limit, $interval);
+                        $data['login_token'] = $b_info_login['capacity'];
                     }
 
+                    $penality_time = RATE_IP_LOGIN_PENALTY;
+                    $result = Fixed_window_to_bucket_algo($limit, $interval, $data['last_refill_login'], $data['login_token'],$penality_time);
 
-                    if(($current_t - $failed_login_at) >= $cleanup_time
-                        || $penality_at !== null
-                    ) {
-                        unset(
-                            $data['failed_login'],
-                            $data['failed_login_at'],
-                            $data['penality_at']
-                        );
-                        return false;
-                    }    
                     
-                    $first_fail = false;
-
-                    $failed_login_count = $data['failed_login'] ?? 0;
-
-                    $limit = RATE_IP_LOGIN_MAX_ATTEMPT;
-                    if($failed_login_count >= $limit) {
-                        $data['penality_at'] = $current_t;
-                        $msg = $data['failed_login']." failed login attempt exceeded within cleanup time $cleanup_time ms(limit: $limit)";
-
+                    if($result) {
+                        $b_info = Bucket_info_from_fixed_window($limit, $interval);
+                        $blocked_until = ($b_info['consume'] - $data['login_token']) / $b_info['refill_speed'];
+                        $msg = $data['login_token'] . " rate-limit tokens remained for current IP Login: penalty active [duration: {$blocked_until} ms](limit: $limit requests)";
                         Log_internal(
                             new Error_code(Error_domain::authentication, Resource_code::rate, Error_condition::surpass_limit),
                             Level::Info,
                             "[IP-\"$ip\"] $msg"
                         );
                         return true;
-                    }
+                    }  
                 
                     return false;
                 }
@@ -258,21 +238,24 @@ require_once __DIR__ . "/User_data.php";
      * @param null|false $status false if record exist else if null then record don't exist at all
      * @return void
      */
-    function IP_failed_login_update(Rate_limiter $IP_rate_limiter, int $key, ?bool $status, bool $first_fail) : void{
+    function IP_failed_login_update(Rate_limiter $IP_rate_limiter, int $key, ?bool $status) : void{
         try{
             if($status === null || $status === false) {
                 $life_time = RATE_RECORD_EXPIRATION;
-                $curr_t = (int)(\microtime(true) * 1000);
+                $curr_t = \intdiv(\hrtime(true),1000000);
 
-                $modify_target = $first_fail ? ['failed_login'=>1, 'failed_login_at'=>$curr_t] : ['failed_login'=>1];
+                $b_info_login = Bucket_info_from_fixed_window(RATE_IP_LOGIN_PER_INTERVAL['max_request'], RATE_IP_LOGIN_PER_INTERVAL['interval']);
+                $b_info_ip = Bucket_info_from_fixed_window(RATE_IP_MAX_REQUEST_PER_INTERVAL['max_request'], RATE_IP_MAX_REQUEST_PER_INTERVAL['interval']);
 
-                if($status === false) $IP_rate_limiter->Modify_counter($key,$modify_target);
-                else $IP_rate_limiter->Append_new_record($key,$curr_t + $life_time,[
-                    'last_request_at'=>$curr_t,
-                    'start_at'=>$curr_t,
-                    'failed_login'=>1,
-                    'failed_login_at'=>$curr_t,
-                ]);
+                if($status === null) $IP_rate_limiter->Append_new_record($key, $curr_t + $life_time,
+                    [
+                        'login_token'=>$b_info_login['capacity'],
+                        'count'=> $b_info_ip['capacity'],
+                        'last_request_at'=>$curr_t,
+                        'last_refill'=>$curr_t,
+                        'last_refill_login'=>$curr_t
+                    ]
+                );
                 $IP_rate_limiter->Push();
             }
             else{
@@ -294,33 +277,27 @@ require_once __DIR__ . "/User_data.php";
 
         try{
             $key = hexdec(substr(hash('xxh32', \strtolower(trim($email))), 0, 8));
+            $limit = RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL['max_request'];
+            $interval = RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL['interval'];
 
             $result = $ACC_rate_limiter->At_limit($key,
-                function(array &$data){
-                    $limit = RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL['max_request'];
-                    $interval = RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL['interval'];
-                    $min_interval = RATE_ACCOUNT_LOGIN_MINIUM_INTERVAL;
+                function(array &$data) use($limit,$interval){
+                    $min_interval = RATE_ACCOUNT_LOGIN_MINIMUM_INTERVAL;
 
-                    $current_t = (int)(\microtime(true) * 1000);
+                    $current_t = \intdiv(\hrtime(true),1000000);
                     $last_login_at = $data['last_login_at'];
                     $data['last_login_at'] = $current_t;
 
-                    $start_at = $data['start_at'];
-                    $time = $current_t - $start_at;
-
-                    if($time>=$interval) {
-                        $data['count'] = 0;
-                        $data['start_at'] = $current_t;
-                    }
-                    
+                    if(!isset($data['last_refill'])) $data['last_refill'] = $current_t;
+                    $result = Fixed_window_to_bucket_algo($limit, $interval, $data['last_refill'], $data['count']);
 
                     $current_interval = $current_t - $last_login_at;
 
-                    if($current_interval < $min_interval || $data['count'] >= $limit){
+                    if($current_interval < $min_interval || $result){
                         $ip = Get_IP_address_txt();
-                        $msg = $data['count'] >= $limit 
-                        ? "Login rejected - " .$data['count']." failed login attempts exceeded the limit whithin: interval=[{$interval}ms] (limit: $limit)" 
-                        : "Login rejected - Interval since last failed login is too short  (current:{$current_interval}ms | minium:{$min_interval}ms)";
+                        $msg = $current_interval < $min_interval
+                        ? "Login rejected - Interval since last failed login is too short  (current:{$current_interval}ms | minimum:{$min_interval}ms)"
+                        : "Login rejected - " .$data['count']." rate-limit tokens remained for failed login attempts whithin: window=[{$interval}ms] (limit: $limit requests)";
                         
                         Log_internal(
                             new Error_code(Error_domain::authentication, Resource_code::rate, Error_condition::surpass_limit),
@@ -338,9 +315,10 @@ require_once __DIR__ . "/User_data.php";
             if($result === null || $result === false) {
                 $life_time = RATE_RECORD_EXPIRATION;
                 
-                $curr_t = (int)(\microtime(true) * 1000);
-                if($result === false) $ACC_rate_limiter->Modify_counter($key,['count'=>1]);
-                else $ACC_rate_limiter->Append_new_record($key,$curr_t + $life_time,['last_login_at'=>$curr_t,'start_at'=>$curr_t]);
+                $curr_t = \intdiv(\hrtime(true),1000000);
+
+                $b_info = Bucket_info_from_fixed_window($limit,$interval);
+                if($result === null) $ACC_rate_limiter->Append_new_record($key,$curr_t + $life_time,['last_login_at'=>$curr_t,'count'=>$b_info['capacity'],'last_refill'=>$curr_t]);
                 $ACC_rate_limiter->Push();
             }
             else{

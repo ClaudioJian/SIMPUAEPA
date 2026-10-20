@@ -8,8 +8,8 @@ namespace ACEX_project\WEB\Private\Core\Security;
     require_once __DIR__ .'/../../Error/Error_code.php';
     require_once __DIR__ .'/../../Error/Error_manager.php';
     use Exception;
-use function ACEX_project\WEB\Private\Error\Handle_error;
-use function ACEX_project\WEB\Private\Error\Log_internal;
+    use function ACEX_project\WEB\Private\Error\Handle_error;
+    use function ACEX_project\WEB\Private\Error\Log_internal;
 
     use ACEX_project\WEB\Private\Core\File_storation_path;
     use ACEX_project\WEB\Private\Error\Error_code;
@@ -17,7 +17,7 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
     use ACEX_project\WEB\Private\Error\Error_domain;
     use ACEX_project\WEB\Private\Error\Resource_code;
     use Monolog\Level;
-use Throwable;
+    use Throwable;
 
     require_once __DIR__ .'/../File_storation_map.php';
 
@@ -25,6 +25,7 @@ use Throwable;
     enum Rate_bucket{
         case IP;
         case Account;
+        case EndPoint;
         /**
          * @param int $key the number to decice which file will use for each different bucket. Pick rule for this should be same amoung call
          * @return string
@@ -33,6 +34,7 @@ use Throwable;
             $dir = match ($this) {
                 self::IP => File_storation_path::Rate_track_ip->value,
                 self::Account => File_storation_path::Rate_track_account->value,
+                self::EndPoint => File_storation_path::Rate_track_endpoint->value
             };
 
             $bucket = (($key % RATE_FILE_MAX_QUANT) + RATE_FILE_MAX_QUANT) % RATE_FILE_MAX_QUANT;
@@ -47,6 +49,7 @@ use Throwable;
             return match ($this) {
                 self::IP => $_SERVER['REMOTE_ADDR'] ?? $_SERVER['X_HTTP_FOWARD_TO'] ?? '',
                 self::Account => $email,
+                self::EndPoint => CURRENT_ENDPOINT ?? ''
             };
         }
     } 
@@ -253,7 +256,7 @@ use Throwable;
 
             $file = $this->type->Get_path($key);
 
-            $start_t = (int)(\microtime(true) * 1000);
+            $start_t = \intdiv(\hrtime(true),1000000);
             $current_time = $start_t;
             $ftp = \fopen($file,'r+');
 
@@ -267,7 +270,7 @@ use Throwable;
                     \usleep($this->abs_timeout/$this->wait_split);
                 }
 
-                $current_time = (int)(\microtime(true) * 1000);
+                $current_time = \intdiv(\hrtime(true),1000000);;
                 if($current_time - $start_t >= $this->abs_timeout) {
                     Log_internal(new Error_code(Error_domain::request,Resource_code::rate,Error_condition::timeout),
                         Level::Info,
@@ -304,7 +307,7 @@ use Throwable;
 
                 if($record !==null) $this->data[] = $record;
 
-                $current_time = (int)(\microtime(true) * 1000);
+                $current_time = \intdiv(\hrtime(true),1000000);
                 if($current_time - $start_t >= $this->abs_timeout) {
                     Log_internal(new Error_code(Error_domain::server,Resource_code::rate,Error_condition::timeout),
                         Level::Warning,
@@ -320,7 +323,7 @@ use Throwable;
         }
 
         private function Clean_expired_record(int $idx,array &$data) : bool{
-            $current_time = (int)(\microtime(true) * 1000);
+            $current_time =\intdiv(\hrtime(true),1000000);
             if(!isset($data['expired_at'])) return false;
 
             $time_limit = $data['expired_at'];
@@ -331,4 +334,63 @@ use Throwable;
             $this->deleted_record++;
             return true;
         }
+    }
+
+    /**
+     * Transform rate limit from fixed window to bucket algoritm. 
+     * @param int $max_allowed
+     * @param int $interval in ms
+     * @param int $last_refill in ms, change by reference
+     * @param float $current_token current quantity of token registered. change by reference
+     * @param null|int $max_penality maximum penality time in ms. This allow calculate minimum negative token.
+     * @return bool true if hit rate limit else false
+     */
+    function Fixed_window_to_bucket_algo(int $max_allowed, int $interval, int &$last_refill, float &$current_token , ?int $max_penality = null) : bool{
+        $b_info = Bucket_info_from_fixed_window($max_allowed,$interval);
+
+        if($b_info === null || ($max_penality!==null && $max_penality < 0)) return true;
+
+        $refill_speed = $b_info['refill_speed'];
+        $consume = $b_info['consume'];
+        $capacity = $b_info['capacity'];
+
+        //in token unit
+        $max_debut = $refill_speed * ($max_penality ?? 0);
+
+        $current_t = intdiv(hrtime(true),1000000);
+        $elapsed_t = $current_t - $last_refill;
+
+        $tokens_refilled = $elapsed_t * $refill_speed;
+        $current_token = min($capacity, $current_token + $tokens_refilled);
+
+        $rejected = $current_token - $consume < 0;
+
+        $current_token = max(-$max_debut, $current_token - $consume);
+        $last_refill = $current_t;
+
+        return $rejected;
+    }
+
+    /**
+     * @param int $max_allowed
+     * @param int $interval
+     * @return null|array{capacity: float|int, consume: float|int, "refill_speed": float|int}
+     */
+    function Bucket_info_from_fixed_window(int $max_allowed, int $interval) : array|null{
+        if($max_allowed <=0 || $interval <=0 ) return [];
+        $factor = gcd($max_allowed,$interval);
+
+        $refill_speed = $max_allowed/$factor;
+        $consume = $interval/$factor;
+        $capacity = $refill_speed * $consume;
+
+        return ['capacity'=>$capacity,'consume'=>$consume,'refill_speed'=>$refill_speed];
+    }
+
+
+    /**
+     * Great common factor from https://www.php.net/manual/en/function.gmp-gcd.php
+     */
+    function gcd(int $a,int $b) {
+        return ($a % $b) ? gcd($b,$a % $b) : $b;
     }

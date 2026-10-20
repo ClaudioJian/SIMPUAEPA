@@ -37,11 +37,11 @@ namespace ACEX_project\API;
     //routing logic
     $route = [
         new Route("/csrf",'POST',Handle_CSRF_GET(...),bypass_rate_limit:true),
-        new Route("/subscribe",'POST',Create_account(...),require_nonce:true),
-        new Route("/login",'POST',Login(...)),
+        new Route("/subscribe",'POST',Create_account(...),require_nonce:true, rate_limit_option:RATE_ENDPOINT_SUBSCRIBE),
+        new Route("/login",'POST',Login(...), rate_limit_option:RATE_ENDPOINT_LOGIN),
         new Route('/logout',"POST",Logout(...), require_login:true),
-        new Route('/image/profile',"POST",Upload_profile(...),require_login:true),
-        new Route('/image/map',"POST",Upload_map_img(...),require_login:true),
+        new Route('/image/profile',"POST",Upload_profile(...),require_login:true, rate_limit_option:RATE_ENDPOINT_IMG_UPLOAD),
+        new Route('/image/map',"POST",Upload_map_img(...),require_login:true, rate_limit_option:RATE_ENDPOINT_IMG_UPLOAD),
     ];
 
 

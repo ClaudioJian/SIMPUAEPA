@@ -32,7 +32,7 @@ loginForm.addEventListener('submit', async function(event) {
         // HTTP 200: success 0 = logou agora, success 1 = já estava logado
         if (response.ok) {
             localStorage.setItem('uid', result.uid);
-            //window.location.href = "../index.html";
+            window.location.href = "../index.html";
         }
 
     } catch (error) {
