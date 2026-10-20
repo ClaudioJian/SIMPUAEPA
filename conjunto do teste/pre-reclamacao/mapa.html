@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pão com ovo</title>
+     <!--Css do leaflet e do mapa, quando exportar esses arquivos para o arquivo principal, colocar esses 2 links-->
+    <link rel="stylesheet" href="/leaflet/leaflet.css" />
+     <link rel="stylesheet" href="mapa-css.css"/>
+     <!-- Javascript do mapa e do leaflet, quando exportar esses arquivos para o arquivo principal, colocar esses 2 scripts-->
+
+     <script type="module" src="mapa-js.js"></script>
+    <script type="importmap">
+        {
+    "imports": {
+        "leaflet": "./leaflet/leaflet.js"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="map"></div>
+    <button id="test" type="button" class="botao-controle leaflet-tooltip-pane"><img src="icones/visualizacao-sf.png" class="imagem-visualizacao" alt="visualização de ícones"/></button>
+    <div class="test">
+        
+        <div id="visualizacao" class="control-visu-icon conjunto visivel">
+            <!--Botão que liga todos os icones -->
+            <div class="opçoes">
+                    <div><button class="botao-background" id="botao-todos"><img src="icones/tudo.png"   class="perigo-icone" alt="botão de ícone de perigo"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Ligar/Desligar<br> todos os pontos</div>
+                </div>
+        <!--elementos  de perigo-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-perigo"><img src="icones/perigo.png"   class="perigo-icone" alt="botão de ícone de perigo"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Área Perigosa</div>
+                </div>
+        <!--elementos de rua-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-rua" ><img src="icones/rua.png"   class="rua-icone" alt="botão de ícone de rua"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Rua problemática</div>
+                </div>
+        <!--elementos de esgoto-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-esgoto"><img src="icones/esgoto.png"   class="esgoto-icone" alt="botão de ícone de esgoto"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Esgoto invasivo</div>
+                </div>
+        <!--elementos de sonora-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-sonora"><img src="icones/sonora.png"   class="sonora-icone" alt="botão de ícone de poluição sonora"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Poluição sonora excessiva</div>
+                </div>
+        <!--elementos de poluição-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-poluicao"><img src="icones/poluicao.png"   class="poluicao-icone" alt="botão de ícone de poluição"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Excesso de poluição</div>
+                </div>
+        <!--elementos de eletricidade-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-eletricidade"><img src="icones/eletricidade.png"   class="eletricidade-icone" alt="botão de ícone de eletricidade"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Problemas em fiação eletrônica</div>
+                </div>
+        <!--elementos de outro-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-outro"><img src="icones/outro.png"   class="outro-icone" alt="botão de ícone de outro"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Outro problema</div>
+                </div>
+        
+            </div>
+    </div>
+        <!--Caixa de reclamação, adicionar os elementos aqui-->
+        <div id="caixa_reclamacao" class="caixa_reclamacao visivel">
+            <h2>Colocar elementos aqui</h2>
+            <button id="fechar" class="fechar">X</button>
+            
+        </div>
+</body>
+
+</html>
