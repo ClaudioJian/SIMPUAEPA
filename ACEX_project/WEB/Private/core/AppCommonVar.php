@@ -87,44 +87,55 @@ namespace ACEX_project\WEB\Private\Core;
                 $required_int_env = [
                     'IMG_FINAL_QUALITY'
                 ];
-            }else{
+            }
+            else{
                 $required_env = [
                     'DATABASE_NAME',
                     'DATABASE_PASSWORD',
                     'DATABASE_HOST',
                     'DATABASE_USER',
                     'DATABASE_PORT',
-                    'SESSION_OBSOLETE_MAXLIFE',
-                    'SESSION_ACTIVE_TIME',
-                    'SESSION_ABSOLUTE_TIME',
-                    'CSRF_TOKEN_MAXLIFE',
-                    'CSRF_TOKEN_HEADER_NAME',
-                    'REQUEST_MAX_LIFE',
-                    'HOME_PAGE_LOCATION',
-                    'PHP_PATH',
-                    'IMG_PROFILE_MAX_SIZE',
-                    'IMG_MAP_MAX_SIZE',
-                    'RATE_FILE_MAX_QUANT',
-                    'RATE_IP_MINIMUM_INTERVAL',
-                    'RATE_IP_MAX_REQUEST_PER_INTERVAL',
-                    'RATE_RECORD_EXPIRATION',
-                    'RATE_IP_LOGIN_PER_INTERVAL',
-                    'RATE_IP_LOGIN_PENALTY',
-                    'RATE_ACCOUNT_LOGIN_MINIMUM_INTERVAL',
-                    'RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL',
-                    'RATE_ENDPOINT_LOGIN',
-                    'RATE_ENDPOINT_SUBSCRIBE',
-                    'RATE_ENDPOINT_IMG_UPLOAD'
                 ];
+
                 $required_int_env = [
                     'DATABASE_PORT',
-                    'SESSION_OBSOLETE_MAXLIFE',
-                    'SESSION_ACTIVE_TIME',
-                    'SESSION_ABSOLUTE_TIME',
-                    'CSRF_TOKEN_MAXLIFE',
-                    'REQUEST_MAX_LIFE',
-                    'RATE_FILE_MAX_QUANT',
-                ];
+                ];                
+
+                if(!\defined('DB_SCHEMA')){
+                    $required_env = [
+                            ...$required_env,
+                        'SESSION_OBSOLETE_MAXLIFE',
+                        'SESSION_ACTIVE_TIME',
+                        'SESSION_ABSOLUTE_TIME',
+                        'CSRF_TOKEN_MAXLIFE',
+                        'CSRF_TOKEN_HEADER_NAME',
+                        'REQUEST_MAX_LIFE',
+                        'HOME_PAGE_LOCATION',
+                        'PHP_PATH',
+                        'IMG_PROFILE_MAX_SIZE',
+                        'IMG_MAP_MAX_SIZE',
+                        'RATE_FILE_MAX_QUANT',
+                        'RATE_IP_MINIMUM_INTERVAL',
+                        'RATE_IP_MAX_REQUEST_PER_INTERVAL',
+                        'RATE_RECORD_EXPIRATION',
+                        'RATE_IP_LOGIN_PER_INTERVAL',
+                        'RATE_IP_LOGIN_PENALTY',
+                        'RATE_ACCOUNT_LOGIN_MINIMUM_INTERVAL',
+                        'RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL',
+                        'RATE_ENDPOINT_LOGIN',
+                        'RATE_ENDPOINT_SUBSCRIBE',
+                        'RATE_ENDPOINT_IMG_UPLOAD'
+                    ];
+                    $required_int_env = [
+                        ...$required_int_env,
+                        'SESSION_OBSOLETE_MAXLIFE',
+                        'SESSION_ACTIVE_TIME',
+                        'SESSION_ABSOLUTE_TIME',
+                        'CSRF_TOKEN_MAXLIFE',
+                        'REQUEST_MAX_LIFE',
+                        'RATE_FILE_MAX_QUANT',
+                    ];
+                }
             }
 
             //global

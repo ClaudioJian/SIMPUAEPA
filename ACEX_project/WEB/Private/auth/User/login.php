@@ -55,7 +55,7 @@ use function ACEX_project\WEB\Private\Error\Log_internal;
 require_once __DIR__ . "/User_data.php";
 
 
-    function Login(?Rate_limiter $IP_rate_limiter,array $request_body = []){
+    function Login(?Rate_limiter $IP_rate_limiter, array $captured_args, array $request_body = []){
         if(Is_logged()) {
             \header('Content-type: '.Construct_MIME(MIME['application']['json']));
             echo json_encode(['success'=>1,'uid'=>$_SESSION['uid']]);
@@ -145,7 +145,7 @@ require_once __DIR__ . "/User_data.php";
         }
 
         $query = "SELECT " .
-            \implode(", ",[tb_user_columns::id_user->name, tb_user_columns::email->name, tb_user_columns::password->name]).
+            \implode(", ",[tb_user_columns::id->name, tb_user_columns::email->name, tb_user_columns::password->name]).
             " FROM ". All_tables::user->name. 
             " WHERE ". tb_user_columns::email->name ." = :email"
         ;
@@ -174,7 +174,7 @@ require_once __DIR__ . "/User_data.php";
             return false;
         }
 
-        return $row[tb_user_columns::id_user->name];
+        return $row[tb_user_columns::id->name];
     }
 
     /**

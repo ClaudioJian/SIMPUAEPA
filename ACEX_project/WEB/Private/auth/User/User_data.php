@@ -50,13 +50,13 @@ use Monolog\Level;
             $conn = Connect_database();
             if($conn === null) return null;
 
-            $selected_columns = [tb_user_columns::name_user->name, tb_user_columns::email->name];
+            $selected_columns = [tb_user_columns::name->name, tb_user_columns::email->name];
             if($passwd) $selected_columns[] = tb_user_columns::password->name;
 
             $query = "SELECT " .
                 \implode(", ",$selected_columns).
                 " FROM ". All_tables::user->name. 
-                " WHERE ". tb_user_columns::id_user->name ." = :uid"
+                " WHERE ". tb_user_columns::id->name ." = :uid"
             ;
             $smtm = $conn->prepare($query);
             if($smtm===false) throw new Exception('in Create_account(): Database server failed to prepare statement for select query');
@@ -75,7 +75,7 @@ use Monolog\Level;
     */
     function Get_user_data_authorized(){
         $select_auth = Is_query_permitted(HOST,[Query_type::select] ,All_tables::user,
-            [tb_user_columns::email,tb_user_columns::id_user,tb_user_columns::password]
+            [tb_user_columns::email,tb_user_columns::id,tb_user_columns::password]
         );
 
         if(!$select_auth){

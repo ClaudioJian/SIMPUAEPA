@@ -41,9 +41,11 @@ use function ACEX_project\WEB\Private\Core\Security\Fixed_window_to_bucket_algo;
         private $action;
         private readonly ?array $rate_limit_option;
         private readonly bool $use_session;
+        private array $captured_args = [];
 
         /**
-         * @param callable $action the first argument can pass IP rate limiter(class Rate_limiter) or null
+         * @param string $resource endpoint or resorce requested. prefix SIMPUAEPA is stripeed, however, leading '/' need be prefix. The wildcard '*' will matches a path segment(segmented by '/', if wildcard is in the end, no need '/' at end to segment it) and capture its values as argument in a array, preserving the order in which wildcards appears
+         * @param callable $action the first argument can pass IP rate limiter(class Rate_limiter) or null, second argument will pass captured values from wildcard or empty array.
          * @param bool $require_login if true, $use_session is automatically set to true
          * @param bool $bypass_rate_limit ignore ip rate limit and endpoint rate limit if set
          * @param null|array{
@@ -62,7 +64,7 @@ use function ACEX_project\WEB\Private\Core\Security\Fixed_window_to_bucket_algo;
             ?array $rate_limit_option = null
         )
         {
-            $this->res = $resource;
+            $this->res = \strtolower($resource);
             $method = \strtoupper($method);
             
             if(!\in_array($method,VALID_HTTP_METHOD,true)) throw new Exception("$method isn't valid http method");
@@ -73,17 +75,23 @@ use function ACEX_project\WEB\Private\Core\Security\Fixed_window_to_bucket_algo;
             $this->rate_limit_option = $bypass_rate_limit ? null : $rate_limit_option;
         }
 
+
         public function execute(string $method,string $requested_resource) : bool{
-            if($requested_resource !== $this->res || $method !== $this->method) return false;
+            if($method !== $this->method || !$this->is_request_path($requested_resource)) return false;
 
             if($this->require_login) \define('REQUIRE_LOGIN',true);
             if($this->use_session){
                 $status = \session_status();
                 if($status===PHP_SESSION_DISABLED){
+                    Log_internal(
+                        new Error_code(Error_domain::configuration, Resource_code::session, Error_condition::unsupported),
+                        Level::Error,
+                        "Failed to check permission of user: Session is not allowed in current php setting"
+                    );
+
                     \http_response_code(500);
                     exit();
                 }
-
 
                 if($status === PHP_SESSION_NONE) session_initialize();
             }
@@ -115,9 +123,35 @@ use function ACEX_project\WEB\Private\Core\Security\Fixed_window_to_bucket_algo;
             
 
             Validate_request();
-            ($this->action)($IP_rate_limiter);
+            ($this->action)($IP_rate_limiter, $this->captured_args);
             return true;
         }
+
+        private function is_request_path(string $requested_resource): bool{
+            if($requested_resource === $this->res) return true;
+            $captured_args = [];
+            $this->captured_args = [];
+
+            $requested_parts = explode('/',$requested_resource);
+            $current_parts = explode('/',$this->res);
+
+            $segments_count = \count($current_parts);
+            if($segments_count !== \count($requested_parts)) return false;
+
+            for($i = 0; $i < $segments_count; $i++){
+                $req_part = $requested_parts[$i];
+                $curr_part = $current_parts[$i];
+
+                if(trim($curr_part) === '*') {
+                    $captured_args[] = trim($req_part);
+                    continue;
+                }
+                if($curr_part !== $req_part) return false;
+            }
+
+            $this->captured_args = $captured_args;
+            return true;
+        }        
     }
 
     function Route_start(array $all_route){

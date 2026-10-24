@@ -10,7 +10,11 @@ namespace ACEX_project\WEB\Private\Core\Security\File_upload;
     require_once __DIR__ . "/File_upload_utils.php";
     require_once __DIR__ . "/../../File_storation_map.php";
 
-    use ACEX_project\WEB\Private\Core\Avaible_extension;
+use ACEX_project\WEB\Private\Api\database\All_tables;
+use ACEX_project\WEB\Private\Api\database\Query_type;
+use ACEX_project\WEB\Private\Api\database\tb_complain_columns;
+use ACEX_project\WEB\Private\Api\database\tb_user_columns;
+use ACEX_project\WEB\Private\Core\Avaible_extension;
 use ACEX_project\WEB\Private\Core\File_storation_path;
 
     require_once __DIR__ . "/../../AppCommonVar.php";
@@ -22,11 +26,18 @@ use ACEX_project\WEB\Private\Core\File_storation_path;
     use ACEX_project\WEB\Private\Error\Error_condition;
     use ACEX_project\WEB\Private\Error\Error_domain;
     use ACEX_project\WEB\Private\Error\Resource_code;
-    use Monolog\Level;
+use Exception;
+use Monolog\Level;
+use Throwable;
 
     require_once __DIR__ . "/../../MIME_type.php";
 
-    use function ACEX_project\WEB\Private\Core\Construct_MIME;
+use function ACEX_project\WEB\Private\Api\database\Column_belong_to_table;
+use function ACEX_project\WEB\Private\Api\database\Connect_database;
+use function ACEX_project\WEB\Private\Api\database\Get_img_db_location;
+use function ACEX_project\WEB\Private\Api\database\Is_query_permitted;
+use function ACEX_project\WEB\Private\Api\database\Simple_WHERE_wrapper;
+use function ACEX_project\WEB\Private\Core\Construct_MIME;
     use function ACEX_project\WEB\Private\Core\Find_MIME_from_extension;
 use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 use function ACEX_project\WEB\Private\Error\Handle_error;
@@ -63,7 +74,7 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
      * )
      * if failed, the error will be logged, the possible result can be find in File_upload_utils.php from Get_descriptive_ERRupload()
      * 
-     * stage mean stage of validation. 1 mean in validation and 2 mean in ai validation
+     * stage mean stage of validation. 1 mean in validation and 2 mean in ai validation, 3 mean db
      * For front end, success -1 then stage 1 mean the validation failed else if success is 0, then mean the validation success and is moving to next stage
      * For exemple stage 2 success 0 mean the operation is finished else -1 mean ai validation didn't pass
      * 
@@ -75,7 +86,7 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         //send to client that is sucessfully received
         \ob_start();
         \header('Content-type: '.Construct_MIME(MIME['application']['json']));
-        echo json_encode(['success'=>0,'stage'=>0]);
+        echo json_encode(['success'=>0,'stage'=>0]) . "\n";
         \ob_flush();
         
         $finfo_txt = Get_file_log_format();
@@ -122,7 +133,6 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         $ip = Get_IP_address_txt();
         Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[IP-\"$ip\" | File type - $target_location->name] Rewriting and compressing file $finfo_txt");
         \exec($command,$output, $return_code);
-
         switch($return_code){
             case 0:  break;
             case 1:  Exit_upload_err(Custom_Upload_Err::no_gd_support,1,$allowed_ext,$og_name,$full_name,$internal_fname);
@@ -156,12 +166,16 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         }
 
         Send_response(0,2,$og_name);
-        \ob_end_clean();
+        
 
         $internal_fname = $new_name. '.'.$compressed_ext->name;
         $finfo_txt = Get_file_log_format($internal_fname);
 
+        Register_image_in_db($target_location, $internal_fname, $og_name, $allowed_ext);
+
+
         Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[IP-\"$ip\" | File type - $target_location->name] File stored sucessfully: $finfo_txt");
+        \ob_end_clean();
         return true;
     }
 
@@ -261,7 +275,7 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         return $byte_size <= $allowed_byte;
     }
 
-    function Exit_upload_err(Custom_Upload_Err|int $code, int $stage,array $allowed_ext,string $og_name,string $moved_fpath = "", string $internal_name = "") : never
+    function Exit_upload_err(Custom_Upload_Err|int $code, int $stage,array $allowed_ext,string $og_name,string $moved_fpath = "", string $internal_name = "", string $extra_msg = "") : never
     {
         $ip = Get_IP_address_txt();
         $desc = Get_descriptive_ERRupload($code,$allowed_ext,$internal_name);
@@ -284,10 +298,12 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 
         $code_args = $code instanceof Custom_Upload_Err ? $code->value : $code;
 
+        $extra_msg = $extra_msg === "" ? '' : "| $extra_msg";
+
         Log_internal(
             new Error_code(Error_domain::request,Resource_code::file,Error_condition::failed),
             Level::Warning,
-            "[IP-\"$ip\"](code: $code_args) $err_desc"
+            "[IP-\"$ip\"](code: $code_args) $err_desc $extra_msg"
         );
         if($moved_fpath !== "") \unlink($moved_fpath);
         
@@ -317,4 +333,158 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         echo json_encode($response,JSON_UNESCAPED_UNICODE) . "\n";
         if(\ob_get_level() > 0) \ob_flush();
         \flush();
+    }
+
+
+    /**
+     * If alredy exist, delete old image
+     */
+    function Register_image_in_db(File_storation_path $category, string $internal_fname, string $user_upload_fname , array $allowed_ext){
+        $full_name = $category->value . DIRECTORY_SEPARATOR . $internal_fname;
+        $uid = $_SESSION['uid'];
+
+        $db_map = Get_img_db_location($category);
+
+        if($db_map === []) Exit_upload_err(Custom_Upload_Err::db_reference_missing,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname);
+        $table = $db_map['table'];
+        $column = $db_map['column'];
+        $uid_column = $db_map['user_id'];
+
+        if(!Is_query_permitted(HOST,[Query_type::select,Query_type::update],$table,[$column])) 
+            Exit_upload_err(Custom_Upload_Err::db_failed,3,
+            $allowed_ext,$user_upload_fname,$full_name,$internal_fname,
+            "Not enought permission for $table->name and column [$column->name, $uid_column->name]"
+        );
+        
+        
+
+        $conn = null;
+        try{
+            $old_fname = Get_old_file_name($table,$column,$uid_column);
+
+            if(is_int($old_fname)){
+                switch($old_fname){
+                    //new upload file
+                    case 0: break;
+                    case 1: Exit_upload_err(Custom_Upload_Err::db_failed,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "Cannot connect to database when getting old file reference");
+                    case 2: Exit_upload_err(Custom_Upload_Err::db_failed,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "Prepare statement failed when getting old file reference");
+                    case 3: Exit_upload_err(Custom_Upload_Err::db_failed,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "Execute query to get old file reference failed");
+                    case 4: Exit_upload_err(Custom_Upload_Err::db_reference_missing,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "No record found to update of table \"$table\"");
+                    default: Exit_upload_err(Custom_Upload_Err::db_failed,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "Unknown error when getting old file reference");
+                }
+            }
+            
+            //keep connect with old db connection
+            $conn = Connect_database(true);
+            $conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+            if($conn === null) Exit_upload_err(Custom_Upload_Err::db_failed,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname);
+            if(!$conn->inTransaction()) $conn->beginTransaction();
+
+
+            //update reference
+            $query = "
+                UPDATE $table->name
+                SET $column->name = :new_file
+                WHERE $uid_column->name = :uid
+            ";
+
+            $smtm = $conn->prepare($query);
+            if($smtm===false) {
+                if($conn->inTransaction()) $conn->rollBack();
+                Exit_upload_err(Custom_Upload_Err::db_failed,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "Failed to prepare statement when update new file reference");
+            }
+
+
+            $success = $smtm->execute(['uid'=>$uid,'new_file'=>$internal_fname]);
+            if(!$success || ($conn->inTransaction() && !$conn->commit())) {
+                if($conn->inTransaction()) $conn->rollBack();
+                Exit_upload_err(Custom_Upload_Err::db_failed,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "Failed to execute query when update new file reference");
+            }
+
+            if($smtm->rowCount()===0) {
+                if($conn->inTransaction()) $conn->rollBack();
+                Exit_upload_err(Custom_Upload_Err::db_reference_missing,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "No affected row when update new file reference");
+            }
+
+            $ip = Get_IP_address_txt();
+
+            $log_msg = "uploaded new file \"$user_upload_fname\"";
+            if(!is_int($old_fname)) {
+                $log_msg = "replacing (old internal name - \"$old_fname\") with new file \"$user_upload_fname\"";
+                \unlink("{$category->value}/$old_fname");
+            }
+            
+
+            
+            Log_internal(
+                new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::duplicated),
+                Level::Notice,
+                "[IP-\"$ip\"] User(uid - $uid) $log_msg [internal_name: $internal_fname | final directory - $category->name]"
+            );
+
+            
+            Send_response(0,3,$user_upload_fname,201);
+        }catch(Throwable $e){
+            if($conn instanceof \PDO && $conn->inTransaction()) $conn->rollBack();
+            Exit_upload_err(Custom_Upload_Err::db_failed, 3, $allowed_ext, $user_upload_fname, $full_name, $internal_fname, $e->getMessage());
+        }
+    }
+
+    /**
+     * Get old file name before replace it to get reference to unlink it.
+     * 
+     * If unexpected error occur, e.g., sql query error, you may need catch it when use this
+     * 
+     * If no previous transaction, then start new one. subsequence from Connect_database will be same as here and transaction will not exit if no error occurs(so you may need to commit/rollback it).
+     * @param \UnitEnum $file_column column name which store file name
+     * @param \UnitEnum $uid_column column name for current table
+     * @return string|int  INT mean failed: 0 = new file, 1 = failed to connect, 2= prepare failed, 3 = execute, 4 = record not found;
+     * @param list<array{column:\UnitEnum,value:mixed}> $extra_condition expect: [value_name => value], become WHERE ... value_name = :value
+     * @throws Exception
+     */
+    function Get_old_file_name(All_tables $table, \UnitEnum $file_column, \UnitEnum $uid_column, array $extra_condition = []) : string|int{
+        $conn = null;
+
+        if(!Column_belong_to_table($table,[$file_column,$uid_column],false)) throw new Exception("Requested columns [$uid_column->name, $file_column->name] doesn't exist in table \"{$table->name}\"");
+
+        $uid = $_SESSION['uid'];
+        $conn = Connect_database(true);
+        
+        if($conn === null) return 1;
+        $conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+        if(!$conn->inTransaction()) $conn->beginTransaction();
+
+        $extra_condition[] = ['column'=> $uid_column, 'value'=>$uid];
+
+        $condition = Simple_WHERE_wrapper($extra_condition);
+        $where_clause = $condition['condition'];
+
+        $query = "
+            SELECT $file_column->name , $uid_column->name
+            FROM $table->name 
+            $where_clause
+        ";
+
+
+
+
+
+        $smtm = $conn->prepare($query);
+        if($smtm===false) {
+            if($conn->inTransaction()) $conn->rollBack();
+            return 2;
+        }
+
+        $success = $smtm->execute($condition['binded_value']);
+        if(!$success) {
+            if($conn->inTransaction()) $conn->rollBack();
+            return 3;
+        }
+        
+        if($smtm->rowCount() <= 0) return 4;
+        
+        $row = $smtm->fetch(\PDO::FETCH_ASSOC);
+        return $row[$file_column->name] ?? 0;
     }

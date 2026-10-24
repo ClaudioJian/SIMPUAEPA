@@ -50,7 +50,9 @@ require_once __DIR__ .'/../../Error/Error_manager.php';
 
         \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
         \http_response_code(200);
-        echo json_encode([...$response,'reason'=>0,'success'=>0]);
+        $response = [...$response,'reason'=>0,'success'=>0];
+        $json = \json_encode($response);
+        echo $json;
     }
 
 
@@ -72,7 +74,7 @@ require_once __DIR__ .'/../../Error/Error_manager.php';
             $user_name = $email = 'unknown';
         }else{
             $row = $smtm->fetch(\PDO::FETCH_ASSOC);
-            $user_name = $row[tb_user_columns::name_user->name];
+            $user_name = $row[tb_user_columns::name->name];
             $email = $row[tb_user_columns::email->name];
         }
 

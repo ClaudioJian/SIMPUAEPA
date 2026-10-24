@@ -137,16 +137,17 @@ namespace ACEX_project\WEB\Private\Api\database;
 
     /**
      * Bind values and execute. May throw error after execute
-     * @param array{string,mixed} $key_val_pair expect: [:value_name => value]
+     * @param array{string,mixed} $key_val_pair expect: [value_name => value]
+     * @throws PDOException On error if PDO::ERRMODE_EXCEPTION option is true.
      */
-    function PDO_Mybind_params(array $key_val_pair,PDOStatement $smtm) : void{
+    function PDO_Mybind_params(array $key_val_pair,PDOStatement $smtm) : bool{
         foreach($key_val_pair as $name=>$values){
                 $flags = Find_php_param_from_value($values);
 
                 if($flags!==null) $smtm->bindValue($name,$values,$flags);
                 else $smtm->bindValue($name,$values);
             }
-        $smtm->execute();
+        return $smtm->execute();
     }
 
     /**
@@ -217,11 +218,76 @@ namespace ACEX_project\WEB\Private\Api\database;
     }
 
     /**
+     * @param list<array{
+     *     column: \UnitEnum,
+     *     value: mixed,
+     *     table: All_tables|null
+     * }> $all_column_value
+     * @param bool $and control if all condition is AND or OR
+     * @return array{
+     * condition: string,
+     * binded_value: array
+     * } condition: WHERE column=:value_name,...
+     * binded_value = [value_name => binded value]
+     */
+    function Simple_WHERE_wrapper(array $all_column_value, bool $and = true) : array{
+        if($all_column_value === []) return [
+            'condition' => '',
+            'binded_value' => []
+        ];
+
+        $binded_values = $all_condition = [];
+
+        $condition_count = \count($all_column_value);
+
+        for($i=0; $i < $condition_count; $i++){
+            $curr_condition = $all_column_value[$i];
+
+            $column = $curr_condition['column'] ?? MyArray_missing_key('column','Simple_WHERE_wrapper','all_column_value');
+
+            if(!$column instanceof \UnitEnum) {
+                Handle_error(
+                    new Error_code(Error_domain::database,Resource_code::db_column,Error_condition::type),
+                    Level::Critical,
+                    'Invalid argument in Simple_WHERE_wrapper:
+                    Each condition must contain valid enum type.'
+                );
+            }
+
+            $value = $curr_condition['value'] ?? MyArray_missing_key('value','Simple_WHERE_wrapper','all_column_value');
+
+
+            if(isset($curr_condition['table']) && !$curr_condition['table'] instanceof All_tables) {
+                Handle_error(
+                    new Error_code(Error_domain::database,Resource_code::db_column,Error_condition::type),
+                    Level::Critical,
+                    'Invalid argument in Simple_WHERE_wrapper:
+                    Requested table isnt enum All_table.'
+                );
+            }
+
+            $table = $table?->name ?? '';
+
+            $named_value = Generate_value_name($i,$i+1,$table);
+
+            $all_condition[] = "{$column->name} = $named_value";
+            $binded_values[$named_value] = $value;
+        };
+
+        $and = $and ? 'AND' : 'OR';
+
+        return [
+            'condition'=> 'WHERE '. \implode(" $and ",$all_condition),
+            'binded_value'=> $binded_values
+        ];
+    }
+
+    /**
      * return: table name(if present) + column(prefix) + unique column indentifier or order(string) + row id, e.g ':user_column_1_row_1'
      */
     function Generate_value_name(int $column_id,int $row_id ,string $table_name = ""):string{
         $tb_name = $table_name === '' ? "" : $table_name."_";
-        return ":".$tb_name."column".$column_id."_row_".$row_id;
+        return ":".$tb_name."column_".$column_id."_row_".$row_id;
     }
 
     /**if type is null, type should using default type */

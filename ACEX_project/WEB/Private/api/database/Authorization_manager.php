@@ -52,17 +52,7 @@ namespace ACEX_project\WEB\Private\Api\database;
                 if (!$type instanceof Query_type) Throw_invalid_query_type("Permission::__construct()");
             }
 
-            $table_enum_name = $table->value;
-
-            foreach ($column as $c) {
-                if (!$c instanceof \UnitEnum || $c::class !== $table_enum_name) {
-                    Handle_error(
-                        new Error_Code(Error_domain::database,Resource_code::db_column,Error_condition::missing),
-                        Level::Critical,
-                        "Invalid argument in Permission::__construct(): Requested table $table->name does not have one of the specified columns."
-                    );
-                }
-            }
+            Column_belong_to_table($table,$column);
 
             $this->user_name = \strtolower($user_name);
         }

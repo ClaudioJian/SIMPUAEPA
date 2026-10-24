@@ -378,11 +378,13 @@ namespace ACEX_project\WEB\Private\Core\Security;
      */
     function Bucket_info_from_fixed_window(int $max_allowed, int $interval) : array|null{
         if($max_allowed <=0 || $interval <=0 ) return [];
-        $factor = gcd($max_allowed,$interval);
+        $factor = 1;//gcd($max_allowed,$interval);
 
         $refill_speed = $max_allowed/$factor;
         $consume = $interval/$factor;
         $capacity = $refill_speed * $consume;
+
+        
 
         return ['capacity'=>$capacity,'consume'=>$consume,'refill_speed'=>$refill_speed];
     }
