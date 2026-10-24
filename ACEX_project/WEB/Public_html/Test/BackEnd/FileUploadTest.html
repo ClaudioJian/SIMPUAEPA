@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fazer Login</title>
+    <link rel="stylesheet" href="../Style/login.css">
+</head>
+<body>
+    <h1>Aceita extenção: jpeg, webep, png</h1>
+
+    <h2>ENVIAR perfil imagem</h2>
+    <form enctype="multipart/form-data" action="/SIMPUAEPA/image/profile?test=1" method="POST" id="perfil">
+        <!-- MAX_FILE_SIZE must precede the file input field -->
+        <input type="hidden" name="MAX_FILE_SIZE" value="41943040" />
+        <!-- Name of input element determines name in $_FILES array -->
+        file: <input name="userfile" type="file" />
+        X:<input name="x" type="number" placeholder="coordenada x inicial para recorte de imagem">
+        Y:<input name="y" type="number" placeholder="coordenada y inicial para recorte de imagem">
+        Width:<input name="width" type="number" placeholder="largura para ser recortada">
+        Height:<input name="height" type="number" placeholder="altura para ser recortada">
+        <input type="submit" value="Send File" />
+
+    </form>
+
+    <h2>ENVIAR mapa imagem(imcompleto)</h2>
+    <form enctype="multipart/form-data" action="/SIMPUAEPA/image/map" method="POST">
+        <!-- MAX_FILE_SIZE must precede the file input field -->
+        <input type="hidden" name="MAX_FILE_SIZE" value="41943040" />
+        <!-- Name of input element determines name in $_FILES array -->
+        Send this file: <input name="userfile" type="file" />
+        <input type="submit" value="Send File" />
+    </form>
+
+    <img src="/SIMPUAEPA/image/profile/6adc1a7c71f50.webp">
+    
+</body>
+<script src="../../API/api-client.js"></script>
+</html>
