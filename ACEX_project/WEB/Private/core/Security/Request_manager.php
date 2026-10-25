@@ -114,13 +114,19 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 
 
     /**
-     *  get value posted in json from web in array form. don't use when is multi-part
+     *  get value posted in raw/json/query param from web in array form. don't use when is multi-part
      *  to use: returned_array['key']
+     * 
+     *  if getting php://input lead nothing, then if is POST then return $_POST else if is GET then return $_GET
      * @return array ['key'=>'value'] from fetch(url,{...,body:JSON.stringfy(key:value)})
      */
     function Get_request_body(){
         $request_raw = \file_get_contents('php://input');
-        if(($request_raw === false || $request_raw === "") && $_SERVER['REQUEST_METHOD']==='POST') return $_POST;
+        if(($request_raw === false || $request_raw === "")) {
+          if($_SERVER['REQUEST_METHOD']==='POST') return $_POST;
+          if($_SERVER['REQUEST_METHOD']==='GET') return $_GET;
+        }
+
         $assoc_arr = \json_decode($request_raw,true);
 
         if($assoc_arr===false && json_last_error() === JSON_ERROR_NONE){

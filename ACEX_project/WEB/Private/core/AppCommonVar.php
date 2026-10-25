@@ -42,6 +42,7 @@ namespace ACEX_project\WEB\Private\Core;
     if(!\defined('INITIALIZED')) Initialize_value();
 
     function Initialize_value(){
+        define('URI_PREFIX','SIMPUAEPA');
         //Create directory if not exist
         if(
             !File_storation_path::Await_sanitation->Initialize_directory() ||

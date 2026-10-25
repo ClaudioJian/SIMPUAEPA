@@ -59,7 +59,6 @@ class Schema{
         $conn = null;
         try{
             $conn = Connect_database();
-            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             if($conn === null) {
                 Log_internal(new Error_code(Error_domain::database,Resource_code::connection,Error_condition::failed),
                     Level::Error,

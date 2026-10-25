@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fazer Login</title>
-    <link rel="stylesheet" href="../Style/login.css">
 </head>
 <body>
     <h1>Aceita extenção: jpeg, webep, png</h1>
@@ -32,7 +31,16 @@
         <input type="submit" value="Send File" />
     </form>
 
-    <img src="/SIMPUAEPA/image/profile/6adc1a7c71f50.webp">
+    <h2>Pegar dados de perfil</h2>
+    <form action="/SIMPUAEPA/user/profile" method="get">
+        id: <input type="number" name="id"/>
+        incluir email: <input name="email" type="checkbox" value=1 />
+        incluir nome: <input name="name" type="checkbox" value=1 />
+        incluir img: <input name="image_url" type="checkbox" value=1 />
+        <input type="submit" value="Enviar"/>
+    </form>
+
+    <img src="/SIMPUAEPA/image/profile/6add795d3c096.webp">
     
 </body>
 <script src="../../API/api-client.js"></script>

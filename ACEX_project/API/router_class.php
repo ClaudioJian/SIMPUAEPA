@@ -35,6 +35,7 @@ use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 use Monolog\Level;
 use function ACEX_project\WEB\Private\Core\Security\Bucket_info_from_fixed_window;
 use function ACEX_project\WEB\Private\Core\Security\Fixed_window_to_bucket_algo;
+use function ACEX_project\WEB\Private\Core\Send_mime_type;
 
     class Route{
         private readonly string $res;
@@ -116,7 +117,7 @@ use function ACEX_project\WEB\Private\Core\Security\Fixed_window_to_bucket_algo;
                 );
 
                 \http_response_code(401);
-                \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+                Send_mime_type(MIME['application']['json']);
                 echo json_encode(['success'=>-2]);
                 exit();
             }

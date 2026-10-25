@@ -40,6 +40,7 @@ use function ACEX_project\WEB\Private\Api\database\Simple_WHERE_wrapper;
 use function ACEX_project\WEB\Private\Core\Construct_MIME;
     use function ACEX_project\WEB\Private\Core\Find_MIME_from_extension;
 use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
+use function ACEX_project\WEB\Private\Core\Send_mime_type;
 use function ACEX_project\WEB\Private\Error\Handle_error;
     use function ACEX_project\WEB\Private\Error\Log_internal;
 
@@ -85,7 +86,7 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         //start buffering the output
         //send to client that is sucessfully received
         \ob_start();
-        \header('Content-type: '.Construct_MIME(MIME['application']['json']));
+        Send_mime_type(MIME['application']['json']);
         echo json_encode(['success'=>0,'stage'=>0]) . "\n";
         \ob_flush();
         
@@ -376,7 +377,6 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
             
             //keep connect with old db connection
             $conn = Connect_database(true);
-            $conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
             if($conn === null) Exit_upload_err(Custom_Upload_Err::db_failed,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname);
             if(!$conn->inTransaction()) $conn->beginTransaction();
@@ -397,14 +397,16 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 
 
             $success = $smtm->execute(['uid'=>$uid,'new_file'=>$internal_fname]);
-            if(!$success || ($conn->inTransaction() && !$conn->commit())) {
-                if($conn->inTransaction()) $conn->rollBack();
-                Exit_upload_err(Custom_Upload_Err::db_failed,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "Failed to execute query when update new file reference");
-            }
+
 
             if($smtm->rowCount()===0) {
                 if($conn->inTransaction()) $conn->rollBack();
                 Exit_upload_err(Custom_Upload_Err::db_reference_missing,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "No affected row when update new file reference");
+            }
+
+            if(!$success || ($conn->inTransaction() && !$conn->commit())) {
+                if($conn->inTransaction()) $conn->rollBack();
+                Exit_upload_err(Custom_Upload_Err::db_failed,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "Failed to execute query when update new file reference");
             }
 
             $ip = Get_IP_address_txt();
@@ -422,6 +424,8 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
                 Level::Notice,
                 "[IP-\"$ip\"] User(uid - $uid) $log_msg [internal_name: $internal_fname | final directory - $category->name]"
             );
+
+            if($table === All_tables::user) $_SESSION['profile_img_url'] = '/'. URI_PREFIX ."/image/profile/{$internal_fname}";
 
             
             Send_response(0,3,$user_upload_fname,201);
@@ -452,7 +456,6 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         $conn = Connect_database(true);
         
         if($conn === null) return 1;
-        $conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
         if(!$conn->inTransaction()) $conn->beginTransaction();
 
@@ -466,9 +469,6 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
             FROM $table->name 
             $where_clause
         ";
-
-
-
 
 
         $smtm = $conn->prepare($query);

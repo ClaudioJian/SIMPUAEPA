@@ -45,6 +45,7 @@ use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 
 require_once __DIR__ . "/../../Core/Security/Request_manager.php";
 use function ACEX_project\WEB\Private\Core\Security\Get_request_body;
+use function ACEX_project\WEB\Private\Core\Send_mime_type;
 
 require_once __DIR__ . "/../../Error/Error_manager.php";
 use function ACEX_project\WEB\Private\Error\Handle_error;
@@ -122,7 +123,7 @@ require_once __DIR__ ."/Authentication.php";
       Handle_query_fail($e,$conn);
     }
 
-    Internal_login($id);
+    Internal_login($id,$email,$user_name);
 
     Log_internal(
       new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::success),
@@ -130,7 +131,7 @@ require_once __DIR__ ."/Authentication.php";
       "[IP-\"$ip\"] Account created sucessfully: User id=[$id]"
     );
 
-    \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+    Send_mime_type(MIME['application']['json']);
     echo json_encode(['success'=>0,'uid'=>$id]);
     \http_response_code(201);
     exit();
@@ -179,7 +180,7 @@ require_once __DIR__ ."/Authentication.php";
 
 
         \http_response_code(400);
-        \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+        Send_mime_type(MIME['application']['json']);
         echo json_encode(['success'=>-1,'name'=> $name_exist? 2 : 4,'email'=> $email_exist? 2 : 4,'password'=>4]);
         exit();
       }

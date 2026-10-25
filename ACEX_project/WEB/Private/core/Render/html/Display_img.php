@@ -5,13 +5,14 @@ namespace ACEX_project\WEB\Private\Core\Render\html;
 require_once __DIR__ . "/../../File_storation_map.php";
 require_once __DIR__ . "/../../Security/Rate_limit_handler.php";
 
-require_once __DIR__ . "/../../MIME_type.php";
+
 require_once __DIR__ . "/../../../Api/database/database_dictionary.php";
 require_once __DIR__ . "/../../../Api/database/database_manager.php";
 
 require_once __DIR__ . "/../../../Error/Error_code.php";
 require_once __DIR__ . "/../../../Error/Error_manager.php";
 
+require_once __DIR__ . "/../../MIME_type.php";
 use ACEX_project\WEB\Private\Core\Avaible_extension;
 use ACEX_project\WEB\Private\Core\File_storation_path;
 use ACEX_project\WEB\Private\Core\Security\Rate_limiter;
@@ -28,6 +29,7 @@ use function ACEX_project\WEB\Private\Auth\session_initialize;
 use function ACEX_project\WEB\Private\Auth\User\Is_logged;
 use function ACEX_project\WEB\Private\Core\Find_MIME_from_extension;
 use function ACEX_project\WEB\Private\Core\Security\File_upload\Get_old_file_name;
+use function ACEX_project\WEB\Private\Core\Send_mime_type;
 use function ACEX_project\WEB\Private\Error\Log_internal;
 
 /**
@@ -73,9 +75,13 @@ function Send_img(?Rate_limiter $ip_limiter, array $captured_args){
     Is_img_acess_authorized($target_dir, $file_name);
 
     $full_path = $target_dir->value . "/{$file_name}";
-    $fptr = fopen($full_path,'rb');
 
-    $content = stream_get_contents($fptr);
+    $fptr = fopen($full_path,'rb');
+    if(!is_resource($fptr) || ($content = stream_get_contents($fptr)) === false) {
+        \http_response_code(404);
+        exit();
+    }
+
     fclose($fptr);
 
     echo $content;
@@ -119,10 +125,13 @@ function Is_img_acess_authorized(File_storation_path $category, string $file_nam
                 ))
             ){
                 \http_response_code(401);
+                echo json_encode(['success'=>-2]);
                 exit();
             }
 
         }catch(Throwable $e){
+            $conn = Connect_database(true);
+            if($conn instanceof \PDO && $conn->inTransaction()) $conn->rollBack();
             $uid = $_SESSION['uid'] ?? 'unknown';
             Log_internal(
                 new Error_code(Error_domain::database, Resource_code::file, Error_condition::unknown),

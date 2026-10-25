@@ -41,9 +41,10 @@ use ACEX_project\WEB\Private\Error\Error_code;
         case email;
         case password;
         case profile_image_name;
-        case status;
         case theme;
         case credibility_score;
+        case deleted;
+        case access_stricted;
     }
 
     enum tb_complain_columns{

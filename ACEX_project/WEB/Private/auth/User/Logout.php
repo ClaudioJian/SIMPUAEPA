@@ -22,6 +22,7 @@ require_once __DIR__ . "/login.php";
 require_once __DIR__ . '/../session_manager.php';
 use function ACEX_project\WEB\Private\Auth\New_session;
 use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
+use function ACEX_project\WEB\Private\Core\Send_mime_type;
 
     require_once __DIR__ ."/Authentication.php";
 
@@ -48,7 +49,7 @@ require_once __DIR__ .'/../../Error/Error_manager.php';
             "[IP-\"$ip\"] Logout successfull: user_name=\"". $response['logout_user_name'] . "\", email=\"" .$response['logout_user_email'] . '"'
         );
 
-        \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+        Send_mime_type(MIME['application']['json']);
         \http_response_code(200);
         $response = [...$response,'reason'=>0,'success'=>0];
         $json = \json_encode($response);
@@ -68,14 +69,13 @@ require_once __DIR__ .'/../../Error/Error_manager.php';
     function Internal_Logout() : array | null{
         if(!Is_logged()) return null;
         $user_name = $email = '';
-        $smtm = Get_user_data(false);
+        $data = Get_user_data(['email'=>true,'name'=>true]);
 
-        if($smtm === null || $smtm->rowCount() === 0){
+        if($data === null){
             $user_name = $email = 'unknown';
         }else{
-            $row = $smtm->fetch(\PDO::FETCH_ASSOC);
-            $user_name = $row[tb_user_columns::name->name];
-            $email = $row[tb_user_columns::email->name];
+            $user_name = $data['name'] ?? 'unknown';
+            $email = $data['email'] ?? 'unknown';
         }
 
         $response = [
@@ -86,5 +86,8 @@ require_once __DIR__ .'/../../Error/Error_manager.php';
         
         New_session();
         unset($_SESSION['uid']);
+        unset($_SESSION['user_email']);
+        unset($_SESSION['user_name']);
+        unset($_SESSION['profile_img_url']);
         return $response;
     }

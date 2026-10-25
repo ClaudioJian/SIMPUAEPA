@@ -41,9 +41,10 @@ $all_schema = [
                 ['name'=>tb_user_columns::name,'type'=>'VARCHAR(255)'],
                 ['name'=>tb_user_columns::password, 'type'=>'VARCHAR(255)'],
                 ['name'=>tb_user_columns::profile_image_name, 'type'=>'CHAR(18)'],
-                ['name'=>tb_user_columns::status, 'type'=>'INT UNSIGNED'],
+                ['name'=>tb_user_columns::deleted, 'type'=>'BOOL'],
                 ['name'=>tb_user_columns::theme, 'type'=>'BOOL'],
                 ['name'=>tb_user_columns::credibility_score, 'type'=>'CHAR(18)'],
+                ['name'=>tb_user_columns::access_stricted, 'type'=>'BOOL'],
             ],
             'UNIQUE('.tb_user_columns::email->name.','. tb_user_columns::name->name.')'
         ).'' 

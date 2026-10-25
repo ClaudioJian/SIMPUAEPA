@@ -22,6 +22,7 @@ use function ACEX_project\WEB\Private\Api\database\Handle_query_fail;
 require_once __DIR__ . "/../../Api/database/database_dictionary.php";
 use ACEX_project\WEB\Private\Api\database\All_tables;
 use ACEX_project\WEB\Private\Api\database\tb_user_columns;
+use ACEX_project\WEB\Private\Core\File_storation_path;
 use ACEX_project\WEB\Private\Core\Security\Rate_bucket;
 use ACEX_project\WEB\Private\Core\Security\Rate_limiter;
 use ACEX_project\WEB\Private\Error\Error_condition;
@@ -45,6 +46,7 @@ use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 require_once __DIR__ .'/../../Core/Security/Rate_limit_handler.php';
 use function ACEX_project\WEB\Private\Core\Security\Bucket_info_from_fixed_window;
 use function ACEX_project\WEB\Private\Core\Security\Fixed_window_to_bucket_algo;
+use function ACEX_project\WEB\Private\Core\Send_mime_type;
 
 require_once __DIR__ .'/../../Error/Error_manager.php';
 
@@ -57,7 +59,7 @@ require_once __DIR__ . "/User_data.php";
 
     function Login(?Rate_limiter $IP_rate_limiter, array $captured_args, array $request_body = []){
         if(Is_logged()) {
-            \header('Content-type: '.Construct_MIME(MIME['application']['json']));
+            Send_mime_type(MIME['application']['json']);
             echo json_encode(['success'=>1,'uid'=>$_SESSION['uid']]);
             exit();
         }
@@ -88,12 +90,11 @@ require_once __DIR__ . "/User_data.php";
                 exit();
             }
             
-            $first_fail = true;
             $key = hexdec(substr(hash('xxh32', $ip), 0, 8));
             $result = IP_login_at_limit($IP_rate_limiter, $key);
 
             Validate_enroll_data($email,$password);
-            Get_user_data_authorized();
+            Get_user_data_authorized(true,false,true);
 
             $msg = "";
             $uid = Validate_login_credential($email,$password,$msg);
@@ -109,13 +110,13 @@ require_once __DIR__ . "/User_data.php";
                 exit();
             }
 
-            Internal_login($uid);
+            Internal_login($uid['uid'], $email, $uid['name']);
         }catch(Throwable $e){
             Handle_query_fail($e,$conn);
         }
 
         $uid = $_SESSION['uid'];
-        \header('Content-type: '.Construct_MIME(MIME['application']['json']));
+        Send_mime_type(MIME['application']['json']);
         echo json_encode(['success'=>0,'uid'=>$uid]);
 
         Log_internal(
@@ -132,9 +133,13 @@ require_once __DIR__ . "/User_data.php";
      * @param string $email
      * @param string $raw_passwd
      * @throws Exception
-     * @return int|false
+     * @return array{
+     * uid: int,
+     * name:string,
+     * img_url: string
+     * }|false
      */
-    function Validate_login_credential(string $email, string $raw_passwd, string &$msg):int|false{
+    function Validate_login_credential(string $email, string $raw_passwd, string &$msg):array|false{
         $response = ['success'=>0,'email'=>4,'password'=>4];
         $conn = Connect_database();
         if($conn === null) {
@@ -145,7 +150,7 @@ require_once __DIR__ . "/User_data.php";
         }
 
         $query = "SELECT " .
-            \implode(", ",[tb_user_columns::id->name, tb_user_columns::email->name, tb_user_columns::password->name]).
+            \implode(", ",[tb_user_columns::id->name, tb_user_columns::name->name , tb_user_columns::email->name, tb_user_columns::password->name, tb_user_columns::profile_image_name->name]).
             " FROM ". All_tables::user->name. 
             " WHERE ". tb_user_columns::email->name ." = :email"
         ;
@@ -157,7 +162,7 @@ require_once __DIR__ . "/User_data.php";
 
         if($smtm->rowCount()<1) {
             \http_response_code(400);
-            \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+            Send_mime_type(MIME['application']['json']);
             echo json_encode([...$response,'email'=>2,'success'=>-1]);
             $msg = "Email not registered in database";
             return false;
@@ -168,13 +173,17 @@ require_once __DIR__ . "/User_data.php";
 
         if(!Secure_password_verify($raw_passwd,$stored_passwd)){
             \http_response_code(400);
-            \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+            Send_mime_type(MIME['application']['json']);
             echo json_encode([...$response,'success'=>-1,'password'=>2]);
             $msg = "Invalid password";
             return false;
         }
 
-        return $row[tb_user_columns::id->name];
+        return [
+            'uid' => $row[tb_user_columns::id->name],
+            'name' => $row[tb_user_columns::name->name],
+            'img_url' => $row[tb_user_columns::profile_image_name->name]
+        ];
     }
 
     /**
@@ -332,9 +341,13 @@ require_once __DIR__ . "/User_data.php";
     }
 
 
-    function Internal_login(int $uid){
+    function Internal_login(int $uid, string $email = '', string $name = '', string $profile_img_url = ''){
         New_session();
         $_SESSION['uid'] = $uid;
+
+        if($email !== '') $_SESSION['user_email'] = \trim($email);
+        if($name !== '') $_SESSION['user_name'] = \trim($name);
+        if($profile_img_url !== '') $_SESSION['profile_img_url'] = '/'. URI_PREFIX .'/image/profile/' . \strtolower(\trim($profile_img_url));
     }
 
     function Is_logged():bool{

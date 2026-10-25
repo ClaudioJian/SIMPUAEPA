@@ -47,6 +47,7 @@ namespace ACEX_project\WEB\Private\Api\database;
         if($conn === null){
             try{
                 $conn = new PDO($dns,SERVER_USER,DB_PASSWORD);
+                $conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
             }catch(PDOException $e){
                 Handle_error(
                     new Error_Code(Error_domain::database,Resource_code::connection,Error_condition::unknown),

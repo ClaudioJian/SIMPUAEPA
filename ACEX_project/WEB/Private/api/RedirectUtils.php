@@ -5,7 +5,7 @@ namespace ACEX_project\WEB\Private\Api;
     use function ACEX_project\WEB\Private\Core\Construct_MIME;
 
     use function ACEX_project\WEB\Private\Auth\session_initialize;
-
+use function ACEX_project\WEB\Private\Core\Send_mime_type;
 
     /**
      * send redirect for client. need session to be active to able store information(don't matter if is guest or authenticated user).
@@ -19,9 +19,9 @@ namespace ACEX_project\WEB\Private\Api;
         if($data!==[] && session_status()===PHP_SESSION_NONE) session_initialize();
         if($resource_name==='') $resource_name = HOME_PAGE_LOCATION;
 
-        \header('Content-type: '.Construct_MIME(MIME['application']['json']));
-        \header("Location: /SIMPUAEPA/$resource_name");
-        \header("X-target-location: /SIMPUAEPA/".ltrim($resource_name,'/'));
+        Send_mime_type(MIME['application']['json']);
+        \header("Location: /". URI_PREFIX ."/$resource_name");
+        \header("X-target-location: /". URI_PREFIX .'/'.ltrim($resource_name,'/'));
         \http_response_code($http_code);
         
         exit();

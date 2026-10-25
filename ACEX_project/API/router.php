@@ -1,7 +1,7 @@
 <?php 
 
 namespace ACEX_project\API;
-
+    error_log('hi');
 
 
     require_once __DIR__ . "/../WEB/Private/Core/AppCommonVar.php";  
@@ -12,6 +12,8 @@ namespace ACEX_project\API;
     require_once __DIR__ . "/../WEB/Private/Auth/User/Create_account.php";
 
     use function ACEX_project\WEB\Private\Auth\User\Create_account;
+
+    require_once __DIR__ . "/../WEB/Private/Auth/User/User_data.php";
 
     require_once __DIR__ . "/../WEB/Private/Auth/User/login.php";
 
@@ -28,6 +30,7 @@ namespace ACEX_project\API;
     require_once __DIR__ . "/../WEB/Private/Core/Security/CSRF_manager.php";
     use function ACEX_project\WEB\Private\Core\Security\Handle_CSRF_GET;
     use function ACEX_project\WEB\Private\Auth\User\Login;
+    use function ACEX_project\WEB\Private\Auth\User\Send_user_data;
 
     require_once __DIR__ . "/../WEB/Private/Core/Render/html/Display_img.php";
     use function ACEX_project\WEB\Private\Core\Render\html\Send_img;
@@ -43,6 +46,9 @@ namespace ACEX_project\API;
         new Route("/csrf",'POST',Handle_CSRF_GET(...),bypass_rate_limit:true),
         //display image
         new Route('/image/*/*','GET',Send_img(...)),
+        //Get user data
+        new Route('/user/*','GET', Send_user_data(...)),
+        //Get complain data
         new Route("/subscribe",'POST',Create_account(...),require_nonce:true, rate_limit_option:RATE_ENDPOINT_SUBSCRIBE),
         new Route("/login",'POST',Login(...), rate_limit_option:RATE_ENDPOINT_LOGIN),
         new Route('/logout',"POST",Logout(...), require_login:true),

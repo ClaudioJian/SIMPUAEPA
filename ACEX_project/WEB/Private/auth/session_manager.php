@@ -48,6 +48,7 @@ namespace ACEX_project\WEB\Private\Auth;
     require_once __DIR__ . "/../Core/MIME_type.php";
     use function ACEX_project\WEB\Private\Core\Construct_MIME;
 use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
+use function ACEX_project\WEB\Private\Core\Send_mime_type;
 
     $sequence = [];
     //header('Cache-Control: no-cache, no-store, must-revalidate, private'); -> should put last moment when sending back
@@ -252,7 +253,7 @@ use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 
         if($response===null) return;
 
-        \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+        Send_mime_type(MIME['application']['json']);
         \http_response_code(401);
         echo json_encode($response);
         exit();
