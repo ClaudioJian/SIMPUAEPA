@@ -55,14 +55,15 @@ $all_schema = [
 
 
 
-foreach($all_schema as $schema){
-    if(!$schema instanceof Schema){
+usort($all_schema, function($a, $b){
+    if(!$a instanceof Schema || !$b instanceof Schema){
         Handle_error(
             new Error_code(Error_domain::configuration,Resource_code::invalidArgument,Error_condition::type),
             Level::Critical,
             "When trying to execute schema, one of element (array)\$all_schema isn't class Schema"
         );
     }
-    if(!$schema->execute()) break;
-}
+    return $a->version <=> $b->version;
+});
 
+foreach($all_schema as $schema) if(!$schema->execute()) break;
