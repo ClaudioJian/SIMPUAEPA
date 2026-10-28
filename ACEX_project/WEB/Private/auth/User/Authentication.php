@@ -16,7 +16,7 @@ use function ACEX_project\WEB\Private\Auth\Strong_password;
 
 require_once __DIR__ ."/../../Core/MIME_type.php";
 use function ACEX_project\WEB\Private\Core\Construct_MIME;
-
+use function ACEX_project\WEB\Private\Core\Send_mime_type;
 
 require_once __DIR__ . "/../../Error/Error_manager.php";
 use function ACEX_project\WEB\Private\Error\Handle_error;
@@ -91,7 +91,7 @@ require_once __DIR__ . '/../session_manager.php';
     }catch(Throwable $e){
       $response['success'] = -1;
       $json = \json_encode($response);
-      \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+      Send_mime_type(MIME['application']['json']);
       \http_response_code(400);
       
       echo $json;

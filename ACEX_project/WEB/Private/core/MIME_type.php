@@ -85,7 +85,16 @@ namespace ACEX_project\WEB\Private\Core;
         ]
     );
 
-
+    /**
+     * Send header content-type to browser
+     * * Use MIME['type']['subtype'] to avoid mistake.
+     * @return void success example:application/json. no sending when type/subtring is not specified
+     */
+    function Send_mime_type(string $subtype){
+        $mime = Construct_MIME($subtype);
+        if($mime===null) return;
+        header('Content-type: '.$mime);
+    }
 
     /**
      * validate if mime is registered in constant MIME, have valid format and the subtype is in type.

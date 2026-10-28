@@ -28,9 +28,10 @@ use function ACEX_project\WEB\Private\Core\Security\File_upload\Strip_all_extens
         case email         = -6;
         case server        = -7;
         case configuration = -8;
-        case object = -9;
+        case object         = -9;
         case child_proccess = -10;
-        case upload = -11;
+        case upload         = -11;
+        case authentication = -12;
     };
 
     /**
@@ -57,6 +58,7 @@ use function ACEX_project\WEB\Private\Core\Security\File_upload\Strip_all_extens
         case db_query         = -20;
         case file             = -21;
         case directory        = -22;
+        case rate             = -23;
 
         //action
         case action           = -50;
@@ -100,6 +102,7 @@ use function ACEX_project\WEB\Private\Core\Security\File_upload\Strip_all_extens
         case abnomaly      = -17;
         case failed        = -18;
         case quantity      = -19;
+        case timeout       = -20;
     }
 
     final class Error_code{
@@ -122,7 +125,7 @@ use function ACEX_project\WEB\Private\Core\Security\File_upload\Strip_all_extens
                 => LOG_FILE_NAME .".log",
 
                 Error_domain::database => LOG_DB_NAME. ".log",
-                Error_domain::credential, Error_domain::request, Error_domain::email, Error_domain::upload => LOG_REQUEST_NAME. ".log",
+                Error_domain::credential, Error_domain::request, Error_domain::email, Error_domain::upload, Error_domain::authentication => LOG_REQUEST_NAME. ".log",
                 default => LOG_FILE_NAME. ".log"
             };
         }

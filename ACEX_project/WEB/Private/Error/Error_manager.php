@@ -33,12 +33,14 @@ use Monolog\Handler\StreamHandler;
             case Level::Alert:
             case Level::Emergency :
             case Level::Critical :{
+                if(\php_sapi_name() === "cli") exit();
+                
                 \http_response_code(500);
                 if($data!=="") echo $data;
                 exit();                
             }
             case Level::Error:{
-                throw new Exception();
+                throw new Exception($err_msg);
             }
         }
         if($throw) throw new Exception();
@@ -58,14 +60,13 @@ use Monolog\Handler\StreamHandler;
      */
     function Log_internal(Error_code $code,Level $lvl = Level::Warning,string $err_msg = ""){
         //day day/month/year time in milisec(hour:min:sec.ms)
-        $date_format = "'D d/M/Y H:i:s";
+        $date_format = "D d/M/Y H:i:s";
 
         $output_format = $err_msg !== "" ? "[%datetime%] [%channel%: %level_name%] <<%context.domain% %context.resource% %context.condition%>> %message%"
         : "[%datetime%] [%channel%: %level_name%] %context.domain% %context.resource% %context.condition%";
 
         $formater = new LineFormatter("$output_format\n", $date_format, false, true);
 
-        //not implanted yet
         $log = new Logger("SIMUP");
 
         $log_fname = $code->Get_log_name();
@@ -74,10 +75,13 @@ use Monolog\Handler\StreamHandler;
             file_put_contents($file_path,"Start to log\n\n");
         }
 
+        
         $handler = $log_fname === ini_get("error_log") ? new ErrorLogHandler($file_path, $lvl) : new StreamHandler($file_path, $lvl);
         $handler->setFormatter($formater);
 
         $log->pushHandler($handler);
+
+        Set_cli_logger($log,$lvl,$output_format,$date_format);
 
         // add records to the log
         $log->addRecord($lvl, $err_msg, ["domain"=>$code->type->name, "resource"=>$code->res->name, "condition"=>$code->detail->name]);
@@ -88,6 +92,44 @@ use Monolog\Handler\StreamHandler;
             Level::Critical => $log->close(),
             default => null,
         };
+    }
+
+    function Set_cli_logger(Logger $log, Level $lvl, string $output_format, string $date_format) : void{
+        $cli_handler = \php_sapi_name() === "cli" ? new StreamHandler(STDOUT,$lvl) : null;
+        if($cli_handler === null) return;
+
+        $color = Get_cli_color($lvl);
+        $reset = $color === '' ? '':"\033[0m";
+
+        $cli_output_format = "{$color}$output_format{$reset}";
+        $cli_formater = new LineFormatter("$cli_output_format\n", $date_format, true, true);
+        $cli_handler->setFormatter($cli_formater);
+
+        $log->pushHandler($cli_handler);
+    }
+
+    function Get_cli_color(Level $level) : string{
+        return \php_sapi_name() === "cli"
+        ? match($level){
+            //magenta text
+            Level::Alert => "\033[1;35m",
+            //dark gray backgroun and green text
+            Level::Debug => "\033[0;90m",
+            //yellow background and black text
+            Level::Critical => "\033[1;30;43m",
+            //white text
+            Level::Emergency => "\033[1;37;41m",
+            //red text
+            Level::Error => "\033[0;31m",
+            //light gray
+            Level::Info => "\033[0;37m",
+            //light blue
+            Level::Notice => "\033[0;94m",
+            //yellow text
+            Level::Warning => "\033[33m",
+            default => "\033[0m"
+        }
+        : "";
     }
 
     /**

@@ -25,6 +25,7 @@ require_once __DIR__ . "/../../Api/database/database_dictionary.php";
 use ACEX_project\WEB\Private\Api\database\All_tables;
 use ACEX_project\WEB\Private\Api\database\Query_type;
 use ACEX_project\WEB\Private\Api\database\tb_user_columns;
+use ACEX_project\WEB\Private\Core\Security\Rate_limiter;
 
 require_once __DIR__ . "/../../Api/database/Authorization_manager.php";
 use function ACEX_project\WEB\Private\Api\database\Is_query_permitted;
@@ -40,9 +41,11 @@ use function ACEX_project\WEB\Private\Auth\Secure_hash_password;
 
 require_once __DIR__ ."/../../Core/MIME_type.php";
 use function ACEX_project\WEB\Private\Core\Construct_MIME;
+use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 
 require_once __DIR__ . "/../../Core/Security/Request_manager.php";
 use function ACEX_project\WEB\Private\Core\Security\Get_request_body;
+use function ACEX_project\WEB\Private\Core\Send_mime_type;
 
 require_once __DIR__ . "/../../Error/Error_manager.php";
 use function ACEX_project\WEB\Private\Error\Handle_error;
@@ -60,7 +63,8 @@ require_once __DIR__ ."/Authentication.php";
   /**
    * when redirect involved, may have no body so you should store elsewhere and could put in passed parameter. if no data supplied, it will try to get from request body.
    */
-  function Create_account(array $request_body=[]){
+  function Create_account(?Rate_limiter $IP_limiter, array $captured_args ,array $request_body=[]){
+    $ip = Get_IP_address_txt();
     $conn = null;
     $id = null;
     try{
@@ -70,12 +74,11 @@ require_once __DIR__ ."/Authentication.php";
       $password = $request_body['password'] ?? '';
 
       if(Is_logged()) Redirect();
-      Require_nonce();
 
       Log_internal(
         new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::attempt),
         Level::Notice,
-        "Email:[$email] | public name:[$user_name]"
+        "[IP-\"$ip\"] Email=[$email], user_name=[$user_name]"
       );
 
 
@@ -97,7 +100,7 @@ require_once __DIR__ ."/Authentication.php";
                 'value' => [$email]
               ],
               [
-                'column' => tb_user_columns::name_user,
+                'column' => tb_user_columns::name,
                 'value' => [$user_name]
               ],
               [
@@ -120,15 +123,15 @@ require_once __DIR__ ."/Authentication.php";
       Handle_query_fail($e,$conn);
     }
 
-    Internal_login($id);
+    Internal_login($id,$email,$user_name);
 
     Log_internal(
       new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::success),
       Level::Info,
-      "User id:[$id]"
+      "[IP-\"$ip\"] Account created sucessfully: User id=[$id]"
     );
 
-    \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+    Send_mime_type(MIME['application']['json']);
     echo json_encode(['success'=>0,'uid'=>$id]);
     \http_response_code(201);
     exit();
@@ -138,6 +141,7 @@ require_once __DIR__ ."/Authentication.php";
    * Exit immedially if find duplicate and return json response, not may still have race condition so be sure insert is upsert.
    */
   function Exit_if_duplicated(string $email,string $name) : void{
+    $ip = Get_IP_address_txt();
     $query = "SELECT
         EXISTS (
             SELECT 1
@@ -147,7 +151,7 @@ require_once __DIR__ ."/Authentication.php";
         EXISTS (
             SELECT 1
             FROM " . All_tables::user->name . "
-            WHERE " . tb_user_columns::name_user->name . " = :user_name
+            WHERE " . tb_user_columns::name->name . " = :user_name
         ) AS uname_exist
       ";
       $conn = Connect_database();
@@ -171,12 +175,12 @@ require_once __DIR__ ."/Authentication.php";
         Log_internal(
           new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::duplicated),
           Level::Notice,
-          "Name: [$name] | email: [$email]"
+          "[IP-\"$ip\"] Duplicated user name or email: Name=[$name], email=[$email]"
         );
 
 
         \http_response_code(400);
-        \header('Content-Type: '.Construct_MIME(MIME['application']['json']));
+        Send_mime_type(MIME['application']['json']);
         echo json_encode(['success'=>-1,'name'=> $name_exist? 2 : 4,'email'=> $email_exist? 2 : 4,'password'=>4]);
         exit();
       }
@@ -191,7 +195,7 @@ require_once __DIR__ ."/Authentication.php";
     $colums_denied = '';
 
     $select_auth = Is_query_permitted(HOST,[Query_type::select] , All_tables::user);
-    $insert_auth = Is_query_permitted(HOST, [Query_type::insert] ,All_tables::user, [tb_user_columns::email,tb_user_columns::name_user,tb_user_columns::password]);
+    $insert_auth = Is_query_permitted(HOST, [Query_type::insert] ,All_tables::user, [tb_user_columns::email,tb_user_columns::name,tb_user_columns::password]);
 
     if(!$select_auth || !$insert_auth){
       if(!$insert_auth) {

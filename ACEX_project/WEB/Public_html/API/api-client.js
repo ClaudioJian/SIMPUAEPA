@@ -117,7 +117,7 @@ async function interceptFormRequest(e) {
     e.preventDefault();
     e.stopPropagation();
 
-    const url = form.action || window.location.href;
+    let url = form.action || window.location.href;
     const method = (form.method || 'POST').toUpperCase();
     const data = new FormData(form);
     let headers = new Headers();
@@ -128,7 +128,11 @@ async function interceptFormRequest(e) {
     headers.append('x-cgen-time',cgenTime);
     
     const options = {method:method,headers:headers};
-    if(method!== 'HEAD' && method!== 'GET') options.body = data;
+    if(method=== 'HEAD' || method=== 'GET') {
+        const queryParams = ToQueryParams(data);
+        if(queryParams !== '') url += '?' + queryParams;
+    }
+    else options.body = data;
 
     let serverResponse = await originalFetch(url,options);
 
@@ -137,6 +141,15 @@ async function interceptFormRequest(e) {
 
     const body = await serverResponse.clone().text();
     //window.location.href = serverResponse.redirected ? serverResponse.url : url;
+}
+
+function ToQueryParams(formData){
+    const queryParams =  [...formData.entries()].
+        filter((d)=>{return d[1].trim() !== "" && d[1].trim() != null}).
+        map(d=>{return encodeURIComponent(d[0]) + '=' + encodeURIComponent(d[1])}
+    );
+    if(queryParams.length <= 0) return '';
+    return queryParams.join('&');
 }
 
 async function HandleChallenge(url,options,serverResponse){

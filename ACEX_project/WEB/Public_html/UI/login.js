@@ -1,4 +1,5 @@
 const loginForm = document.getElementById('loginForm');
+
 const mensagemErro = document.getElementById('mensagemErro');
 const campoEmail = document.getElementById('email');
 const campoSenha = document.getElementById('password');
@@ -36,14 +37,17 @@ campoSenha.addEventListener('input', limparErro);
 
 // LOGIN
 
+
 loginForm.addEventListener('submit', async function(event) {
 
     event.preventDefault();
+
 
     limparErro();
 
     const email = campoEmail.value;
     const password = campoSenha.value;
+
 
     const url = "/SIMPUAEPA/login";
 
@@ -91,6 +95,7 @@ loginForm.addEventListener('submit', async function(event) {
     } catch (error) {
         console.error("Erro na requisição:", error);
         mostrarErro("Não foi possível conectar ao servidor.", false);
+
     }
 
 });

@@ -25,7 +25,8 @@ namespace ACEX_project\WEB\Private\Core\Security;
     use ACEX_project\WEB\Private\Error\Resource_code;
 use Monolog\Level;
 
-    use function ACEX_project\WEB\Private\Error\Log_internal;
+use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
+use function ACEX_project\WEB\Private\Error\Log_internal;
 
     require_once __DIR__ . "/../AppCommonVar.php";
     require_once __DIR__ . "/../../Auth/session_manager.php";
@@ -141,10 +142,11 @@ use Monolog\Level;
     }
 
     function CSRF_invalidation(string $msg,Error_condition $condition){
+        $ip = Get_IP_address_txt();
         Log_internal(
             new Error_code(Error_domain::request,Resource_code::csrf,$condition),
             Level::Warning,
-            err_msg:$msg
+            err_msg:"[IP-\"$ip\"] $msg"
         );
         //immedially expire front end cookie
         \setcookie(CSRF_TOKEN_HEADER_NAME,"",1,"/","",true,false);

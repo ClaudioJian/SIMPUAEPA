@@ -6,4 +6,6 @@ vendor/
 Log/*
 .log
 
-WEB/Private/Uploads/
+WEB/Private/Core/Rate_track/*
+
+WEB/Private/Uploads/*
