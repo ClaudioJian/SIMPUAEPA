@@ -1,0 +1,305 @@
+/*Não recomendo copiar e colar direto esse css, é melhor para separar os elementos de acordo com o mapa*/
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#map {
+    height:100vh;
+    width:100vw;
+    
+}
+
+
+
+.control-visu-icon {
+    height: 550px;
+    width: 350px;
+    background-color:#FFFFFF;
+    display:grid;
+    grid-template-columns: 80px 200px;
+    grid-template-rows: auto auto auto auto auto auto auto auto;
+    border: 5px solid black;
+    border-radius: 8px;
+    align-items:left;
+    top:0%;
+    right:0%;
+}
+
+img {
+    height:60px;
+    width:60px;
+    display:flex;
+}
+
+.imagem-visualizacao {
+    height:100px;
+    width:100px;
+    display:flex;
+}
+
+.test{
+    display: flex;
+    z-index:401;
+    top:0%;
+    right:10%;
+    position:absolute;
+}
+
+.botao-controle {
+    width:120px;
+    height: 80px;
+    position:absolute;
+    display:flex;
+    top:1%;
+    right:11%;
+    z-index: 650;
+}
+
+
+.visivel {
+    visibility:hidden;
+    display: none;
+}
+
+
+.opçoes{
+    display: flex;
+    
+    width:auto;
+    height:auto;
+    background-color:#FFFFFF;
+    justify-content:flex-start;
+    align-items:center;
+    left:0%;
+}
+
+.botao-background {
+    border:auto;
+    background-color:white;
+}
+
+.botao-background:active {
+    background-color:rgb(197, 197, 197);
+}
+
+.caixa_reclamacao {
+     display: relative;
+    width: 550px;
+    height: 400px;
+    z-index: 650;
+    top: 20%;
+    right: 35%;
+    position: fixed;
+    background-color: white;
+    border: 4px solid black;
+    border-radius: 8px;
+    
+}
+
+.fechar {
+    position:absolute;
+    color:red;
+    height:24px;
+    width:24px;
+    display:flex;
+    top:0%;
+    right:0%;
+    font-size: 20px;
+    justify-content: center;
+    align-items: center;
+}
+
+
+/* Conteúdo da caixa de reclamação */
+#caixa_reclamacao {
+    box-sizing: border-box;
+    width: min(450px, 90vw);
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 25px;
+    padding-top: 40px;
+    background-color: white;
+    color: #1f2937;
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+    gap: 12px;
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding-right: 12px;
+    scrollbar-gutter: stable;
+    clip-path: inset(0 round 12px);
+}
+
+/* Título e instrução */
+#caixa_reclamacao h2 {
+    margin: 0;
+    font-size: 24px;
+}
+
+#caixa_reclamacao > p {
+    margin: 0 0 8px;
+    color: #4b5563;
+}
+
+/* Organização do formulário */
+#form_reclamacao {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Rótulos */
+#form_reclamacao label {
+    margin-top: 8px;
+    font-weight: 600;
+}
+
+/* Campos de entrada */
+#form_reclamacao input,
+#form_reclamacao select,
+#form_reclamacao textarea {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: white;
+    color: #1f2937;
+    font: inherit;
+}
+
+/* Permite redimensionar a descrição apenas verticalmente */
+#form_reclamacao textarea {
+    resize: vertical;
+}
+
+/* Destaque ao selecionar um campo */
+#form_reclamacao input:focus,
+#form_reclamacao select:focus,
+#form_reclamacao textarea:focus {
+    outline: 2px solid #0571d3;
+    outline-offset: 1px;
+}
+
+/* Botão de envio */
+#enviar_reclamacao {
+    margin-top: 12px;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    background-color: #0571d3;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+#enviar_reclamacao:hover {
+    background-color: #033a6d;
+}
+
+/* Botão de fechar */
+#caixa_reclamacao .fechar {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 5px;
+    background: transparent;
+    color: #b91c1c;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+
+/* Fundo que cobre a tela */
+.aviso-fundo {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.45);
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+/* Quando o popup estiver aberto */
+.aviso-fundo.aberto {
+    display: flex;
+}
+
+/* Caixa central */
+.aviso-conteudo {
+    width: min(360px, 100%);
+    padding: 28px 24px;
+    box-sizing: border-box;
+    border-radius: 14px;
+    background: white;
+    color: #1f2937;
+    text-align: center;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.25);
+    animation: avisoEntrada 0.2s ease-out;
+}
+
+/* Ícone de sucesso */
+.aviso-icone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #166534;
+    font-size: 30px;
+    font-weight: bold;
+}
+
+/* Título e mensagem */
+.aviso-conteudo h2 {
+    margin: 0 0 10px;
+    font-size: 22px;
+}
+
+.aviso-conteudo p {
+    margin: 0 0 22px;
+    line-height: 1.5;
+    color: #4b5563;
+}
+
+/* Botão */
+#fechar_aviso {
+    width: 100%;
+    padding: 11px;
+    border: none;
+    border-radius: 7px;
+    background: #0571d3;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+#fechar_aviso:hover {
+    background: #033a6d;
+}
+
+@keyframes avisoEntrada {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
