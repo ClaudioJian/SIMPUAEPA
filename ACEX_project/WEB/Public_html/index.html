@@ -126,6 +126,7 @@
                 Login
             </a>
 
+            
             <!-- Usuário logado -->
             <div id="user-menu" class="user-menu" style="display:none;">
 
@@ -136,7 +137,9 @@
                     aria-label="Menu do usuário"
                     aria-expanded="false"
                 >
+                    <!-- foto padrão, usada quando o usuário não tem foto -->
                     <svg
+                        id="avatar-padrao"
                         viewBox="0 0 24 24"
                         width="100%"
                         height="100%"
@@ -146,11 +149,30 @@
                         <circle cx="12" cy="9" r="4" fill="white"/>
                         <path d="M4 20c0-4 4-6 8-6s8 2 8 6z" fill="white"/>
                     </svg>
+
+                    <!-- foto do usuário -->
+                    <img id="avatar-foto" class="avatar-foto" alt="Foto de perfil" hidden>
                 </button>
 
-                <div id="dropdown" class="dropdown" style="display:none;">
+                <div
+                    id="dropdown"
+                    class="dropdown"
+                    style="display:none;"
+                >
+                    <div class="dropdown-usuario">
+                        <div id="user-nome" class="user-nome"></div>
+                        <div id="user-email" class="user-email"></div>
+                    </div>
+
                     <a href="html/minha-conta.html" class="dropdown-item">Minha conta</a>
-                    <button id="btn-logout" class="dropdown-item" type="button">Logout</button>
+
+                    <button
+                        id="btn-logout"
+                        class="dropdown-item"
+                        type="button"
+                    >
+                        Logout
+                    </button>
                 </div>
 
             </div>
@@ -285,15 +307,43 @@
         const btnLogin = document.getElementById("btn-login");
         const userMenu = document.getElementById("user-menu");
         const avatar = document.getElementById("avatar");
+        const avatarPadrao = document.getElementById("avatar-padrao");
+        const avatarFoto = document.getElementById("avatar-foto");
         const dropdown = document.getElementById("dropdown");
+        const userNome = document.getElementById("user-nome");
+        const userEmail = document.getElementById("user-email");
         const btnLogout = document.getElementById("btn-logout");
 
         // Impede que cliques no login acionem o mapa
         L.DomEvent.disableClickPropagation(loginContainer);
 
-        function mostrarLogado() {
+        // Mostra a foto do usuário; sem foto (ou se ela falhar), volta para a silhueta
+        function mostrarFoto(url) {
+            if (url) {
+                avatarFoto.onerror = function () {
+                    avatarFoto.hidden = true;
+                    avatarPadrao.style.display = "";
+                };
+                avatarFoto.src = url;
+                avatarFoto.hidden = false;
+                avatarPadrao.style.display = "none";
+            } else {
+                avatarFoto.hidden = true;
+                avatarFoto.removeAttribute("src");
+                avatarPadrao.style.display = "";
+            }
+        }
+
+        // perfil é opcional: sem ele, só troca o botão Login pela bolinha
+        function mostrarLogado(perfil) {
             btnLogin.style.display = "none";
             userMenu.style.display = "block";
+
+            if (perfil) {
+                userNome.textContent = perfil.name || "";
+                userEmail.textContent = perfil.email || "";
+                mostrarFoto(perfil.image_url);
+            }
         }
 
         function mostrarDeslogado() {
@@ -301,13 +351,47 @@
             dropdown.style.display = "none";
             avatar.setAttribute("aria-expanded", "false");
             btnLogin.style.display = "inline-block";
+
+            userNome.textContent = "";
+            userEmail.textContent = "";
+            mostrarFoto(null);
         }
 
-        function verificarLogin() {
+        // Pergunta ao servidor quem está logado (documentação 5.2)
+        async function verificarLogin() {
+
+            // mostra já o estado guardado, para a tela não piscar enquanto o servidor responde
             if (localStorage.getItem("uid")) {
                 mostrarLogado();
             } else {
                 mostrarDeslogado();
+            }
+
+            try {
+                const resposta = await fetch(
+                    "/SIMPUAEPA/user/profile?name=1&email=1&image_url=1",
+                    { credentials: "same-origin", cache: "no-store" }
+                );
+
+                // 401: ninguém logado (sessão expirada ou visitante)
+                if (resposta.status === 401) {
+                    localStorage.removeItem("uid");
+                    mostrarDeslogado();
+                    return;
+                }
+
+                // 200: logado, com os dados do perfil
+                if (resposta.ok) {
+                    const perfil = await resposta.json();
+                    mostrarLogado(perfil);
+                    return;
+                }
+
+                // outros erros (404, 500...): mantém o que já está na tela
+                console.error("Perfil: servidor respondeu", resposta.status);
+
+            } catch (err) {
+                console.error("Falha ao verificar o login:", err);
             }
         }
 
@@ -324,10 +408,7 @@
 
             dropdown.style.display = estaAberto ? "none" : "block";
 
-            avatar.setAttribute(
-                "aria-expanded",
-                String(!estaAberto)
-            );
+            avatar.setAttribute("aria-expanded", String(!estaAberto));
         });
 
         // Fecha o dropdown ao clicar fora
