@@ -16,21 +16,34 @@
 
         <div class="login-container">
             
-            <form id="registerForm">    
+            <form id="registerForm">
+
                 <input type="text" name="name" id="name" placeholder="Nome Completo" required>
+                <p id="erroName" class="mensagem-erro" role="alert"></p>
+
                 <input type="email" id="email" name="email" placeholder="E-mail" required>
-                <input type="password" id="password" name="password" placeholder="Senha" required>
+                <p id="erroEmail" class="mensagem-erro" role="alert"></p>
+
+                <input type="password" name="password" id="password" placeholder="Senha" required>
+                <p id="erroPassword" class="mensagem-erro" role="alert"></p>
+
                 <input type="password" name="confirm_password" id="confirm_password" placeholder="Confirmar Senha" required>
-            
+                <p id="erroConfirm" class="mensagem-erro" role="alert"></p>
+
+                <label class="mostrar-senha">
+                    <input type="checkbox" id="mostrarSenha">
+                    Mostrar senha
+                </label>
+
+                <p id="erroGeral" class="mensagem-erro" role="alert"></p>
+
                 <button type="submit" class="btn-pequeno">Cadastrar</button>
                 <a href="login.html" class="btn-cadastro btn-pequeno">Já tenho conta (Login)</a>
             </form>
 
         </div>
 
-            <form action="/SIMPUAEPA/logout" method="POST">
-                <button type="submit" class="btn-pequeno">LogOut</button>
-            </form>
+            
 
     </body>
 

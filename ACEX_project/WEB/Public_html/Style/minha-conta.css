@@ -1,0 +1,150 @@
+/* o atributo hidden perde para "display:flex" do login.css, por isso o !important */
+[hidden] {
+    display: none !important;
+}
+
+body {
+    padding: 20px;
+}
+
+.conta-container {
+    max-width: 420px;
+}
+
+.voltar {
+    display: inline-block;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #007BFF;
+    text-decoration: none;
+}
+
+.voltar:hover {
+    text-decoration: underline;
+}
+
+.conta-titulo {
+    margin-bottom: 20px;
+    font-size: 22px;
+    color: #333;
+}
+
+.conta-secao {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding-bottom: 25px;
+    margin-bottom: 25px;
+    border-bottom: 1px solid #eee;
+}
+
+.conta-secao:last-child {
+    padding-bottom: 0;
+    margin-bottom: 0;
+    border-bottom: none;
+}
+
+.conta-secao h2 {
+    font-size: 16px;
+    color: #333;
+}
+
+.aviso {
+    font-size: 14px;
+    color: #666;
+}
+
+/* mensagens de erro (vermelho) e de sucesso (verde) */
+.msg {
+    font-size: 14px;
+}
+
+.msg:empty {
+    display: none;
+}
+
+.msg.erro {
+    color: #d93025;
+}
+
+.msg.ok {
+    color: #188038;
+}
+
+/* botões da exclusão */
+button.btn-perigo {
+    background: #d93025;
+    color: white;
+    border: none;
+}
+
+button.btn-perigo:hover {
+    background: #b3261e;
+}
+
+.btn-perigo-claro {
+    background: white;
+    color: #d93025;
+    border: 1px solid #d93025;
+}
+
+.btn-perigo-claro:hover {
+    background: #fce8e6;
+}
+
+.btn-cancelar {
+    background: #e0e0e0;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.btn-cancelar:hover {
+    background: #d2d2d2;
+}
+
+
+/* DARK MODE ABAIXO: */
+body.dark-mode .conta-titulo,
+body.dark-mode .conta-secao h2 {
+    color: #eee;
+}
+
+body.dark-mode .aviso {
+    color: #aaa;
+}
+
+body.dark-mode .conta-secao {
+    border-bottom-color: #333;
+}
+
+body.dark-mode .msg.erro {
+    color: #ff6b6b;
+}
+
+body.dark-mode .msg.ok {
+    color: #81c995;
+}
+
+body.dark-mode .voltar {
+    color: #6ea8fe;
+}
+
+body.dark-mode .btn-perigo-claro {
+    background: transparent;
+    color: #ff6b6b;
+    border-color: #ff6b6b;
+}
+
+body.dark-mode .btn-perigo-claro:hover {
+    background: #3a1f1f;
+}
+
+body.dark-mode .btn-cancelar {
+    background: #333;
+    color: white;
+    border-color: #444;
+}
+
+body.dark-mode .btn-cancelar:hover {
+    background: #444;
+}

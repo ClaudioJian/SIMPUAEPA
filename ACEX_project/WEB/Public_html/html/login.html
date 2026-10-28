@@ -21,6 +21,17 @@
 
                 <input type="password" id="password" name="password" placeholder="Senha" required>
 
+                <div class="linha-opcoes">
+                    <label class="mostrar-senha">
+                        <input type="checkbox" id="mostrarSenha">
+                        Mostrar senha
+                    </label>
+
+                    <a href="esqueci-senha.html" class="link-esqueci">Esqueceu a senha?</a>
+                </div>
+
+                <p id="mensagemErro" class="mensagem-erro" role="alert"></p>
+
                 <button type="submit" class="btn-pequeno">Login</button>
 
                 <a href="cadastro.html" class="btn-cadastro btn-pequeno">Cadastrar</a>
@@ -28,9 +39,7 @@
             </form>
         </div>
 
-        <form action="/SIMPUAEPA/logout" method="POST">
-            <button type="submit" class="btn-pequeno">LogOut</button>
-        </form>
+        
 
         
     </body>

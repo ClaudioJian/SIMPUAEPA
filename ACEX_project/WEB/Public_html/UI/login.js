@@ -1,11 +1,49 @@
 const loginForm = document.getElementById('loginForm');
+const mensagemErro = document.getElementById('mensagemErro');
+const campoEmail = document.getElementById('email');
+const campoSenha = document.getElementById('password');
+const mostrarSenha = document.getElementById('mostrarSenha');
+
+
+// MOSTRAR / OCULTAR SENHA
+
+mostrarSenha.addEventListener('change', function() {
+    campoSenha.type = mostrarSenha.checked ? 'text' : 'password';
+});
+
+
+// MENSAGEM DE ERRO
+
+function mostrarErro(texto, destacarCampos) {
+    mensagemErro.textContent = texto;
+
+    if (destacarCampos) {
+        campoEmail.classList.add('erro');
+        campoSenha.classList.add('erro');
+    }
+}
+
+function limparErro() {
+    mensagemErro.textContent = '';
+    campoEmail.classList.remove('erro');
+    campoSenha.classList.remove('erro');
+}
+
+// o erro some assim que o usuário volta a digitar
+campoEmail.addEventListener('input', limparErro);
+campoSenha.addEventListener('input', limparErro);
+
+
+// LOGIN
 
 loginForm.addEventListener('submit', async function(event) {
 
     event.preventDefault();
 
-    const email = loginForm.elements.email.value;
-    const password = loginForm.elements.password.value;
+    limparErro();
+
+    const email = campoEmail.value;
+    const password = campoSenha.value;
 
     const url = "/SIMPUAEPA/login";
 
@@ -24,19 +62,35 @@ loginForm.addEventListener('submit', async function(event) {
             body: JSON.stringify(data)
         });
 
-        const result = await response.json();
-
         console.log("HTTP:", response.status);
+
+        // 500: erro no banco (pode vir sem JSON)
+        if (response.status === 500) {
+            mostrarErro("Erro no servidor. Tente novamente mais tarde.", false);
+            return;
+        }
+
+        const result = await response.json();
         console.log("Resposta:", result);
 
-        // HTTP 200: success 0 = logou agora, success 1 = já estava logado
+        // 200: success 0 = logou agora, success 1 = já estava logado
         if (response.ok) {
             localStorage.setItem('uid', result.uid);
             window.location.href = "../index.html";
+            return;
         }
+
+        // 400: e-mail ou senha com problema
+        if (response.status === 400) {
+            mostrarErro("E-mail ou senha inválidos.", true);
+            return;
+        }
+
+        mostrarErro("Ocorreu um erro inesperado. Tente novamente.", false);
 
     } catch (error) {
         console.error("Erro na requisição:", error);
+        mostrarErro("Não foi possível conectar ao servidor.", false);
     }
 
 });

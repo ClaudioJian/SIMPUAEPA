@@ -39,7 +39,8 @@ form {
 
 
 input[type="email"], 
-input[type="password"] {
+input[type="password"],
+input[type="text"] {
     padding: 14px; 
     font-size: 16px;
     border-radius: 5px;
@@ -50,6 +51,88 @@ input[type="password"] {
 input:focus {
     border-color: #007BFF;
 }
+
+input.erro {
+    border-color: #d93025;
+}
+
+.mostrar-senha {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    margin-top: -6px;
+    font-size: 14px;
+    color: #555;
+    cursor: pointer;
+}
+
+.mostrar-senha input {
+    cursor: pointer;
+}
+
+
+
+
+
+
+
+
+
+
+
+.linha-opcoes {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: -6px;
+}
+
+/* a margem negativa agora fica no container, não no label */
+.linha-opcoes .mostrar-senha {
+    margin-top: 0;
+}
+
+.link-esqueci {
+    font-size: 14px;
+    color: #007BFF;
+    text-decoration: none;
+}
+
+.link-esqueci:hover {
+    text-decoration: underline;
+}
+
+
+
+
+
+
+
+
+.mensagem-erro {
+    font-size: 14px;
+    color: #d93025;
+}
+
+/* sem erro, o parágrafo some e não ocupa espaço */
+.mensagem-erro:empty {
+    display: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 .btn-pequeno {
@@ -138,6 +221,38 @@ body.dark-mode input {
 body.dark-mode input::placeholder {
     color: #aaa;
 }
+
+body.dark-mode .mostrar-senha {
+    color: #ccc;
+}
+
+body.dark-mode .mensagem-erro {
+    color: #ff6b6b;
+}
+
+body.dark-mode input.erro {
+    border-color: #ff6b6b;
+}
+
+
+
+body.dark-mode .link-esqueci {
+    color: #6ea8fe;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 body.dark-mode .btn-cadastro {
     background-color: #333;

@@ -50,6 +50,58 @@ input:focus {
     border-color: #007BFF;
 }
 
+input.erro {
+    border-color: #d93025;
+}
+
+.mostrar-senha {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    margin-top: -6px;
+    font-size: 14px;
+    color: #555;
+    cursor: pointer;
+}
+
+.mostrar-senha input {
+    cursor: pointer;
+}
+
+.mensagem-erro {
+    margin: 0;
+    margin-top: -8px;
+    font-size: 14px;
+    color: #d93025;
+}
+
+/* sem erro, o parágrafo some e não ocupa espaço */
+.mensagem-erro:empty {
+    display: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 .btn-pequeno {
     padding: 8px; 
@@ -144,6 +196,50 @@ body.dark-mode input {
 body.dark-mode input::placeholder {
     color: #aaa;
 }
+
+body.dark-mode .mostrar-senha {
+    color: #ccc;
+}
+
+body.dark-mode .mensagem-erro {
+    color: #ff6b6b;
+}
+
+body.dark-mode input.erro {
+    border-color: #ff6b6b;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 body.dark-mode .btn-cadastro {
     background-color: #333;

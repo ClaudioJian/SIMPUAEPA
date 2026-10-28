@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Esqueci minha senha</title>
+        <link rel="stylesheet" href="../Style/login.css">
+        <link rel="stylesheet" href="../Style/esqueci-senha.css">
+    </head>
+    <body>
+
+        <button id="themeToggle" class="theme-toggle" aria-label="Alternar Tema">
+            <img id="themeIcon" src="../images/dia-e-noite.png" alt="Alterar tema">
+        </button>
+
+        <div class="login-container">
+
+            <a href="login.html" class="voltar">← Voltar ao login</a>
+            <h1 class="esqueci-titulo">Esqueceu a senha?</h1>
+            <p class="esqueci-texto">
+                Informe o e-mail da sua conta. Se ele estiver cadastrado,
+                enviaremos as instruções para criar uma nova senha.
+            </p>
+
+            <form id="formEsqueci" novalidate>
+
+                <input type="email" id="email" name="email" placeholder="E-mail">
+
+                <p id="mensagem" class="msg" role="alert"></p>
+
+                <button type="submit" class="btn-pequeno">Enviar instruções</button>
+
+            </form>
+
+        </div>
+
+    </body>
+
+    <script src="../UI/esqueci-senha.js"></script>
+
+</html>

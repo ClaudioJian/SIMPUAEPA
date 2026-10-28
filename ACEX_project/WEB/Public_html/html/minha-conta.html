@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Minha conta</title>
+        <link rel="stylesheet" href="../Style/login.css">
+        <link rel="stylesheet" href="../Style/minha-conta.css">
+    </head>
+    <body>
+
+        <button id="themeToggle" class="theme-toggle" aria-label="Alternar Tema">
+            <img id="themeIcon" src="../images/dia-e-noite.png" alt="Alterar tema">
+        </button>
+
+        <div class="login-container conta-container">
+
+            <a href="../index.html" class="voltar">← Voltar ao mapa</a>
+            <h1 class="conta-titulo">Minha conta</h1>
+
+            <!-- ALTERAR E-MAIL -->
+            <form id="formEmail" class="conta-secao" novalidate>
+                <h2>Alterar e-mail</h2>
+
+                <input type="email" id="novoEmail" placeholder="Novo e-mail">
+                <input type="password" id="senhaEmail" placeholder="Senha atual" data-senha>
+
+                <label class="mostrar-senha">
+                    <input type="checkbox" class="toggle-senha">
+                    Mostrar senha
+                </label>
+
+                <p id="msgEmail" class="msg" role="alert"></p>
+
+                <button type="submit" class="btn-pequeno">Salvar e-mail</button>
+            </form>
+
+            <!-- ALTERAR SENHA -->
+            <form id="formSenha" class="conta-secao" novalidate>
+                <h2>Alterar senha</h2>
+
+                <input type="password" id="senhaAtual" placeholder="Senha atual" data-senha>
+                <input type="password" id="novaSenha" placeholder="Nova senha" data-senha>
+                <input type="password" id="confirmarNovaSenha" placeholder="Confirmar nova senha" data-senha>
+
+                <label class="mostrar-senha">
+                    <input type="checkbox" class="toggle-senha">
+                    Mostrar senha
+                </label>
+
+                <p id="msgSenha" class="msg" role="alert"></p>
+
+                <button type="submit" class="btn-pequeno">Salvar senha</button>
+            </form>
+
+            <!-- EXCLUIR CONTA -->
+            <section class="conta-secao">
+                <h2>Excluir conta</h2>
+                <p class="aviso">Essa ação é permanente e não pode ser desfeita.</p>
+
+                <button type="button" id="btnAbrirExcluir" class="btn-pequeno btn-perigo-claro">
+                    Excluir minha conta
+                </button>
+
+                <form id="formExcluir" novalidate hidden>
+                    <input type="password" id="senhaExcluir" placeholder="Digite sua senha para confirmar" data-senha>
+
+                    <label class="mostrar-senha">
+                        <input type="checkbox" class="toggle-senha">
+                        Mostrar senha
+                    </label>
+
+                    <p id="msgExcluir" class="msg" role="alert"></p>
+
+                    <button type="submit" class="btn-pequeno btn-perigo">Confirmar exclusão</button>
+                    <button type="button" id="btnCancelarExcluir" class="btn-pequeno btn-cancelar">Cancelar</button>
+                </form>
+            </section>
+
+        </div>
+
+    </body>
+
+    <script src="../UI/minha-conta.js"></script>
+
+</html>
