@@ -318,20 +318,60 @@
         L.DomEvent.disableClickPropagation(loginContainer);
 
         // Mostra a foto do usuário; sem foto (ou se ela falhar), volta para a silhueta
-        function mostrarFoto(url) {
-            if (url) {
-                avatarFoto.onerror = function () {
-                    avatarFoto.hidden = true;
-                    avatarPadrao.style.display = "";
-                };
-                avatarFoto.src = url;
-                avatarFoto.hidden = false;
-                avatarPadrao.style.display = "none";
-            } else {
+        // image_url pode vir como URL completa, caminho absoluto ou só o nome do arquivo
+       function montarUrlFoto(valor) {
+            if (!valor || !String(valor).trim()) { return null; }
+            valor = String(valor).trim();
+
+            // aponta só para a pasta, sem nome de arquivo: não é uma foto
+            if (valor.endsWith("/")) { return null; }
+
+            if (/^(https?:)?\/\//.test(valor) || valor.startsWith("/")) { return valor; }
+            return "/SIMPUAEPA/image/profile/" + valor;
+        }
+
+        // Mostra a foto do usuário; sem foto (ou se ela falhar), volta para a silhueta
+        const INTERVALO_MS = 1200;   // o back-end exige no mínimo 1000ms entre requisições
+
+        function mostrarFoto(valor) {
+            
+            const base = montarUrlFoto(valor);
+
+            if (!base) {
+                avatarFoto.onload = null;
+                avatarFoto.onerror = null;
                 avatarFoto.hidden = true;
                 avatarFoto.removeAttribute("src");
                 avatarPadrao.style.display = "";
+                return;
             }
+
+            let tentativa = 0;
+
+            function carregar() {
+                avatarFoto.src = tentativa > 0
+                    ? base + (base.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now()
+                    : base;
+            }
+
+            avatarFoto.onload = function () {
+                avatarFoto.hidden = false;
+                avatarPadrao.style.display = "none";
+            };
+
+            avatarFoto.onerror = function () {
+                console.error("Falha ao carregar a foto:", avatarFoto.src);
+                if (tentativa < 3) {
+                    tentativa++;
+                    setTimeout(carregar, INTERVALO_MS);
+                    return;
+                }
+                avatarFoto.hidden = true;
+                avatarPadrao.style.display = "";
+            };
+
+            // espera o intervalo mínimo desde a requisição do perfil
+            setTimeout(carregar, INTERVALO_MS);
         }
 
         // perfil é opcional: sem ele, só troca o botão Login pela bolinha
@@ -358,13 +398,11 @@
         }
 
         // Pergunta ao servidor quem está logado (documentação 5.2)
-        async function verificarLogin() {
+        async function verificarLogin(tentativa) {
+            tentativa = tentativa || 1;
 
-            // mostra já o estado guardado, para a tela não piscar enquanto o servidor responde
-            if (localStorage.getItem("uid")) {
-                mostrarLogado();
-            } else {
-                mostrarDeslogado();
+            if (tentativa === 1) {
+                if (localStorage.getItem("uid")) { mostrarLogado(); } else { mostrarDeslogado(); }
             }
 
             try {
@@ -373,23 +411,23 @@
                     { credentials: "same-origin", cache: "no-store" }
                 );
 
-                // 401: ninguém logado (sessão expirada ou visitante)
                 if (resposta.status === 401) {
                     localStorage.removeItem("uid");
                     mostrarDeslogado();
                     return;
                 }
 
-                // 200: logado, com os dados do perfil
-                if (resposta.ok) {
-                    const perfil = await resposta.json();
-                    mostrarLogado(perfil);
+                if (resposta.status === 429 && tentativa < 4) {
+                    setTimeout(function () { verificarLogin(tentativa + 1); }, 1200);
                     return;
                 }
 
-                // outros erros (404, 500...): mantém o que já está na tela
-                console.error("Perfil: servidor respondeu", resposta.status);
+                if (resposta.ok) {
+                    mostrarLogado(await resposta.json());
+                    return;
+                }
 
+                console.error("Perfil: servidor respondeu", resposta.status);
             } catch (err) {
                 console.error("Falha ao verificar o login:", err);
             }

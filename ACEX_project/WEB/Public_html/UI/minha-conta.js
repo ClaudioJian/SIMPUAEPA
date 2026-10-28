@@ -1,33 +1,33 @@
-// ================= CONFIGURAÇÃO DO BACK-END =================
-// perfil e enviarFoto vêm da documentação (5.2 e 5.7).
-// Os itens marcados como PROVISÓRIOS ainda não existem na documentação:
-// quando ela sair, ajuste só este bloco.
+
+
+const BASE = "/SIMPUAEPA";
 
 const API = {
     perfil: {
-        url: "/SIMPUAEPA/user/profile?name=1&email=1&image_url=1"   // 5.2
+        url: BASE + "/user/profile?name=1&email=1&image_url=1"   
     },
     enviarFoto: {
-        url: "/SIMPUAEPA/image/profile",   // 5.7
+        url: BASE + "/image/profile",   
         method: "POST",
-        campoArquivo: "file"               // PROVISÓRIO: nome do campo do arquivo (seção 3.6)
+        campoArquivo: "userfile"        
     },
+    pastaFotos: BASE + "/image/profile/",   
     alterarEmail: {                        // PROVISÓRIO
-        url: "/SIMPUAEPA/account/email",
+        url: BASE + "/account/email",
         method: "POST",
         corpo: function (novoEmail, senhaAtual) {
             return { email: novoEmail, password: senhaAtual };
         }
     },
     alterarSenha: {                        // PROVISÓRIO
-        url: "/SIMPUAEPA/account/password",
+        url: BASE + "/account/password",
         method: "POST",
         corpo: function (senhaAtual, novaSenha) {
             return { password: senhaAtual, new_password: novaSenha };
         }
     },
     excluirConta: {                        // PROVISÓRIO
-        url: "/SIMPUAEPA/account/delete",
+        url: BASE + "/account/delete",
         method: "POST",
         corpo: function (senha) {
             return { password: senha };
@@ -35,17 +35,43 @@ const API = {
     }
 };
 
+// O back-end exige no mínimo 1000ms entre requisições do mesmo IP (responde 429).
+// Todas as esperas/tentativas abaixo usam este valor.
+const INTERVALO_MS = 1200;
+const MAX_TENTATIVAS = 4;
+
 // Textos dos códigos de erro do HTTP 400 (PROVISÓRIOS)
 const MENSAGENS_400 = {
     email:    { 1: "E-mail inválido.", 2: "Esse e-mail já está cadastrado.", 3: "Informe o e-mail." },
     password: { 1: "Senha fraca.", 2: "Senha atual incorreta.", 3: "Informe a senha." }
 };
 
-// Limites da imagem de perfil (documentação 5.7: padrão 512x512 e 1MB).
-// Se o servidor estiver configurado com outros valores, ajuste aqui.
+
 const FOTO = {
     tamanhoFinal: 512,
     tamanhoMaxBytes: 1024 * 1024
+};
+
+// Códigos de erro do upload (documentação 5.6.3)
+const ERROS_UPLOAD = {
+    "-1": "Extensão de arquivo inválida ou não permitida.",
+    "-2": "Requisição inválida ou arquivo enviado de forma incompleta.",
+    "-3": "O servidor não conseguiu iniciar a validação (problema interno).",
+    "-4": "Muitas requisições. Aguarde um instante e tente de novo.",
+    "-5": "O processamento excedeu o limite permitido.",
+    "-6": "Falha interna ao processar a imagem.",
+    "-7": "Esse formato de imagem não é suportado pelo servidor.",
+    "-8": "A imagem excede o tamanho máximo permitido.",
+    "-9": "O servidor não recebeu nenhum arquivo.",
+    "-10": "Erro no banco de dados do servidor.",
+    "-99": "Erro inesperado no servidor."
+};
+
+const TEXTO_ETAPAS = {
+    0: "Enviando a foto...",
+    1: "Imagem validada, processando...",
+    2: "Verificação concluída, salvando...",
+    3: "Foto salva."
 };
 
 
@@ -74,7 +100,7 @@ async function enviar(config, corpo) {
     try {
         result = await response.json();
     } catch (e) {
-        // resposta sem JSON (comum em 500 ou 404)
+        // resposta sem JSON 
     }
 
     console.log("HTTP:", response.status);
@@ -96,6 +122,12 @@ function tratarFalha(status, result, elementoMsg) {
     // endpoint ainda não existe no back-end
     if (status === 404) {
         mostrarMsg(elementoMsg, "Esta função ainda não está disponível no servidor.", "erro");
+        return;
+    }
+
+    // limite de requisições do back-end 
+    if (status === 429) {
+        mostrarMsg(elementoMsg, "Muitas requisições. Aguarde um instante e tente de novo.", "erro");
         return;
     }
 
@@ -130,25 +162,58 @@ const perfilNome = document.getElementById('perfilNome');
 const perfilEmail = document.getElementById('perfilEmail');
 const emailAtual = document.getElementById('emailAtual');
 
-// forcarRecarga: depois de trocar a foto, evita que o navegador mostre a antiga do cache
-function mostrarFotoAtual(url, forcarRecarga) {
-    if (url) {
-        fotoAtual.onerror = function () {
-            fotoAtual.hidden = true;
-            fotoPadrao.style.display = "";
-        };
 
-        fotoAtual.src = forcarRecarga
-            ? url + (url.indexOf('?') === -1 ? '?' : '&') + 't=' + Date.now()
-            : url;
+function montarUrlFoto(valor) {
+    if (!valor || !String(valor).trim()) { return null; }
+    valor = String(valor).trim();
 
+    // aponta só para a pasta, sem nome de arquivo: não é uma foto
+    if (valor.endsWith("/")) { return null; }
+
+    if (/^(https?:)?\/\//.test(valor) || valor.startsWith("/")) { return valor; }
+    return "/SIMPUAEPA/image/profile/" + valor;
+}
+
+function mostrarFotoAtual(valor, forcarRecarga) {
+    const base = montarUrlFoto(valor);
+
+    if (!base) {
+        fotoAtual.onload = null;
+        fotoAtual.onerror = null;
+        fotoAtual.hidden = true;
+        fotoAtual.removeAttribute("src");
+        fotoPadrao.style.display = "";
+        return;
+    }
+
+    let tentativa = 0;
+
+    function carregar() {
+       
+        const precisaBuster = forcarRecarga || tentativa > 0;
+
+        fotoAtual.src = precisaBuster
+            ? base + (base.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now()
+            : base;
+    }
+
+    fotoAtual.onload = function () {
         fotoAtual.hidden = false;
         fotoPadrao.style.display = "none";
-    } else {
+    };
+
+    fotoAtual.onerror = function () {
+        console.error("Falha ao carregar a foto:", fotoAtual.src);
+        if (tentativa < 3) {
+            tentativa++;
+            setTimeout(carregar, INTERVALO_MS);
+            return;
+        }
         fotoAtual.hidden = true;
-        fotoAtual.removeAttribute('src');
         fotoPadrao.style.display = "";
-    }
+    };
+
+    carregar();
 }
 
 function preencherPerfil(perfil, forcarRecarga) {
@@ -158,8 +223,10 @@ function preencherPerfil(perfil, forcarRecarga) {
     mostrarFotoAtual(perfil.image_url, forcarRecarga);
 }
 
-// Pergunta ao servidor quem está logado e carrega os dados
-async function carregarPerfil(forcarRecarga) {
+
+async function carregarPerfil(forcarRecarga, tentativa) {
+    tentativa = tentativa || 1;
+
     try {
         const response = await fetch(API.perfil.url, {
             credentials: "same-origin",
@@ -173,14 +240,24 @@ async function carregarPerfil(forcarRecarga) {
             return;
         }
 
+        if (response.status === 429 && tentativa < MAX_TENTATIVAS) {
+            setTimeout(function () {
+                carregarPerfil(forcarRecarga, tentativa + 1);
+            }, INTERVALO_MS);
+            return;
+        }
+
         if (response.ok) {
             const perfil = await response.json();
+            console.log("Perfil:", perfil);
             preencherPerfil(perfil, forcarRecarga);
             return;
         }
 
         console.error("Perfil: servidor respondeu", response.status);
-        perfilNome.textContent = "Não foi possível carregar seus dados.";
+        perfilNome.textContent = response.status === 429
+            ? "Muitas requisições. Aguarde um instante e recarregue a página."
+            : "Não foi possível carregar seus dados.";
 
     } catch (error) {
         console.error("Falha ao carregar o perfil:", error);
@@ -212,7 +289,98 @@ document.querySelectorAll('form').forEach(function (form) {
 });
 
 
-// ================= FOTO DE PERFIL (documentação 5.7) =================
+// ================= RESPOSTAS  UPLOAD =================
+
+function sucessoDe(msg) {
+    return msg.success !== undefined ? msg.success : msg.sucess;
+}
+
+
+function extrairJSONs(texto) {
+    const objetos = [];
+    let profundidade = 0;
+    let inicio = -1;
+    let consumido = 0;
+    let emString = false;
+    let escape = false;
+
+    for (let i = 0; i < texto.length; i++) {
+        const c = texto[i];
+
+        if (emString) {
+            if (escape) { escape = false; }
+            else if (c === "\\") { escape = true; }
+            else if (c === '"') { emString = false; }
+            continue;
+        }
+
+        if (c === '"') {
+            emString = true;
+            continue;
+        }
+
+        if (c === "{") {
+            if (profundidade === 0) { inicio = i; }
+            profundidade++;
+        } else if (c === "}") {
+            profundidade--;
+            if (profundidade === 0 && inicio !== -1) {
+                objetos.push(texto.slice(inicio, i + 1));
+                consumido = i + 1;
+                inicio = -1;
+            }
+        }
+    }
+
+    return { objetos: objetos, resto: texto.slice(consumido) };
+}
+
+
+async function lerRespostasProgressivas(response, aoReceber) {
+    const mensagens = [];
+    let buffer = "";
+
+    function processar() {
+        const extraido = extrairJSONs(buffer);
+        buffer = extraido.resto;
+
+        extraido.objetos.forEach(function (texto) {
+            try {
+                const msg = JSON.parse(texto);
+                console.log("Upload:", msg);
+                mensagens.push(msg);
+                aoReceber(msg);
+            } catch (e) {
+                console.warn("JSON inválido no upload:", texto);
+            }
+        });
+    }
+
+    
+    if (!response.body || !response.body.getReader) {
+        buffer = await response.text();
+        processar();
+        return mensagens;
+    }
+
+    const leitor = response.body.getReader();
+    const decodificador = new TextDecoder();
+
+    while (true) {
+        const parte = await leitor.read();
+        if (parte.done) { break; }
+        buffer += decodificador.decode(parte.value, { stream: true });
+        processar();
+    }
+
+    buffer += decodificador.decode();
+    processar();
+
+    return mensagens;
+}
+
+
+// ================= FOTO DE PERFIL  =================
 
 const arquivoFoto = document.getElementById('arquivoFoto');
 const btnEscolherFoto = document.getElementById('btnEscolherFoto');
@@ -224,12 +392,12 @@ const btnCancelarFoto = document.getElementById('btnCancelarFoto');
 const msgFoto = document.getElementById('msgFoto');
 
 const ctxRecorte = canvasRecorte.getContext('2d');
-const V = canvasRecorte.width;   // tamanho da área de recorte na tela (280)
+const V = canvasRecorte.width;   
 
 // estado do recorte
 let imagem = null;       // imagem escolhida
 let escala = 1;          // tamanho atual da imagem em relação ao original
-let escalaMinima = 1;    // menor escala possível (a imagem sempre cobre a área toda)
+let escalaMinima = 1;    // menor escala possível
 let deslocX = 0;         // posição da imagem dentro da área de recorte
 let deslocY = 0;
 
@@ -239,7 +407,7 @@ function desenharRecorte() {
     ctxRecorte.drawImage(imagem, deslocX, deslocY, imagem.width * escala, imagem.height * escala);
 }
 
-// impede de arrastar a imagem para fora, deixando espaço vazio
+
 function limitarDeslocamento() {
     const w = imagem.width * escala;
     const h = imagem.height * escala;
@@ -252,7 +420,7 @@ function fecharEditorFoto() {
     editorFoto.hidden = true;
     btnEscolherFoto.hidden = false;
     imagem = null;
-    arquivoFoto.value = '';   // permite escolher o mesmo arquivo de novo
+    arquivoFoto.value = '';   
 }
 
 btnEscolherFoto.addEventListener('click', function () {
@@ -284,7 +452,7 @@ arquivoFoto.addEventListener('change', function () {
         imagem = nova;
         escalaMinima = Math.max(V / nova.width, V / nova.height);
         escala = escalaMinima;
-        deslocX = (V - nova.width * escala) / 2;   // começa centralizada
+        deslocX = (V - nova.width * escala) / 2;   
         deslocY = (V - nova.height * escala) / 2;
         zoomFoto.value = 1;
 
@@ -303,7 +471,8 @@ arquivoFoto.addEventListener('change', function () {
     nova.src = endereco;
 });
 
-// ampliar mantendo o centro da área de recorte
+
+
 zoomFoto.addEventListener('input', function () {
     if (!imagem) {
         return;
@@ -320,7 +489,7 @@ zoomFoto.addEventListener('input', function () {
     desenharRecorte();
 });
 
-// arrastar a imagem (mouse e toque)
+
 let arrastando = false;
 let ultimoX = 0;
 let ultimoY = 0;
@@ -340,7 +509,7 @@ canvasRecorte.addEventListener('pointermove', function (e) {
         return;
     }
 
-    // a área pode aparecer menor que 280px em telas estreitas
+    
     const proporcao = V / canvasRecorte.getBoundingClientRect().width;
 
     deslocX += (e.clientX - ultimoX) * proporcao;
@@ -364,7 +533,7 @@ btnCancelarFoto.addEventListener('click', function () {
     fecharEditorFoto();
 });
 
-// gera a imagem final (quadrada) a partir do que está enquadrado na tela
+
 function gerarImagemFinal(qualidade) {
     const saida = document.createElement('canvas');
     saida.width = FOTO.tamanhoFinal;
@@ -373,7 +542,7 @@ function gerarImagemFinal(qualidade) {
     const ctx = saida.getContext('2d');
     const f = FOTO.tamanhoFinal / V;
 
-    ctx.fillStyle = "#fff";   // JPEG não tem transparência
+    ctx.fillStyle = "#fff";   
     ctx.fillRect(0, 0, saida.width, saida.height);
     ctx.drawImage(imagem, deslocX * f, deslocY * f, imagem.width * escala * f, imagem.height * escala * f);
 
@@ -392,7 +561,7 @@ btnSalvarFoto.addEventListener('click', async function () {
     btnSalvarFoto.disabled = true;
 
     try {
-        // reduz a qualidade, se preciso, até caber no limite do servidor
+        
         let arquivo = null;
         const qualidades = [0.9, 0.8, 0.7, 0.6, 0.5];
 
@@ -408,7 +577,7 @@ btnSalvarFoto.addEventListener('click', async function () {
             return;
         }
 
-        // a imagem já está recortada, então o recorte pedido pelo servidor é ela inteira
+        
         const dados = new FormData();
         dados.append(API.enviarFoto.campoArquivo, arquivo, "perfil.jpg");
         dados.append("x", 0);
@@ -416,67 +585,57 @@ btnSalvarFoto.addEventListener('click', async function () {
         dados.append("width", FOTO.tamanhoFinal);
         dados.append("height", FOTO.tamanhoFinal);
 
-        // sem Content-Type manual: o navegador monta o multipart sozinho
+        mostrarMsg(msgFoto, TEXTO_ETAPAS[0], "ok");
+
+        
         const response = await fetch(API.enviarFoto.url, {
             method: API.enviarFoto.method,
             credentials: "same-origin",
             body: dados
         });
 
+        console.log("HTTP:", response.status);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-                // lê como texto primeiro, para ver a resposta mesmo quando não é JSON
-        const texto = await response.text();
-        let result = null;
-        try {
-            result = JSON.parse(texto);
-        } catch (e) {
-            // resposta sem JSON
+        // falhas "de verdade" do HTTP (sessão, endpoint, servidor, limite de requisições)
+        if (response.status === 401 || response.status === 404 ||
+            response.status === 429 || response.status >= 500) {
+            tratarFalha(response.status, null, msgFoto);
+            return;
         }
 
-        console.log("HTTP:", response.status);
-        console.log("Resposta (texto):", texto);
-        console.log("Resposta (JSON):", result);
+        
+        const mensagens = await lerRespostasProgressivas(response, function (msg) {
+            if (sucessoDe(msg) === 0 && TEXTO_ETAPAS[msg.stage]) {
+                mostrarMsg(msgFoto, TEXTO_ETAPAS[msg.stage], "ok");
+            }
+        });
 
+        const falha = mensagens.find(function (m) { return sucessoDe(m) === -1; });
+        const confirmou = mensagens.some(function (m) {
+            return sucessoDe(m) === 0 && m.stage === 3;
+        });
 
-
-
-
-
-
+        if (falha) {
+            mostrarMsg(msgFoto, ERROS_UPLOAD[String(falha.code)] || "O servidor recusou a imagem.", "erro");
+            return;
+        }
 
         
-
-
-
-
-        
-        if (response.ok) {
+        if (confirmou) {
             fecharEditorFoto();
             mostrarMsg(msgFoto, "Foto atualizada com sucesso.", "ok");
-            carregarPerfil(true);   // mostra a foto nova
+
+            
+            setTimeout(function () { carregarPerfil(true); }, INTERVALO_MS);
             return;
         }
 
-        // o servidor recusou a imagem (a seção 3.6 define os códigos exatos)
-        if (response.status === 400 || response.status === 413 || response.status === 415) {
-            mostrarMsg(msgFoto, "O servidor não aceitou essa imagem (formato ou tamanho). Tente outra.", "erro");
+        if (response.status === 400) {
+            mostrarMsg(msgFoto, "O servidor não aceitou essa imagem. Tente outra.", "erro");
             return;
         }
 
-        tratarFalha(response.status, result, msgFoto);
+        mostrarMsg(msgFoto, "O servidor não confirmou que a foto foi salva.", "erro");
 
     } catch (error) {
         console.error("Erro na requisição:", error);
@@ -524,7 +683,7 @@ formEmail.addEventListener('submit', async function (event) {
             mostrarMsg(msgEmail, "E-mail alterado com sucesso.", "ok");
             campoNovoEmail.value = '';
             campoSenhaEmail.value = '';
-            carregarPerfil();   // atualiza o e-mail mostrado na tela
+            setTimeout(function () { carregarPerfil(); }, INTERVALO_MS);   // atualiza o e-mail mostrado na tela
         } else {
             tratarFalha(response.status, result, msgEmail);
         }
@@ -558,7 +717,7 @@ formSenha.addEventListener('submit', async function (event) {
         return;
     }
 
-    // mesma regra do cadastro: mais de 15 caracteres
+    //  regra do cadastro: mais de 15 caracteres
     if (novaSenha.length <= 15) {
         mostrarMsg(msgSenha, "A nova senha deve ter mais de 15 caracteres.", "erro");
         return;
@@ -596,7 +755,7 @@ const formExcluir = document.getElementById('formExcluir');
 const campoSenhaExcluir = document.getElementById('senhaExcluir');
 const msgExcluir = document.getElementById('msgExcluir');
 
-// primeiro clique: só mostra a confirmação (nada é excluído ainda)
+// primeiro clique: só mostra a confirmação 
 btnAbrirExcluir.addEventListener('click', function () {
     btnAbrirExcluir.hidden = true;
     formExcluir.hidden = false;
