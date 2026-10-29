@@ -3,24 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa - SIMPUAEPA</title>
+    <title>Mapa - SIMUP</title>
 
     <!-- CSS do Leaflet -->
-    <link
-        rel="stylesheet"
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-        crossorigin=""
-    >
+   <link rel="stylesheet" href="javascript/leaflet/leaflet.css" />
 
     <!-- Seus arquivos CSS existentes -->
-    <link rel="stylesheet" href="Style/css-estudo.css">
+    
+    <link rel="stylesheet" href="Style/mapa.css">
     <link rel="stylesheet" href="Style/style.css">
 
+
+    <!--javascript do leaflet e do mapa-->
+    <script type="module" src="javascript/mapa.js"></script>
+    <script type="importmap">
+        {
+    "imports": {
+        "leaflet": "./leaflet/leaflet.js"
+        }
+    }
+    </script>
+    <!--javascript do menu-->
+    <script type="module" src="javascript/menu.js"></script>
 </head>
 
 <body>
-
+    
     <!-- BOTÃO SANDUÍCHE -->
     <button
         id="hamburger"
@@ -113,7 +121,7 @@
     <div id="overlay"></div>
 
     <!-- MAPA E LOGIN -->
-    <div id="map">
+    
 
         <div class="login-container" id="login-container">
 
@@ -178,309 +186,153 @@
             </div>
         </div>
 
+    <!--botão e mapa-->
+    <div id="map"></div>
+    <button id="test" type="button" class="botao-controle leaflet-tooltip-pane"><img src="images/icones/visualizacao-sf.png" class="imagem-visualizacao" alt="visualização de ícones"/></button>
+    <div class="test">
+        
+        <div id="visualizacao" class="control-visu-icon conjunto visivel">
+            <!--Botão que liga todos os icones -->
+            <div class="opçoes">
+                    <div><button class="botao-background" id="botao-todos"><img src="images/icones/tudo.png"   class="perigo-icone" alt="botão de ícone de perigo"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Ligar/Desligar<br> todos os pontos</div>
+                </div>
+        <!--elementos  de perigo-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-perigo"><img src="images/icones/perigo.png"   class="perigo-icone" alt="botão de ícone de perigo"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Área Perigosa</div>
+                </div>
+        <!--elementos de rua-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-rua" ><img src="images/icones/rua.png"   class="rua-icone" alt="botão de ícone de rua"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Rua problemática</div>
+                </div>
+        <!--elementos de esgoto-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-esgoto"><img src="images/icones/esgoto.png"   class="esgoto-icone" alt="botão de ícone de esgoto"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Esgoto invasivo</div>
+                </div>
+        <!--elementos de sonora-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-sonora"><img src="images/icones/sonora.png"   class="sonora-icone" alt="botão de ícone de poluição sonora"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Poluição sonora excessiva</div>
+                </div>
+        <!--elementos de poluição-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-poluicao"><img src="images/icones/poluicao.png"   class="poluicao-icone" alt="botão de ícone de poluição"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Excesso de poluição</div>
+                </div>
+        <!--elementos de eletricidade-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-eletricidade"><img src="images/icones/eletricidade.png"   class="eletricidade-icone" alt="botão de ícone de eletricidade"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Problemas em fiação eletrônica</div>
+                </div>
+        <!--elementos de outro-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-outro"><img src="images/icones/outro.png"   class="outro-icone" alt="botão de ícone de outro"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Outro problema</div>
+                </div>
+        
+            </div>
     </div>
+        <!--Caixa de reclamação, adicionar os elementos aqui-->
+        <div id="caixa_reclamacao" class="caixa_reclamacao visivel">
 
-    <!-- JAVASCRIPT DO LEAFLET -->
-    <script
-        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossorigin=""
-    ></script>
+        <button type="button" id="fechar" class="fechar"
+            aria-label="Fechar formulário">X</button>
 
-    <script>
-        // ================= MENU LATERAL =================
+        <h2>Registrar reclamação</h2>
+        <p>Descreva o problema encontrado neste local.</p>
 
-        const hamburger = document.getElementById("hamburger");
-        const menu = document.getElementById("menu");
-        const overlay = document.getElementById("overlay");
+        <form id="form_reclamacao">
 
-        function abrirMenu() {
-            menu.classList.add("open");
-            overlay.classList.add("open");
-            hamburger.classList.add("open");
+            <label for="tipo_reclamacao">Tipo de problema</label>
+            <select id="tipo_reclamacao" name="tipo_reclamacao" required>
+                <option value="">Selecione uma categoria</option>
+                <option value="rua">Problema na rua</option>
+                <option value="esgoto">Esgoto</option>
+                <option value="poluicao">Poluição</option>
+                <option value="sonora">Poluição sonora</option>
+                <option value="eletricidade">Problema elétrico</option>
+                <option value="perigo">Área perigosa</option>
+                <option value="outro">Outro problema</option>
+            </select>
 
-            hamburger.setAttribute("aria-expanded", "true");
-            hamburger.setAttribute("aria-label", "Fechar menu");
-        }
+            <label for="titulo_reclamacao">Título</label>
+            <input
+                type="text"
+                id="titulo_reclamacao"
+                name="titulo_reclamacao"
+                placeholder="Ex.: Buraco na rua"
+                maxlength="80"
+                required
+        >
 
-        function fecharMenu() {
-            menu.classList.remove("open");
-            overlay.classList.remove("open");
-            hamburger.classList.remove("open");
+            <label for="descricao_reclamacao">Descrição do problema</label>
+            <textarea
+                id="descricao_reclamacao"
+                name="descricao_reclamacao"
+                placeholder="Explique o que está acontecendo..."
+                rows="5"
+                maxlength="1000"
+                required
+        ></textarea>
 
-            hamburger.setAttribute("aria-expanded", "false");
-            hamburger.setAttribute("aria-label", "Abrir menu");
-        }
+            <label for="referencia_local">Referência do local (opcional)</label>
+            <input
+                type="text"
+                id="referencia_local"
+                name="referencia_local"
+                placeholder="Ex.: próximo à praça"
+                maxlength="150"
+        >
 
-        hamburger.addEventListener("click", function () {
-            if (menu.classList.contains("open")) {
-                fecharMenu();
-            } else {
-                abrirMenu();
-            }
-        });
+            <button type="submit" id="enviar_reclamacao">
+                Enviar reclamação
+            </button>
 
-        overlay.addEventListener("click", fecharMenu);
+            <p id="status_reclamacao" role="status"></p>
 
-        // Fecha o menu com a tecla Escape
-        document.addEventListener("keydown", function (e) {
-            if (e.key === "Escape") {
-                fecharMenu();
-                fecharDropdown();
-            }
-        });
+    </form>
+</div>
 
-        // Impede os cliques no menu de chegarem ao mapa
-        L.DomEvent.disableClickPropagation(menu);
-        L.DomEvent.disableScrollPropagation(menu);
+<div id="aviso_popup" class="aviso-fundo" role="presentation">
+    <div class="aviso-conteudo"
+         role="alertdialog"
+         aria-modal="true"
+         aria-labelledby="aviso_titulo"
+         aria-describedby="aviso_mensagem">
 
-        // Exemplo de ação dos itens do menu
-        menu.querySelectorAll("li[data-acao]").forEach(function (item) {
-            item.addEventListener("click", function () {
-                const acao = item.dataset.acao;
+        <div id="aviso_icone" class="aviso-icone">✓</div>
 
-                console.log("Item selecionado:", acao);
+        <h2 id="aviso_titulo">Formulário validado!</h2>
 
-                // Implemente a ação desejada para cada opção.
-                fecharMenu();
-            });
-        });
+        <p id="aviso_mensagem">
+            Os dados foram preenchidos corretamente.
+        </p>
 
+        <button type="button" id="fechar_aviso">
+            Entendi
+        </button>
+    </div>
+</div>
 
-        // ================= MAPA LEAFLET =================
-
-        const map = L.map("map", { zoomControl: false }).setView([51.505, -0.09], 13);
-        L.control.zoom({ position: "bottomright" }).addTo(map);
-
-        L.tileLayer(
-            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-            {
-                maxZoom: 19,
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">' +
-                    'OpenStreetMap</a>'
-            }
-        ).addTo(map);
-
-        // Marcador
-        const marker = L.marker([51.5, -0.09]).addTo(map);
-
-        marker.bindPopup(
-            "<b>Hello world!</b><br>I am a popup."
-        );
-
-        // Círculo
-        const circle = L.circle([51.508, -0.11], {
-            color: "red",
-            fillColor: "#f03",
-            fillOpacity: 0.5,
-            radius: 500
-        }).addTo(map);
-
-        circle.bindPopup("I am a circle.");
-
-        // Polígono
-        const polygon = L.polygon([
-            [51.509, -0.08],
-            [51.503, -0.06],
-            [51.51, -0.047]
-        ]).addTo(map);
-
-        polygon.bindPopup("I am a polygon.");
-
-        // Popup ao clicar no mapa
-        map.on("click", function (e) {
-            L.popup()
-                .setLatLng(e.latlng)
-                .setContent(
-                    "Você clicou nas coordenadas: " +
-                    e.latlng.lat.toFixed(6) + ", " +
-                    e.latlng.lng.toFixed(6)
-                )
-                .openOn(map);
-        });
-
-
-        // ================= LOGIN / AVATAR / LOGOUT =================
-
-        const loginContainer = document.getElementById("login-container");
-        const btnLogin = document.getElementById("btn-login");
-        const userMenu = document.getElementById("user-menu");
-        const avatar = document.getElementById("avatar");
-        const avatarPadrao = document.getElementById("avatar-padrao");
-        const avatarFoto = document.getElementById("avatar-foto");
-        const dropdown = document.getElementById("dropdown");
-        const userNome = document.getElementById("user-nome");
-        const userEmail = document.getElementById("user-email");
-        const btnLogout = document.getElementById("btn-logout");
-
-        // Impede que cliques no login acionem o mapa
-        L.DomEvent.disableClickPropagation(loginContainer);
-
-        // Mostra a foto do usuário; sem foto (ou se ela falhar), volta para a silhueta
-        // image_url pode vir como URL completa, caminho absoluto ou só o nome do arquivo
-       function montarUrlFoto(valor) {
-            if (!valor || !String(valor).trim()) { return null; }
-            valor = String(valor).trim();
-
-            // aponta só para a pasta, sem nome de arquivo: não é uma foto
-            if (valor.endsWith("/")) { return null; }
-
-            if (/^(https?:)?\/\//.test(valor) || valor.startsWith("/")) { return valor; }
-            return "/SIMPUAEPA/image/profile/" + valor;
-        }
-
-        // Mostra a foto do usuário; sem foto (ou se ela falhar), volta para a silhueta
-        const INTERVALO_MS = 1200;   // o back-end exige no mínimo 1000ms entre requisições
-
-        function mostrarFoto(valor) {
-            
-            const base = montarUrlFoto(valor);
-
-            if (!base) {
-                avatarFoto.onload = null;
-                avatarFoto.onerror = null;
-                avatarFoto.hidden = true;
-                avatarFoto.removeAttribute("src");
-                avatarPadrao.style.display = "";
-                return;
-            }
-
-            let tentativa = 0;
-
-            function carregar() {
-                avatarFoto.src = tentativa > 0
-                    ? base + (base.indexOf("?") === -1 ? "?" : "&") + "t=" + Date.now()
-                    : base;
-            }
-
-            avatarFoto.onload = function () {
-                avatarFoto.hidden = false;
-                avatarPadrao.style.display = "none";
-            };
-
-            avatarFoto.onerror = function () {
-                console.error("Falha ao carregar a foto:", avatarFoto.src);
-                if (tentativa < 3) {
-                    tentativa++;
-                    setTimeout(carregar, INTERVALO_MS);
-                    return;
-                }
-                avatarFoto.hidden = true;
-                avatarPadrao.style.display = "";
-            };
-
-            // espera o intervalo mínimo desde a requisição do perfil
-            setTimeout(carregar, INTERVALO_MS);
-        }
-
-        // perfil é opcional: sem ele, só troca o botão Login pela bolinha
-        function mostrarLogado(perfil) {
-            btnLogin.style.display = "none";
-            userMenu.style.display = "block";
-
-            if (perfil) {
-                userNome.textContent = perfil.name || "";
-                userEmail.textContent = perfil.email || "";
-                mostrarFoto(perfil.image_url);
-            }
-        }
-
-        function mostrarDeslogado() {
-            userMenu.style.display = "none";
-            dropdown.style.display = "none";
-            avatar.setAttribute("aria-expanded", "false");
-            btnLogin.style.display = "inline-block";
-
-            userNome.textContent = "";
-            userEmail.textContent = "";
-            mostrarFoto(null);
-        }
-
-        // Pergunta ao servidor quem está logado (documentação 5.2)
-        async function verificarLogin(tentativa) {
-            tentativa = tentativa || 1;
-
-            if (tentativa === 1) {
-                if (localStorage.getItem("uid")) { mostrarLogado(); } else { mostrarDeslogado(); }
-            }
-
-            try {
-                const resposta = await fetch(
-                    "/SIMPUAEPA/user/profile?name=1&email=1&image_url=1",
-                    { credentials: "same-origin", cache: "no-store" }
-                );
-
-                if (resposta.status === 401) {
-                    localStorage.removeItem("uid");
-                    mostrarDeslogado();
-                    return;
-                }
-
-                if (resposta.status === 429 && tentativa < 4) {
-                    setTimeout(function () { verificarLogin(tentativa + 1); }, 1200);
-                    return;
-                }
-
-                if (resposta.ok) {
-                    mostrarLogado(await resposta.json());
-                    return;
-                }
-
-                console.error("Perfil: servidor respondeu", resposta.status);
-            } catch (err) {
-                console.error("Falha ao verificar o login:", err);
-            }
-        }
-
-        function fecharDropdown() {
-            dropdown.style.display = "none";
-            avatar.setAttribute("aria-expanded", "false");
-        }
-
-        // Abre ou fecha o menu do usuário
-        avatar.addEventListener("click", function (e) {
-            e.stopPropagation();
-
-            const estaAberto = dropdown.style.display === "block";
-
-            dropdown.style.display = estaAberto ? "none" : "block";
-
-            avatar.setAttribute("aria-expanded", String(!estaAberto));
-        });
-
-        // Fecha o dropdown ao clicar fora
-        document.addEventListener("click", function (e) {
-            if (!userMenu.contains(e.target)) {
-                fecharDropdown();
-            }
-        });
-
-        // Logout
-        btnLogout.addEventListener("click", async function () {
-            try {
-                const resposta = await fetch("/SIMPUAEPA/logout", {
-                    method: "POST",
-                    credentials: "same-origin"
-                });
-
-                if (!resposta.ok) {
-                    console.error(
-                        "O servidor retornou um erro no logout:",
-                        resposta.status
-                    );
-                }
-            } catch (err) {
-                console.error("Falha no logout:", err);
-            }
-
-            localStorage.removeItem("uid");
-            mostrarDeslogado();
-        });
-
-        verificarLogin();
-
-    </script>
 
 </body>
 </html>
