@@ -80,9 +80,17 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
      * For exemple stage 2 success 0 mean the operation is finished else -1 mean ai validation didn't pass
      * 
      * @param array $options array contain extra information about file. for example, crop image from (x,y)
-     * @return bool sucess or no for file upload, the user of this funtion should handle error response(all error ids logged automatcally once have error)
+     * @param bool $auto_commit control wether commit automatically once sucess for database. Turn off to allow the transaction don't end immedially(so you will need to commit when call this), 
+     * however, without this the stage 3 end don't mean actually registered in db and log for sucessifullty inserted/updated will be omitted.
+     * Also ob_end_clen won't be called and will return the stage 3 as sucess even actually not success.
+     * @return true|array{
+     * "unlink_target":string|null,
+     * "current_fname": string
+     * } sucess or no for file upload, the user of this funtion should handle error response(all error ids logged automatcally once have error). 
+     * The array will consist of string as old(if exist) and current internal file name if operation sucess.
+     * If the caller failed, the current_fname can be deleted else use unlink_target if is present. Both of value is absolute path to file
      */
-    function Secure_file_upload(File_storation_path $target_location, array $allowed_ext,array $options = []) : bool{
+    function Secure_file_upload(File_storation_path $target_location, array $allowed_ext,array $options = [], bool $auto_commit = true) : true|array{
         //start buffering the output
         //send to client that is sucessfully received
         \ob_start();
@@ -94,6 +102,8 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         $ip = Get_IP_address_txt();
         Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[IP-\"$ip\" | File Type - $target_location->name] Upload file $finfo_txt");
 
+        if(!isset($_FILES[FILE_UPLOAD_FIELD_NAME])) Exit_upload_err(UPLOAD_ERR_NO_FILE,1,[],"");
+        
         $og_name = \basename(\mb_strtolower(\trim($_FILES[FILE_UPLOAD_FIELD_NAME]['name'])));
 
         Validate_uploaded_file($target_location,$allowed_ext,$og_name);
@@ -105,10 +115,8 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         $full_name = Safe_file_store(File_storation_path::Await_sanitation,$extension,$new_name);
         
 
-        if($full_name === false){
-            Exit_upload_err(Custom_Upload_Err::cannot_move_file,1,$allowed_ext,$og_name,'',$new_name);
-            return false;
-        }
+        if($full_name === false) Exit_upload_err(Custom_Upload_Err::cannot_move_file,1,$allowed_ext,$og_name,'',$new_name);
+        
 
 
   
@@ -161,10 +169,7 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         $full_name = Safe_file_store($target_location,$compressed_ext,$new_name,$moved_path,true);
 
 
-        if($full_name === false){
-            Exit_upload_err(Custom_Upload_Err::cannot_move_file,1,$allowed_ext,$og_name,'',$new_name);
-            return false;
-        }
+        if($full_name === false) Exit_upload_err(Custom_Upload_Err::cannot_move_file,1,$allowed_ext,$og_name,'',$new_name);
 
         Send_response(0,2,$og_name);
         
@@ -172,7 +177,15 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         $internal_fname = $new_name. '.'.$compressed_ext->name;
         $finfo_txt = Get_file_log_format($internal_fname);
 
-        Register_image_in_db($target_location, $internal_fname, $og_name, $allowed_ext);
+        $old_fname = Register_image_in_db($target_location, $internal_fname, $og_name, $allowed_ext, $auto_commit);
+        if(!$auto_commit) {
+            Send_response(0,3,$og_name,201);
+
+            $return_arr = ['current_fname'=> "{$target_location->value}/{$internal_fname}"];
+            if($old_fname !== null) $return_arr['unlink_target'] = $old_fname;
+            return $return_arr;
+        }
+
 
 
         Log_internal(new Error_code(Error_domain::upload,Resource_code::file,Error_condition::received), Level::Info,"[IP-\"$ip\" | File type - $target_location->name] File stored sucessfully: $finfo_txt");
@@ -192,11 +205,6 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
         if($_SERVER['REQUEST_METHOD']!=='POST'){
             if($exit) Exit_upload_err(Custom_Upload_Err::invalid_upload->value,1,[],$og_name);
             return Custom_Upload_Err::invalid_upload->value;
-        }
-
-        if(!isset($_FILES[FILE_UPLOAD_FIELD_NAME])){
-            if($exit) Exit_upload_err(UPLOAD_ERR_NO_FILE,1,[],$og_name);
-            return UPLOAD_ERR_NO_FILE;
         }
 
         $err_code = $_FILES[FILE_UPLOAD_FIELD_NAME]['error'];
@@ -338,9 +346,12 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 
 
     /**
+     * 
      * If alredy exist, delete old image
+     * @param $auto_commit control if to omit the log message and don't commit once success, if this set to false, the old file name meant to be deleted will returned so once future transaction succed, the caller can unlink
+     * @return string|null return the old file name in absolute path(don't need add any other string) if exist
      */
-    function Register_image_in_db(File_storation_path $category, string $internal_fname, string $user_upload_fname , array $allowed_ext){
+    function Register_image_in_db(File_storation_path $category, string $internal_fname, string $user_upload_fname , array $allowed_ext, bool $auto_commit) :string|null{
         $full_name = $category->value . DIRECTORY_SEPARATOR . $internal_fname;
         $uid = $_SESSION['uid'];
 
@@ -404,20 +415,23 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
                 Exit_upload_err(Custom_Upload_Err::db_reference_missing,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "No affected row when update new file reference");
             }
 
-            if(!$success || ($conn->inTransaction() && !$conn->commit())) {
+            if(!$success || ($auto_commit && $conn->inTransaction() && !$conn->commit())) {
                 if($conn->inTransaction()) $conn->rollBack();
                 Exit_upload_err(Custom_Upload_Err::db_failed,3,$allowed_ext,$user_upload_fname,$full_name,$internal_fname, "Failed to execute query when update new file reference");
             }
 
+            $unlink_target = "{$category->value}/$old_fname";
+            //return unlink target
+            if(!$auto_commit) return is_int($old_fname) ? null : $unlink_target;
             $ip = Get_IP_address_txt();
 
             $log_msg = "uploaded new file \"$user_upload_fname\"";
             if(!is_int($old_fname)) {
                 $log_msg = "replacing (old internal name - \"$old_fname\") with new file \"$user_upload_fname\"";
-                \unlink("{$category->value}/$old_fname");
+                \unlink($unlink_target);
             }
-            
 
+            
             
             Log_internal(
                 new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::duplicated),
@@ -429,6 +443,7 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 
             
             Send_response(0,3,$user_upload_fname,201);
+            return null;
         }catch(Throwable $e){
             if($conn instanceof \PDO && $conn->inTransaction()) $conn->rollBack();
             Exit_upload_err(Custom_Upload_Err::db_failed, 3, $allowed_ext, $user_upload_fname, $full_name, $internal_fname, $e->getMessage());

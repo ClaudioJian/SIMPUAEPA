@@ -61,6 +61,8 @@ use ACEX_project\WEB\Private\Error\Error_code;
         case dislike_count;
         case resolved;
         case priority_level;
+        case etag;
+        case location_reference;
     }
 
     /**
@@ -72,6 +74,7 @@ use ACEX_project\WEB\Private\Error\Error_code;
         \define("DATABASE_PERMISSION",
             [
                 new Permission(HOST,All_tables::user,[Query_type::select,Query_type::insert,Query_type::update]),
+                new Permission(HOST,All_tables::complain, [Query_type::select,Query_type::insert,Query_type::update])
             ]
         );
     }

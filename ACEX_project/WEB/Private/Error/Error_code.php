@@ -59,6 +59,7 @@ use function ACEX_project\WEB\Private\Core\Security\File_upload\Strip_all_extens
         case file             = -21;
         case directory        = -22;
         case rate             = -23;
+        case complain         = -24;
 
         //action
         case action           = -50;
