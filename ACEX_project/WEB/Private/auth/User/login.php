@@ -346,7 +346,7 @@ require_once __DIR__ . "/User_data.php";
         $_SESSION['uid'] = $uid;
 
         if($email !== '') $_SESSION['user_email'] = \trim($email);
-        if($name !== '') $_SESSION['user_name'] = \trim($name);
+        if($name !== '') $_SESSION['user_name'] = \mb_trim($name,encoding:ENCODING_CHARSET);
         if($profile_img_url !== '') $_SESSION['profile_img_url'] = '/'. URI_PREFIX .'/image/profile/' . \strtolower(\trim($profile_img_url));
     }
 

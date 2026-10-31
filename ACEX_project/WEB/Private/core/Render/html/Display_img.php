@@ -76,8 +76,11 @@ function Send_img(?Rate_limiter $ip_limiter, array $captured_args){
 
     $full_path = $target_dir->value . "/{$file_name}";
 
-    $fptr = fopen($full_path,'rb');
-    if(!is_resource($fptr) || ($content = stream_get_contents($fptr)) === false) {
+
+    if(!\file_exists(!$full_path) || 
+        !is_resource($fptr = fopen($full_path,'rb')) || 
+        ($content = stream_get_contents($fptr)) === false) {
+
         \http_response_code(404);
         exit();
     }

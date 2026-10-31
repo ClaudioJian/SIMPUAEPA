@@ -1,9 +1,6 @@
 <?php 
 
 namespace ACEX_project\API;
-    error_log('hi');
-
-
     require_once __DIR__ . "/../WEB/Private/Core/AppCommonVar.php";  
 
 
@@ -31,9 +28,12 @@ namespace ACEX_project\API;
     use function ACEX_project\WEB\Private\Core\Security\Handle_CSRF_GET;
     use function ACEX_project\WEB\Private\Auth\User\Login;
     use function ACEX_project\WEB\Private\Auth\User\Send_user_data;
+use function ACEX_project\WEB\Private\complain\Upload_complain;
 
     require_once __DIR__ . "/../WEB/Private/Core/Render/html/Display_img.php";
     use function ACEX_project\WEB\Private\Core\Render\html\Send_img;
+
+    require_once __DIR__ . "/../WEB/Private/complain/upload_complain.php";
 
     \ini_set('session.cookie_lifetime',(string)(SESSION_ABSOLUTE_TIME+10));
     \ini_set('session.gc_maxlifetime',(string)(SESSION_ABSOLUTE_TIME+10));
@@ -54,7 +54,7 @@ namespace ACEX_project\API;
         new Route('/logout',"POST",Logout(...), require_login:true),
         new Route('/image/profile',"POST",Upload_profile(...),require_login:true, rate_limit_option:RATE_ENDPOINT_IMG_UPLOAD),
         new Route('/image/map',"POST",Upload_map_img(...),require_login:true, rate_limit_option:RATE_ENDPOINT_IMG_UPLOAD),
-        
+        new Route('/upload/complain',"POST",Upload_complain(...),require_login:true, require_nonce:true),
     ];
 
 

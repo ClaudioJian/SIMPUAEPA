@@ -35,7 +35,8 @@ class Schema{
         public readonly int $version,
         private string $query,
         private array $params = [],
-        public string $version_name = ""
+        public string $version_name = "",
+        private bool $db_created = true,
     ){
         $version_name = trim($version_name);
 
@@ -58,7 +59,7 @@ class Schema{
         $msg = "Cannot execute database schema [$this->version_name]:";
         $conn = null;
         try{
-            $conn = Connect_database();
+            $conn = Connect_database(db_exist:$this->db_created);
             if($conn === null) {
                 Log_internal(new Error_code(Error_domain::database,Resource_code::connection,Error_condition::failed),
                     Level::Error,
@@ -66,6 +67,7 @@ class Schema{
                 );
                 return false;
             }
+            $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             $conn->beginTransaction();
             $smtm = $conn->prepare($this->query);
@@ -119,6 +121,7 @@ class Schema{
  */
 function Create_TABLE_SQL_Wrapper(All_tables $table, array $columns, string $extra_info = "") : string{
     $all_columns = [];
+    $extra_query = $extra_info === '' ? '' : ", $extra_info";
 
     foreach($all_columns as $c) $all_columns[] = $c['name'];
     Column_belong_to_table($table,$all_columns);
@@ -130,7 +133,7 @@ function Create_TABLE_SQL_Wrapper(All_tables $table, array $columns, string $ext
                     $columns
                 )
             ).
-        ", $extra_info".
+        $extra_query.
         ');'
     ;
 

@@ -29,10 +29,48 @@ use ACEX_project\WEB\Private\Error\Error_code;
         case update;
     }    
 
+    enum ForeignKey_constraint: string{
+        case on_delete = "ON DELETE";
+        case on_update = "ON UPDATE";
+
+        case restrict = "RESTRICT";
+        case cascade = "CASCADE";
+        case set_null = "SET NULL";
+        case no_action = "NO ACTION";
+        case set_default = "SET DEFAULT";
+
+        public function is_reference_option() : bool{
+            return match($this){
+                self::on_delete, self::on_update=>false,
+                default=>true
+            };
+        }
+    }
+
+    /**
+     * return string which contain function name for get current timestamp
+     * * mysql, postgre, sqlite, sqlserver: CURRENT_TIMESTAMP
+     */
+    function SQL_get_current_time() : string{
+        return match(DB_TYPE){
+            'mysql','postgre','sqlite','sqlserver'=>'CURRENT_TIMESTAMP',
+            default=>''
+        };
+    }
+
     /** table name(should correspond real table name) => enum name that contain all column */
     enum All_tables : string{
         case user = tb_user_columns::class;
         case complain = tb_complain_columns::class;
+        case location = tb_location_columns::class;
+
+        function Get_primaryKey() : string{
+            return match($this){
+                self::user => tb_user_columns::id->name,
+                self::complain => tb_complain_columns::id->name,
+                self::location => tb_complain_columns::id->name,
+            };
+        }
     }
 
     enum tb_user_columns{
@@ -65,6 +103,12 @@ use ACEX_project\WEB\Private\Error\Error_code;
         case location_reference;
     }
 
+    enum tb_location_columns{
+        case id;
+        case ang_x;
+        case ang_y;
+    }
+
     /**
      * be aware when duplicated or have whitelist and blacklist in same column: only last one validated
      *  TODO: redefine table name after model is done
@@ -74,10 +118,13 @@ use ACEX_project\WEB\Private\Error\Error_code;
         \define("DATABASE_PERMISSION",
             [
                 new Permission(HOST,All_tables::user,[Query_type::select,Query_type::insert,Query_type::update]),
-                new Permission(HOST,All_tables::complain, [Query_type::select,Query_type::insert,Query_type::update])
+                new Permission(HOST,All_tables::complain, [Query_type::select,Query_type::insert,Query_type::update]),
+                new Permission(HOST,All_tables::location, [Query_type::select,Query_type::insert,Query_type::update]),
             ]
         );
     }
+
+    
 
     /**
      * @return array{
@@ -106,6 +153,8 @@ use ACEX_project\WEB\Private\Error\Error_code;
         };
     }
 
+
+
     /**
      * check if input column is in origin column
      * @throws never if $origin_columns or $input_columns isn't enum or the request columns don't exist in table
@@ -122,6 +171,8 @@ use ACEX_project\WEB\Private\Error\Error_code;
         }
         return true;
     }
+
+    
 
     /**
      * check if $columns is valid and exist in table, else terminate request early

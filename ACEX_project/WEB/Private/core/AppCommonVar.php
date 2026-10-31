@@ -29,6 +29,8 @@ namespace ACEX_project\WEB\Private\Core;
     use Dotenv\Dotenv;
     use Exception;
     use Monolog\Level;
+use ValueError;
+
     use function ACEX_project\WEB\Private\Error\Handle_error;
 
     require_once __DIR__ . '/../Error/Error_manager.php';
@@ -91,15 +93,27 @@ namespace ACEX_project\WEB\Private\Core;
             }
             else{
                 $required_env = [
+                    'DATABASE_TYPE',
                     'DATABASE_NAME',
                     'DATABASE_PASSWORD',
                     'DATABASE_HOST',
                     'DATABASE_USER',
                     'DATABASE_PORT',
+
+                    'MAX_TITLE_LENGTH',
+                    'MAX_DESCRIPTION_LENGTH',
+                    'MAX_LOCATION_REFERENCE_LENGTH',                        
+                    'MAX_USER_NAME_LENGTH',
+
+                    'ENCODING_CHARSET'
                 ];
 
                 $required_int_env = [
                     'DATABASE_PORT',
+                    'MAX_TITLE_LENGTH',
+                    'MAX_DESCRIPTION_LENGTH',
+                    'MAX_LOCATION_REFERENCE_LENGTH',
+                    'MAX_USER_NAME_LENGTH'                    
                 ];                
 
                 if(!\defined('DB_SCHEMA')){
@@ -125,7 +139,7 @@ namespace ACEX_project\WEB\Private\Core;
                         'RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL',
                         'RATE_ENDPOINT_LOGIN',
                         'RATE_ENDPOINT_SUBSCRIBE',
-                        'RATE_ENDPOINT_IMG_UPLOAD'
+                        'RATE_ENDPOINT_IMG_UPLOAD',
                     ];
                     $required_int_env = [
                         ...$required_int_env,
@@ -167,76 +181,92 @@ namespace ACEX_project\WEB\Private\Core;
             define('IMG_FINAL_QUALITY',min(100,$_ENV['IMG_FINAL_QUALITY']));
         }else{
             define('PHP_PATH',$_ENV['PHP_PATH']);
+
+            define('DB_TYPE', strtolower(trim($_ENV['DATABASE_TYPE'])));
             define('DB_NAME', $_ENV['DATABASE_NAME']);
             define('DB_PASSWORD', $_ENV['DATABASE_PASSWORD']);
             define('HOST', $_ENV['DATABASE_HOST']);
             define('SERVER_USER', $_ENV['DATABASE_USER']);
             define('DB_PORT', (int)$_ENV['DATABASE_PORT']);
 
-            define('SESSION_OBSOLETE_MAXLIFE', (int)$_ENV['SESSION_OBSOLETE_MAXLIFE']);
-            define('SESSION_ACTIVE_TIME', (int)$_ENV['SESSION_ACTIVE_TIME']);
-            define('SESSION_ABSOLUTE_TIME', (int)$_ENV['SESSION_ABSOLUTE_TIME']);
+            //application configuration
+            /** CHARSET used */
+            define('ENCODING_CHARSET', Get_ENCODING_CHARSET($_ENV['ENCODING_CHARSET']));
 
-            define('CSRF_TOKEN_MAXLIFE', (int)$_ENV['CSRF_TOKEN_MAXLIFE']);
-            define('CSRF_TOKEN_VALIDATE_METHOD', ['POST','PATCH','DELETE','PUT']);
-            define('CSRF_TOKEN_HEADER_NAME', $_ENV['CSRF_TOKEN_HEADER_NAME']);
-            define('CSRF_TOKEN_GENERATE_SEPARATOR', '__');
-
-            define('REQUEST_MAX_LIFE',$_ENV['REQUEST_MAX_LIFE']);
+            //user related
+            define('MAX_USER_NAME_LENGTH', (int)$_ENV['MAX_USER_NAME_LENGTH']);
             
+            //complain related
+            define('MAX_TITLE_LENGTH',(int)$_ENV['MAX_TITLE_LENGTH']);
+            define('MAX_DESCRIPTION_LENGTH', (int)$_ENV['MAX_DESCRIPTION_LENGTH']);
+            define('MAX_LOCATION_REFERENCE_LENGTH',(int)$_ENV['MAX_LOCATION_REFERENCE_LENGTH']);            
 
-            define('NONCE_SEP','#');
+            if(!\defined('DB_SCHEMA')){
+                define('SESSION_OBSOLETE_MAXLIFE', (int)$_ENV['SESSION_OBSOLETE_MAXLIFE']);
+                define('SESSION_ACTIVE_TIME', (int)$_ENV['SESSION_ACTIVE_TIME']);
+                define('SESSION_ABSOLUTE_TIME', (int)$_ENV['SESSION_ABSOLUTE_TIME']);
 
-            define('UNSUPPORTED_METHOD',['CONNECT','TRACE']);
-            define('VALID_HTTP_METHOD',['POST','GET','HEAD','CONNECT','TRACE','DELETE','PUT','PATCH']);
+                define('CSRF_TOKEN_MAXLIFE', (int)$_ENV['CSRF_TOKEN_MAXLIFE']);
+                define('CSRF_TOKEN_VALIDATE_METHOD', ['POST','PATCH','DELETE','PUT']);
+                define('CSRF_TOKEN_HEADER_NAME', $_ENV['CSRF_TOKEN_HEADER_NAME']);
+                define('CSRF_TOKEN_GENERATE_SEPARATOR', '__');
 
-            //files
-            define('FILE_UPLOAD_FIELD_NAME','userfile');
-            define("IMG_MAP_MAX_SIZE",$_ENV["IMG_MAP_MAX_SIZE"]);
-            define("IMG_PROFILE_MAX_SIZE",$_ENV['IMG_PROFILE_MAX_SIZE']);                
-             
-            //rate limit
-            $rate_fquant = (int)$_ENV['RATE_FILE_MAX_QUANT'];
-            if($rate_fquant <=0) $rate_fquant = 1;
-            define('RATE_FILE_MAX_QUANT',$rate_fquant);
-            define('RATE_RECORD_EXPIRATION',Parse_time($_ENV['RATE_RECORD_EXPIRATION']));
+                define('REQUEST_MAX_LIFE',$_ENV['REQUEST_MAX_LIFE']);
+                
 
+                define('NONCE_SEP','#');
 
-            /*** In ms*/
-            define('RATE_IP_MINIMUM_INTERVAL',Parse_time($_ENV['RATE_IP_MINIMUM_INTERVAL']));
-            /*** In ms*/
-            /*** maximum number of request one ip can do in one interval */
-            define('RATE_IP_MAX_REQUEST_PER_INTERVAL',Construct_rate_format('RATE_IP_MAX_REQUEST_PER_INTERVAL'));
-            /*** maximum number of failed login attempt one ip can do */
-            define('RATE_IP_LOGIN_PER_INTERVAL',Construct_rate_format('RATE_IP_LOGIN_PER_INTERVAL'));
-            /*** time of penalty when hit login rate limit in ms */
-            define('RATE_IP_LOGIN_PENALTY',Parse_time($_ENV['RATE_IP_LOGIN_PENALTY']));
+                define('UNSUPPORTED_METHOD',['CONNECT','TRACE']);
+                define('VALID_HTTP_METHOD',['POST','GET','HEAD','CONNECT','TRACE','DELETE','PUT','PATCH']);
 
-
-
-            /*** minimum interval between failed login from same account */
-            define('RATE_ACCOUNT_LOGIN_MINIMUM_INTERVAL',Parse_time($_ENV['RATE_ACCOUNT_LOGIN_MINIMUM_INTERVAL']));
-            /** maxium number of login can be done in one interval for same account */
-            define('RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL',Construct_rate_format('RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL'));
-
-            
-            define('RATE_ENDPOINT_LOGIN',Construct_rate_format('RATE_ENDPOINT_LOGIN'));
-            define('RATE_ENDPOINT_SUBSCRIBE',Construct_rate_format('RATE_ENDPOINT_SUBSCRIBE'));
-
-            define('RATE_ENDPOINT_IMG_UPLOAD',Construct_rate_format('RATE_ENDPOINT_IMG_UPLOAD'));
+                //files
+                define('FILE_UPLOAD_FIELD_NAME','userfile');
+                define("IMG_MAP_MAX_SIZE",$_ENV["IMG_MAP_MAX_SIZE"]);
+                define("IMG_PROFILE_MAX_SIZE",$_ENV['IMG_PROFILE_MAX_SIZE']);                
+                
+                //rate limit
+                $rate_fquant = (int)$_ENV['RATE_FILE_MAX_QUANT'];
+                if($rate_fquant <=0) $rate_fquant = 1;
+                define('RATE_FILE_MAX_QUANT',$rate_fquant);
+                define('RATE_RECORD_EXPIRATION',Parse_time($_ENV['RATE_RECORD_EXPIRATION']));
 
 
+                /*** In ms*/
+                define('RATE_IP_MINIMUM_INTERVAL',Parse_time($_ENV['RATE_IP_MINIMUM_INTERVAL']));
+                /*** In ms*/
+                /*** maximum number of request one ip can do in one interval */
+                define('RATE_IP_MAX_REQUEST_PER_INTERVAL',Construct_rate_format('RATE_IP_MAX_REQUEST_PER_INTERVAL'));
+                /*** maximum number of failed login attempt one ip can do */
+                define('RATE_IP_LOGIN_PER_INTERVAL',Construct_rate_format('RATE_IP_LOGIN_PER_INTERVAL'));
+                /*** time of penalty when hit login rate limit in ms */
+                define('RATE_IP_LOGIN_PENALTY',Parse_time($_ENV['RATE_IP_LOGIN_PENALTY']));
 
 
-            $home_location = ltrim($_ENV['HOME_PAGE_LOCATION'],'/');
-            define('HOME_PAGE_LOCATION',$home_location);
-            if(!file_exists(__DIR__ . "/../../Public_html/".$home_location)){
-                Handle_error(
-                    new Error_code(Error_domain::configuration,Resource_code::env,Error_condition::missing),
-                    Level::Critical,
-                    "Missing home page - doesnt exist or not found[".__DIR__ . "/../../Public_html/".$home_location."]"
-                );
-            }
+
+                /*** minimum interval between failed login from same account */
+                define('RATE_ACCOUNT_LOGIN_MINIMUM_INTERVAL',Parse_time($_ENV['RATE_ACCOUNT_LOGIN_MINIMUM_INTERVAL']));
+                /** maxium number of login can be done in one interval for same account */
+                define('RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL',Construct_rate_format('RATE_ACCOUNT_LOGIN_ATTEMPT_INTERVAL'));
+
+                
+                define('RATE_ENDPOINT_LOGIN',Construct_rate_format('RATE_ENDPOINT_LOGIN'));
+                define('RATE_ENDPOINT_SUBSCRIBE',Construct_rate_format('RATE_ENDPOINT_SUBSCRIBE'));
+
+                define('RATE_ENDPOINT_IMG_UPLOAD',Construct_rate_format('RATE_ENDPOINT_IMG_UPLOAD'));
+
+
+
+
+                $home_location = ltrim($_ENV['HOME_PAGE_LOCATION'],'/');
+                define('HOME_PAGE_LOCATION',$home_location);
+                if(!file_exists(__DIR__ . "/../../Public_html/".$home_location)){
+                    Handle_error(
+                        new Error_code(Error_domain::configuration,Resource_code::env,Error_condition::missing),
+                        Level::Critical,
+                        "Missing home page - doesnt exist or not found[".__DIR__ . "/../../Public_html/".$home_location."]"
+                    );
+                }
+            }    
         }
         
         
@@ -245,6 +275,29 @@ namespace ACEX_project\WEB\Private\Core;
 
         //avoid define/load env twice to opmization, note this is per request
         define('INITIALIZED',true);
+    }
+
+    function Get_ENCODING_CHARSET(string $charset) : string{
+        $charset = \strtolower(\trim($_ENV['ENCODING_CHARSET']));
+        $real_charset = '';
+        try{
+            $real_charset = \mb_preferred_mime_name($charset);
+        }catch(ValueError $e){
+            Handle_error(
+                new Error_code(Error_domain::configuration,Resource_code::env,Error_condition::missing),
+                Level::Critical,
+                "Invalid encoding charset {$charset} | ". $e->getMessage()
+            );
+        }
+
+        if($real_charset === false){
+            Handle_error(
+                new Error_code(Error_domain::configuration,Resource_code::env,Error_condition::missing),
+                Level::Critical,
+                "Unsupported encoding charset {$charset}"
+            );
+        }
+        return $real_charset;
     }
 
     /**

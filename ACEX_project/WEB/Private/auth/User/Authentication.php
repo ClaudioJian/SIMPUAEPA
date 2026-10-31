@@ -35,7 +35,7 @@ require_once __DIR__ . '/../session_manager.php';
    * $password -> 0 success, 1 too weak, 2 missing, 3 not validated
    * @param string|null $name if not specified, is considered as login and not create, to avoid enroll mistaken, you can pass as empty string
    */
-  function Validate_enroll_data(string $email,string $password,string|null $name = null) : void{
+  function Validate_enroll_data(string $email,string $password,?string &$name = null) : void{
     //0 success, 1 too long, 2 duplicated, 3 missing, 4 not validated for name and email
     //0 success, 1 too weak, 2 missing, 3 not validated for password
     $response = ['name'=>4,'email'=>4,'password'=>4];
@@ -45,6 +45,7 @@ require_once __DIR__ . '/../session_manager.php';
     }else $err_txt = "Login";
 
     try{
+      if($name!==null) $name = \mb_trim($name, encoding:ENCODING_CHARSET);      
       if(($email === '' || $name === '' || $password === '')) {
 
         $missing_txt = '';
@@ -65,6 +66,18 @@ require_once __DIR__ . '/../session_manager.php';
           new Error_code(Error_domain::request,Resource_code::credential,Error_condition::missing),
           Level::Warning,
           "$err_txt failed: $missing_txt is/are missing from request data",
+          throw:true
+        );
+      }
+
+      $name_lenght = \mb_strlen($name,ENCODING_CHARSET);
+      if($name_lenght > MAX_USER_NAME_LENGTH) {
+        $response['name'] = 1;
+
+        Handle_error(
+          new Error_code(Error_domain::request,Resource_code::credential,Error_condition::missing),
+          Level::Warning,
+          "$err_txt failed: user name exceed limit of lenght[input: {$name_lenght} | limit: {". MAX_USER_NAME_LENGTH .'}]',
           throw:true
         );
       }

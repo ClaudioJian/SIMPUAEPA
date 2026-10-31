@@ -41,6 +41,23 @@
     </form>
 
     <img src="/SIMPUAEPA/image/profile/6add795d3c096.webp">
+
+    <h2>Enviar Reclamacao</h2>
+    <form action="/SIMPUAEPA/upload/complain" method="post">
+        titulo: <input name="title">
+        descricao(opcional): <input name="description">
+        referencia a local(opcional): <input name="location_reference">
+        tipo(opcional, default = 1): <input name="type">
+        coordenada x: <input name="ang_x" type="number" value="0">
+        coordenada y: <input name="ang_y" type="number" value="0">
+        grau(1 a 5, valor double): <input name="intensity_level" type="number" value="1">
+
+        <!-- MAX_FILE_SIZE must precede the file input field -->
+        <input type="hidden" name="MAX_FILE_SIZE" value="41943040" />
+        <!-- Name of input element determines name in $_FILES array -->
+        file(opcional): <input name="userfile" type="file" />
+        <input type="submit" value="Enviar"/>
+    </form>
     
 </body>
 <script src="../../API/api-client.js"></script>

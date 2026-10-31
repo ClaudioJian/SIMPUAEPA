@@ -93,7 +93,24 @@ namespace ACEX_project\WEB\Private\Core;
     function Send_mime_type(string $subtype){
         $mime = Construct_MIME($subtype);
         if($mime===null) return;
-        header('Content-type: '.$mime);
+
+        $main_type = Get_mime_type($subtype);
+        if($main_type === false) return;
+
+        $mime .= match($main_type){
+            'text'=>'; charset='. ENCODING_CHARSET,
+            default=>''
+        };
+
+        if(!\headers_sent()) header('Content-type: '.$mime);
+    }
+
+    function Get_mime_type(string $subtype) : string|false{
+        $subtype = strtolower(trim($subtype));
+        foreach(MIME as $t=>$subtypes){
+            if(\in_array($subtype,$subtypes,true)) return $t;
+        }
+        return false;
     }
 
     /**
