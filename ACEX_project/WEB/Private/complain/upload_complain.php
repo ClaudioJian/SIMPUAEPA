@@ -456,7 +456,7 @@ function Upload_complain(?Rate_limiter $IP_limiter, array $captured_args){
  * @param Complain_data_fields|null $err_field if null, then response will exclude invalid_field.
  * @param bool $end if true, immedially exit and change some log message
 */
-function Send_response(bool $success ,Upload_err_code $code , ?Complain_data_fields $err_field = null, string $extra_msg = '', bool $end = false){
+function Send_response(bool $success ,Upload_err_code $code , ?Complain_data_fields $err_field = null, string $extra_msg = '', bool $end = false, int $complain_id = null){
     if(!$success) $end = true;
     $response = ['complete'=>$success?0:-1];
     $http_code = 200;
@@ -497,6 +497,7 @@ function Send_response(bool $success ,Upload_err_code $code , ?Complain_data_fie
     }
 
     $has_file = isset($_FILES[FILE_UPLOAD_FIELD_NAME]['size']) && $_FILES[FILE_UPLOAD_FIELD_NAME]['size'] > 100;
+    if($complain_id !==null) $response['complain_id'] = $complain_id;
 
     Send_mime_type(MIME['application']['json']);
     \http_response_code($http_code);
