@@ -1,0 +1,71 @@
+.voltar {
+    display: inline-block;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #007BFF;
+    text-decoration: none;
+}
+
+.voltar:hover {
+    text-decoration: underline;
+}
+
+.esqueci-titulo {
+    margin-bottom: 10px;
+    font-size: 22px;
+    color: #333;
+}
+
+.esqueci-texto {
+    margin-bottom: 20px;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #666;
+}
+
+/* mensagens de erro (vermelho) e de sucesso (verde) */
+.msg {
+    font-size: 14px;
+}
+
+.msg:empty {
+    display: none;
+}
+
+.msg.erro {
+    color: #d93025;
+}
+
+.msg.ok {
+    color: #188038;
+}
+
+input.erro {
+    border-color: #d93025;
+}
+
+
+/* DARK MODE ABAIXO: */
+body.dark-mode .esqueci-titulo {
+    color: #eee;
+}
+
+body.dark-mode .esqueci-texto {
+    color: #aaa;
+}
+
+body.dark-mode .voltar {
+    color: #6ea8fe;
+}
+
+body.dark-mode .msg.erro {
+    color: #ff6b6b;
+}
+
+body.dark-mode .msg.ok {
+    color: #81c995;
+}
+
+body.dark-mode input.erro {
+    border-color: #ff6b6b;
+}
