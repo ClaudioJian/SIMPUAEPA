@@ -80,7 +80,7 @@ enum Complain_data_fields:int{
             ],
             self::description => [
                 'type'=>'string',
-                'required'=>false,
+                'required'=>true,
                 'compare_fn'=> fn(string $val, ?string& $err_msg) => self::validate_text_lenght(MAX_DESCRIPTION_LENGTH, 'description', $val, $err_msg)
             ],
             self::location_reference=>[

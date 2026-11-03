@@ -45,7 +45,7 @@ use function ACEX_project\WEB\Private\complain\Upload_complain;
     $route = [
         new Route("/csrf",'POST',Handle_CSRF_GET(...),bypass_rate_limit:true),
         //display image
-        new Route('/image/*/*','GET',Send_img(...)),
+        new Route('/image/*/*','GET',Send_img(...),bypass_rate_limit:true),
         //Get user data
         new Route('/user/*','GET', Send_user_data(...)),
         //Get complain data

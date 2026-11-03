@@ -1,156 +1,338 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-     crossorigin=""/>
-     <!-- Make sure you put this AFTER Leaflet's CSS -->
- <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-     crossorigin=""></script>
-     <link rel="stylesheet" href="Style/css-estudo.css"/>
-     <link rel="stylesheet" href="Style/style.css"/>
-</head>
-<body>
+    <title>Mapa - SIMUP</title>
 
-    <div id="map">
+    <!-- CSS do Leaflet -->
+   <link rel="stylesheet" href="UI/leaflet/leaflet.css" />
+
+    <!-- Seus arquivos CSS existentes -->
+    
+    <link rel="stylesheet" href="Style/mapa.css">
+    <link rel="stylesheet" href="Style/style.css">
+
+
+    <!--javascript do leaflet e do mapa-->
+    <script type="module" src="UI/mapa.js"></script>
+    <script type="importmap">
+        {
+    "imports": {
+        "leaflet": "./leaflet/leaflet.js"
+        }
+    }
+    </script>
+    <!--javascript do menu-->
+    <script type="module" src="UI/menu.js"></script>
+</head>
+
+<body>
+    
+    <!-- BOTÃO SANDUÍCHE -->
+    <button
+        id="hamburger"
+        type="button"
+        aria-label="Abrir menu"
+        aria-controls="menu"
+        aria-expanded="false"
+    >
+        <div class="line1"></div>
+        <div class="line2"></div>
+        <div class="line3"></div>
+    </button>
+
+    <!-- MENU LATERAL -->
+    <nav id="menu" aria-label="Menu principal">
+        <div class="menu-titulo">SIMPUAEPA</div>
+
+        <ul>
+            <li data-acao="reclamacoes">
+                <span class="menu-icone">🔖</span>
+                Minhas Reclamações
+            </li>
+
+            <li data-acao="recentes">
+                <span class="menu-icone">◷</span>
+                teste
+            </li>
+
+            <li data-acao="contribuicoes">
+                <span class="menu-icone">▧</span>
+                teste
+            </li>
+        </ul>
+
+        <div class="menu-separador"></div>
+
+        <ul>
+            <li data-acao="compartilhar">
+                <span class="menu-icone">↗</span>
+                teste
+            </li>
+
+            <li data-acao="linha-tempo">
+                <span class="menu-icone">⌁</span>
+                teste
+            </li>
+
+            <li data-acao="dados">
+                <span class="menu-icone">⊙</span>
+                teste
+            </li>
+
+            <li data-acao="personalizacao">
+                <span class="menu-icone">◆</span>
+                teste
+            </li>
+        </ul>
+
+        <div class="menu-separador"></div>
+
+        <ul>
+            <li data-acao="adicionar-lugar">
+                <span class="menu-icone">＋</span>
+                teste
+            </li>
+
+            <li data-acao="empresa">
+                <span class="menu-icone">▦</span>
+                teste
+            </li>
+
+            <li data-acao="editar-mapa">
+                <span class="menu-icone">✎</span>
+                teste
+            </li>
+
+            <li data-acao="ajuda">
+                <span class="menu-icone">?</span>
+                Ajuda
+            </li>
+
+            <li data-acao="configuracoes">
+                <span class="menu-icone">⚙</span>
+                Configurações
+            </li>
+        </ul>
+    </nav>
+
+    <!-- FUNDO ESCURECIDO -->
+    <div id="overlay"></div>
+
+    <!-- MAPA E LOGIN -->
+    
 
         <div class="login-container" id="login-container">
-            <!-- Visitante: botão Login -->
-            <a id="btn-login" href="html/login.html" class="login-button">Login</a>
 
-            <!-- Logado: bolinha + menu -->
+            <!-- Visitante -->
+            <a
+                id="btn-login"
+                href="html/login.html"
+                class="login-button"
+            >
+                Login
+            </a>
+
+            
+            <!-- Usuário logado -->
             <div id="user-menu" class="user-menu" style="display:none;">
-                <button id="avatar" class="avatar" type="button" aria-label="Menu do usuário">
-                    <svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true">
+
+                <button
+                    id="avatar"
+                    class="avatar"
+                    type="button"
+                    aria-label="Menu do usuário"
+                    aria-expanded="false"
+                >
+                    <!-- foto padrão, usada quando o usuário não tem foto -->
+                    <svg
+                        id="avatar-padrao"
+                        viewBox="0 0 24 24"
+                        width="100%"
+                        height="100%"
+                        aria-hidden="true"
+                    >
                         <circle cx="12" cy="12" r="12" fill="#bdc1c6"/>
                         <circle cx="12" cy="9" r="4" fill="white"/>
                         <path d="M4 20c0-4 4-6 8-6s8 2 8 6z" fill="white"/>
                     </svg>
+
+                    <!-- foto do usuário -->
+                    <img id="avatar-foto" class="avatar-foto" alt="Foto de perfil" hidden>
                 </button>
 
-                <div id="dropdown" class="dropdown" style="display:none;">
-                    <button id="btn-logout" class="dropdown-item" type="button">Logout</button>
+                <div
+                    id="dropdown"
+                    class="dropdown"
+                    style="display:none;"
+                >
+                    <div class="dropdown-usuario">
+                        <div id="user-nome" class="user-nome"></div>
+                        <div id="user-email" class="user-email"></div>
+                    </div>
+
+                    <a href="html/minha-conta.html" class="dropdown-item">Minha conta</a>
+
+                    <button
+                        id="btn-logout"
+                        class="dropdown-item"
+                        type="button"
+                    >
+                        Logout
+                    </button>
                 </div>
+
             </div>
         </div>
 
-        <script>
-            var map = L.map('map').setView([51.505, -0.09], 13); // localização no mapa.
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { // ter que ter o copyright para marcar o lugar.
-        maxZoom: 19, //o site também é para pegar o lugar para poder usar o mapa, usaremos openstreetmap.
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>' //teremos que fazer essa exportação 
-            //quando fizer o trabalho
-    }).addTo(map);
-                var marker = L.marker([51.5, -0.09]).addTo(map); //coloca uma marcação tipo ponto do google.
-
-                var circle = L.circle([51.508, -0.11], { // coloca um círculo, tem que colocar os dados dele.
-        color: 'red',
-        fillColor: '#f03',
-        fillOpacity: 0.5,
-        radius: 500
-    }).addTo(map);
-
-            var polygon = L.polygon([ // faz um polígono, outra marcação do mapa
-        [51.509, -0.08],
-        [51.503, -0.06],
-        [51.51, -0.047]
-    ]).addTo(map);
-
-        marker.bindPopup("<b>Hello world!</b><br>I am a popup.").openPopup(); // faz um pop up no mapa.
-    circle.bindPopup("I am a circle."); // descrição do pop up, quando você clica no círculo.
-    polygon.bindPopup("I am a polygon."); //descrição do pop up, quando você clica no polígono.
-        var popup = L.popup() // um pop up que não é de uma marcação anterior, dá para fazer um pop up direto
-        .setLatLng([51.513, -0.09]) //ponto do pop up no mapa
-        .setContent("I am a standalone popup.") // o que está escrito no pop up
-        .openOn(map); // comando para aparecer
-        //Here we use openOn instead of addTo because it handles automatic closing of a 
-        // previously opened popup when opening a new one which is good for usability.
-
-        function onMapClick(e) { // um exemplo de evento ao clicar no mapa
-        alert("You clicked the map at " + e.latlng); // ele gerou um aviso de tela quando clicou no mapa, 
-                                                    // do ponto clicado fora das marcações.
-    }
-
-    map.on('click', onMapClick); //execução do comando de clicar no mapa e avisar.
-
-    var popup = L.popup();
-
-    function onMapClick(e) { //o comando foi modificado aqui, agora ele  dá um pop up no mapa do local em vez de dar um aviso na tela.
-        popup
-            .setLatLng(e.latlng) //seta a coordenada ao clicar
-            .setContent("You clicked the map at " + e.latlng.toString()) // aparece a mensagem
-            .openOn(map); // aparece no mapa
-    }
-
-    map.on('click', onMapClick); // método utilizado ao clicar, coloca em funcionamento o comando
-    //no caso, O OUTRO EVENTO ESTÁ EM DESUSO POR CONTA DESSE.
-
-
-
-
-
-
-
-
-
-// ================= LOGIN / AVATAR / LOGOUT =================
-
-// impede que cliques no botão/menu ativem o clique do mapa
-L.DomEvent.disableClickPropagation(document.getElementById('login-container'));
-
-const btnLogin = document.getElementById('btn-login');
-const userMenu = document.getElementById('user-menu');
-const avatar   = document.getElementById('avatar');
-const dropdown = document.getElementById('dropdown');
-
-function mostrarLogado() {
-    btnLogin.style.display = 'none';
-    userMenu.style.display = 'block';
-}
-
-function mostrarDeslogado() {
-    userMenu.style.display = 'none';
-    dropdown.style.display = 'none';
-    btnLogin.style.display = 'block';
-}
-
-function verificarLogin() {
-    if (localStorage.getItem('uid')) {
-        mostrarLogado();
-    } else {
-        mostrarDeslogado();
-    }
-}
-
-// abre/fecha o menu ao clicar na bolinha
-avatar.addEventListener('click', function (e) {
-    e.stopPropagation();
-    dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-});
-
-// fecha o menu ao clicar fora
-document.addEventListener('click', function () {
-    dropdown.style.display = 'none';
-});
-
-// logout
-document.getElementById('btn-logout').addEventListener('click', async function () {
-    try {
-        await fetch('/SIMPUAEPA/logout', { method: 'POST' });
-    } catch (err) {
-        console.error('Falha no logout:', err);
-    }
-    localStorage.removeItem('uid');
-    mostrarDeslogado();
-});
-
-verificarLogin();
-            </script>
+    <!--botão e mapa-->
+    <div id="map"></div>
+    <button id="test" type="button" class="botao-controle leaflet-tooltip-pane"><img src="images/icones/visualizacao-sf.png" class="imagem-visualizacao" alt="visualização de ícones"/></button>
+    <div class="test">
+        
+        <div id="visualizacao" class="control-visu-icon conjunto visivel">
+            <!--Botão que liga todos os icones -->
+            <div class="opçoes">
+                    <div><button class="botao-background" id="botao-todos"><img src="images/icones/tudo.png"   class="perigo-icone" alt="botão de ícone de perigo"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Ligar/Desligar<br> todos os pontos</div>
+                </div>
+        <!--elementos  de perigo-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-perigo"><img src="images/icones/perigo.png"   class="perigo-icone" alt="botão de ícone de perigo"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Área Perigosa</div>
+                </div>
+        <!--elementos de rua-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-rua" ><img src="images/icones/rua.png"   class="rua-icone" alt="botão de ícone de rua"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Rua problemática</div>
+                </div>
+        <!--elementos de esgoto-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-esgoto"><img src="images/icones/esgoto.png"   class="esgoto-icone" alt="botão de ícone de esgoto"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Esgoto invasivo</div>
+                </div>
+        <!--elementos de sonora-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-sonora"><img src="images/icones/sonora.png"   class="sonora-icone" alt="botão de ícone de poluição sonora"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Poluição sonora excessiva</div>
+                </div>
+        <!--elementos de poluição-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-poluicao"><img src="images/icones/poluicao.png"   class="poluicao-icone" alt="botão de ícone de poluição"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Excesso de poluição</div>
+                </div>
+        <!--elementos de eletricidade-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-eletricidade"><img src="images/icones/eletricidade.png"   class="eletricidade-icone" alt="botão de ícone de eletricidade"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Problemas em fiação eletrônica</div>
+                </div>
+        <!--elementos de outro-->
+                <div class="opçoes">
+                    <div><button class="botao-background" id="botao-outro"><img src="images/icones/outro.png"   class="outro-icone" alt="botão de ícone de outro"/></button></div>
+                </div>
+                <div class="opçoes">  
+                    <div> Outro problema</div>
+                </div>
+        
+            </div>
     </div>
+        <!--Caixa de reclamação, adicionar os elementos aqui-->
+        <div id="caixa_reclamacao" class="caixa_reclamacao visivel">
+
+        <button type="button" id="fechar" class="fechar"
+            aria-label="Fechar formulário">X</button>
+
+        <h2>Registrar reclamação</h2>
+        <p>Descreva o problema encontrado neste local.</p>
+
+        <form id="form_reclamacao">
+
+            <label for="tipo_reclamacao">Tipo de problema</label>
+            <select id="tipo_reclamacao" name="tipo_reclamacao" required>
+                <option value="">Selecione uma categoria</option>
+                <option value="rua">Problema na rua</option>
+                <option value="esgoto">Esgoto</option>
+                <option value="poluicao">Poluição</option>
+                <option value="sonora">Poluição sonora</option>
+                <option value="eletricidade">Problema elétrico</option>
+                <option value="perigo">Área perigosa</option>
+                <option value="outro">Outro problema</option>
+            </select>
+
+            <label for="titulo_reclamacao">Título</label>
+            <input
+                type="text"
+                id="titulo_reclamacao"
+                name="titulo_reclamacao"
+                placeholder="Ex.: Buraco na rua"
+                maxlength="80"
+                required
+        >
+
+            <label for="descricao_reclamacao">Descrição do problema</label>
+            <textarea
+                id="descricao_reclamacao"
+                name="descricao_reclamacao"
+                placeholder="Explique o que está acontecendo..."
+                rows="5"
+                maxlength="1000"
+                required
+        ></textarea>
+
+            <label for="referencia_local">Referência do local (opcional)</label>
+            <input
+                type="text"
+                id="referencia_local"
+                name="referencia_local"
+                placeholder="Ex.: próximo à praça"
+                maxlength="150"
+        >
+
+            <button type="submit" id="enviar_reclamacao">
+                Enviar reclamação
+            </button>
+
+            <p id="status_reclamacao" role="status"></p>
+
+    </form>
+</div>
+
+<div id="aviso_popup" class="aviso-fundo" role="presentation">
+    <div class="aviso-conteudo"
+         role="alertdialog"
+         aria-modal="true"
+         aria-labelledby="aviso_titulo"
+         aria-describedby="aviso_mensagem">
+
+        <div id="aviso_icone" class="aviso-icone">✓</div>
+
+        <h2 id="aviso_titulo">Formulário validado!</h2>
+
+        <p id="aviso_mensagem">
+            Os dados foram preenchidos corretamente.
+        </p>
+
+        <button type="button" id="fechar_aviso">
+            Entendi
+        </button>
+    </div>
+</div>
+
 
 </body>
 </html>
