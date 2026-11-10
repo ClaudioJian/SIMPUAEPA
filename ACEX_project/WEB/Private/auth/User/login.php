@@ -45,6 +45,7 @@ use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 
 require_once __DIR__ .'/../../Core/Security/Rate_limit_handler.php';
 use function ACEX_project\WEB\Private\Core\Security\Bucket_info_from_fixed_window;
+use function ACEX_project\WEB\Private\Core\Security\File_upload\Generate_img_url;
 use function ACEX_project\WEB\Private\Core\Security\Fixed_window_to_bucket_algo;
 use function ACEX_project\WEB\Private\Core\Send_mime_type;
 
@@ -55,6 +56,9 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
 use function ACEX_project\WEB\Private\Error\Log_internal;
 
 require_once __DIR__ . "/User_data.php";
+
+require_once __DIR__ . "/../../Core/File_storation_map.php";
+require_once __DIR__ . "/../../Core/Security/File_upload/File_upload_utils.php";
 
 
     function Login(?Rate_limiter $IP_rate_limiter, array $captured_args, array $request_body = []){
@@ -68,8 +72,6 @@ require_once __DIR__ . "/User_data.php";
         
         $conn = null;
         try{
-            if($request_body===[]) $request_body = Get_request_body();
-
             $email = $request_body['email'] ?? '';
             $password = $request_body['password'] ?? '';
 
@@ -93,7 +95,6 @@ require_once __DIR__ . "/User_data.php";
             $key = hexdec(substr(hash('xxh32', $ip), 0, 8));
             $result = IP_login_at_limit($IP_rate_limiter, $key);
 
-            Validate_enroll_data($email,$password);
             Get_user_data_authorized(true,false,true);
 
             $msg = "";
@@ -106,10 +107,10 @@ require_once __DIR__ . "/User_data.php";
                 );
 
                 if($IP_rate_limiter !== null) IP_failed_login_update($IP_rate_limiter, $key, $result);
-                Account_rate_limiter($email);
                 exit();
             }
 
+            Account_rate_limiter($email);
             Internal_login($uid['uid'], $email, $uid['name']);
         }catch(Throwable $e){
             Handle_query_fail($e,$conn);
@@ -211,7 +212,7 @@ require_once __DIR__ . "/User_data.php";
 
                     $penality_time = RATE_IP_LOGIN_PENALTY;
                     $result = Fixed_window_to_bucket_algo($limit, $interval, $data['last_refill_login'], $data['login_token'],$penality_time);
-
+                    $data['last_refill_login'] = $current_t;
                     
                     if($result) {
                         $b_info = Bucket_info_from_fixed_window($limit, $interval);
@@ -299,6 +300,7 @@ require_once __DIR__ . "/User_data.php";
 
                     if(!isset($data['last_refill'])) $data['last_refill'] = $current_t;
                     $result = Fixed_window_to_bucket_algo($limit, $interval, $data['last_refill'], $data['count']);
+                    $data['last_refill'] = $current_t;
 
                     $current_interval = $current_t - $last_login_at;
 
@@ -347,7 +349,7 @@ require_once __DIR__ . "/User_data.php";
 
         if($email !== '') $_SESSION['user_email'] = \trim($email);
         if($name !== '') $_SESSION['user_name'] = \mb_trim($name,encoding:ENCODING_CHARSET);
-        if($profile_img_url !== '') $_SESSION['profile_img_url'] = '/'. URI_PREFIX .'/image/profile/' . \strtolower(\trim($profile_img_url));
+        if($profile_img_url !== '') $_SESSION['profile_img_url'] = Generate_img_url(File_storation_path::profiles,$profile_img_url);
     }
 
     function Is_logged():bool{

@@ -116,6 +116,7 @@ use ValueError;
                     'MAX_USER_NAME_LENGTH'                    
                 ];                
 
+
                 if(!\defined('DB_SCHEMA')){
                     $required_env = [
                             ...$required_env,
@@ -140,6 +141,8 @@ use ValueError;
                         'RATE_ENDPOINT_LOGIN',
                         'RATE_ENDPOINT_SUBSCRIBE',
                         'RATE_ENDPOINT_IMG_UPLOAD',
+                        'MAX_LOCATION_SELECTION_AREA',
+                        'MAX_ITEM_PER_REQUEST'
                     ];
                     $required_int_env = [
                         ...$required_int_env,
@@ -149,6 +152,8 @@ use ValueError;
                         'CSRF_TOKEN_MAXLIFE',
                         'REQUEST_MAX_LIFE',
                         'RATE_FILE_MAX_QUANT',
+                        'MAX_LOCATION_SELECTION_AREA',
+                        'MAX_ITEM_PER_REQUEST'
                     ];
                 }
             }
@@ -202,6 +207,16 @@ use ValueError;
             define('MAX_LOCATION_REFERENCE_LENGTH',(int)$_ENV['MAX_LOCATION_REFERENCE_LENGTH']);            
 
             if(!\defined('DB_SCHEMA')){
+                /**
+                 * Maxium retangle area of coordinate (ang_x,ang_y) to (ang_x,ang_y) can be select per request.
+                 */
+                define('MAX_LOCATION_SELECTION_AREA', (int)$_ENV['MAX_LOCATION_SELECTION_AREA']);
+                /**
+                 * maxium number of complain or comment can be retrieve per request.
+                 */
+                define('MAX_ITEM_PER_REQUEST', (int)$_ENV['MAX_ITEM_PER_REQUEST']);
+
+
                 define('SESSION_OBSOLETE_MAXLIFE', (int)$_ENV['SESSION_OBSOLETE_MAXLIFE']);
                 define('SESSION_ACTIVE_TIME', (int)$_ENV['SESSION_ACTIVE_TIME']);
                 define('SESSION_ABSOLUTE_TIME', (int)$_ENV['SESSION_ABSOLUTE_TIME']);

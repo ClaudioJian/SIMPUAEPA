@@ -33,9 +33,6 @@ use function ACEX_project\WEB\Private\Api\database\Is_query_permitted;
 require_once __DIR__ . "/../../Api/RedirectUtils.php";
 use function ACEX_project\WEB\Private\Api\Redirect;
 
-require_once __DIR__ . "/../../Api/NonceRequest.php";
-use function ACEX_project\WEB\Private\Api\Require_nonce;
-
 require_once __DIR__ . "/../password_handler.php";
 use function ACEX_project\WEB\Private\Auth\Secure_hash_password;
 
@@ -68,23 +65,19 @@ require_once __DIR__ ."/Authentication.php";
     $conn = null;
     $id = null;
     try{
-      if($request_body===[]) $request_body = Get_request_body();
-      $email = $request_body['email'] ?? '';
-      $user_name = $request_body['name'] ?? '';
-      $password = $request_body['password'] ?? '';
-
       if(Is_logged()) Redirect();
+      
+      $email = $request_body['email'];
+      $user_name = $request_body['name'];
+      $password = $request_body['password'];
 
+      
       Log_internal(
         new Error_code(Error_domain::credential,Resource_code::creation,Error_condition::attempt),
         Level::Notice,
         "[IP-\"$ip\"] Email=[$email], user_name=[$user_name]"
       );
 
-
-
-
-      Validate_enroll_data($email,$password,$user_name);
       Is_enroll_authorized();
       $password = Secure_hash_password($password);
 

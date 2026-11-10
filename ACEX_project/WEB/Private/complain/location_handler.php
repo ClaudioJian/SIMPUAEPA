@@ -42,11 +42,14 @@ require_once __DIR__ . "/../api/database/Authorization_manager.php";
 
 /**
  * @param null|string $invalid_reason if x or y is invalid, the message will be written
- * @return true|int 1 mean x and 2 mean y
  */
-function Validate_coordinate(float $x, float $y, ?string &$invalid_reason) : true|int{
+function Validate_coordinate(float $coordinate, ?string &$invalid_reason) : true|int{
     //NO validation so always true
     return true;
+}
+
+function Selection_area_txt(float $x1, float $y1, float $x2, float $y2) : string{
+    return "($x1,$y1),($x2,$y2)";
 }
 
 /**

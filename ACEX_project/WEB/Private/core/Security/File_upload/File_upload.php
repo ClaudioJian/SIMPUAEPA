@@ -443,7 +443,7 @@ use function ACEX_project\WEB\Private\Error\Handle_error;
                 "[IP-\"$ip\"] User(uid - $uid) $log_msg [internal_name: $internal_fname | final directory - $category->name]"
             );
 
-            if($table === All_tables::user) $_SESSION['profile_img_url'] = '/'. URI_PREFIX ."/image/profile/{$internal_fname}";
+            if($table === All_tables::user) $_SESSION['profile_img_url'] = Generate_img_url($category, $internal_fname);
 
             
             Send_response(0,3,$user_upload_fname,201);

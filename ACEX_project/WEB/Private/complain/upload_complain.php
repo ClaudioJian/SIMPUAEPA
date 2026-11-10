@@ -6,9 +6,11 @@ require_once __DIR__ . "/../Core/AppCommonVar.php";
 
 require_once __DIR__ . "/../Core/Security/Rate_limit_handler.php";
 
+use ACEX_project\API\Input_ruleset;
 use ACEX_project\WEB\Private\Api\database\All_tables;
 use ACEX_project\WEB\Private\Api\database\tb_complain_columns;
 use ACEX_project\WEB\Private\Core\Avaible_extension;
+use ACEX_project\WEB\Private\Core\Data_type;
 use ACEX_project\WEB\Private\Core\File_storation_path;
 use ACEX_project\WEB\Private\Core\Security\Rate_limiter;
 use ACEX_project\WEB\Private\Error\Error_code;
@@ -21,8 +23,9 @@ use ACEX_project\WEB\Private\Error\Resource_code;
 use Monolog\Level;
 
 use function ACEX_project\WEB\Private\Api\database\Database_simple_insert;
+use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
+use function ACEX_project\WEB\Private\Core\Security\File_upload\Generate_img_url;
 use function ACEX_project\WEB\Private\Core\Security\File_upload\Secure_file_upload;
-use function ACEX_project\WEB\Private\Core\Security\Get_request_body;
 use function ACEX_project\WEB\Private\Core\Send_mime_type;
 use function ACEX_project\WEB\Private\Error\Handle_error;
 use function ACEX_project\WEB\Private\Error\Log_internal;
@@ -40,6 +43,12 @@ require_once __DIR__ . "/../api/database/Authorization_manager.php";
 
 require_once __DIR__ . "/location_handler.php";
 require_once __DIR__ . "/Content_validator.php";
+require_once __DIR__ . '/../Core/File_storation_map.php';
+
+require_once  __DIR__ . '/../Core/Security/File_upload/File_upload_utils.php';
+
+require_once __DIR__ . '/../../../API/Field_processor.php';
+require_once __DIR__ . '/../Core/Data_type.php';
 
 
 /**
@@ -52,180 +61,115 @@ enum Complain_data_fields:int{
     case location_reference = 3;
     case ang_x = 4;
     case ang_y = 5;
-    case intensity_level = 6;
     case type = -1;
     case crop_option = -2;
 
-    private static function validate_text_lenght(int $max_lenght, string $text_type , string $val, ?string& $err_msg) : bool{
+    public static function TryGet_case(string $name) : Complain_data_fields{
+        $name = strtolower(trim($name));
+        static $cases;
+        $cases = self::cases();
+        foreach($cases as $case){
+            if(strtolower($case->name) === $name) return $case;
+        }
+        throw new \ValueError("$name is not a valid backed enum case for enum ". self::class);
+    }
+
+    private static function validate_text_lenght(int $max_lenght, string $text_type , ?string $val, ?string& $err_msg) : bool{
+        if($val===null) return true; //only happen when isn't required and no default value
         if(mb_strlen($val, ENCODING_CHARSET) <= $max_lenght) return true;
         $err_msg = "The $text_type cannot exceed {$max_lenght} charactere";
         return false;
     }
 
     /**
-     * @return array{
-     * 'type':string,
-     * 'required':bool,
-     * 'default':mixed,
-     * 'compare_fn':callable(int,?string&),
-     * } Where: compare_fn is callable returns bool and receive sanitized value and validate using user provided function and second argument is referece to write error messague when user comparation function returns false;
+     * @return list<array{
+     * 'key':string,
+     * 'instruction':bool,
+     * }> Where: compare_fn is callable returns bool and receive sanitized value and validate using user provided function and second argument is referece to write error messague when user comparation function returns false;
      * The value passed in custom compare function alredy validate by type explicited.
      */
-    private function sanitization_rule() : array{
-        return match($this){
-            self::title => [
-                'type'=>'string',
-                'required'=>true,
-                'compare_fn'=>fn(string $val, ?string& $err_msg) => self::validate_text_lenght(MAX_TITLE_LENGTH, 'title', $val, $err_msg)
+    public static function sanitization_rule() : array{
+        return [
+            [
+                'key' => self::title->name,
+                'instruction'=> new Input_ruleset(
+                    Data_type::string,
+                    validation_fn: fn(?string $val, ?string& $err_msg, ?int &$custom_err) => self::validate_text_lenght(MAX_TITLE_LENGTH, 'title', $val, $err_msg)
+                )
             ],
-            self::description => [
-                'type'=>'string',
-                'required'=>true,
-                'compare_fn'=> fn(string $val, ?string& $err_msg) => self::validate_text_lenght(MAX_DESCRIPTION_LENGTH, 'description', $val, $err_msg)
+            [
+                'key'=> self::description->name,
+                'instruction' => new Input_ruleset(
+                    Data_type::string,
+                    validation_fn: fn(?string $val, ?string& $err_msg, ?int &$custom_err) => self::validate_text_lenght(MAX_TITLE_LENGTH, 'title', $val, $err_msg)
+                )
             ],
-            self::location_reference=>[
-                'type'=>'string',
-                'required'=>false,
-                'compare_fn'=>fn(string $val, ?string& $err_msg) => self::validate_text_lenght(MAX_LOCATION_REFERENCE_LENGTH, 'location reference', $val, $err_msg)
+            [
+                'key' => self::location_reference->name,
+                'instruction' => new Input_ruleset(
+                    Data_type::string,
+                    false,
+                    validation_fn: fn(?string $val, ?string& $err_msg, ?int &$custom_err) => self::validate_text_lenght(MAX_LOCATION_REFERENCE_LENGTH, 'location reference', $val, $err_msg)
+                )
             ],
-            self::ang_x=>[
-                'type'=>'double',
-                'required'=>true
+            [
+                'key' => self::ang_x->name,
+                'instruction' => new Input_ruleset(
+                    Data_type::double,
+                    validation_fn:fn(?float $val, ?string& $err_msg, ?int &$custom_err) => Validate_coordinate($val, $err_msg)
+                ),
             ],
-            self::ang_y=>[
-                'type'=>'double',
-                'required'=>true
+            [
+                'key' => self::ang_x->name,
+                'instruction' => new Input_ruleset(
+                    Data_type::double,
+                    validation_fn:fn(?float $val, ?string& $err_msg, ?int &$custom_err) =>Validate_coordinate($val, $err_msg)
+                )
             ],
-            self::type=>[
-                'type'=>'int',
-                'required'=>false,
-                'default'=>1,
-                'compare_fn' => function(int $val, ?string &$cond_failed_msg){
-                        if($val >0 && $val<=8) return true;
-                        $cond_failed_msg = 'The value should between 1 to 8';
-                        return false;
-                    },
+            [
+                'key' => self::type->name,
+                'instruction' => new Input_ruleset(
+                    Data_type::int,
+                    false,
+                    1,
+                    fn(int $val, ?string &$cond_failed_msg, ?int &$custom_err) => Complain_type::Validate($val, $cond_failed_msg)
+                )
             ],
-            self::intensity_level=>[
-                'type'=>'double',
-                'required'=>true,
-                'compare_fn' => function(int $val, ?string &$cond_failed_msg){
-                        if($val >=1 && $val<=5) return true;
-                        $cond_failed_msg = 'The value should between 1 to 5';
-                        return false;
-                },
-            ],
-            self::crop_option=>[
-                'type'=>'array',
-                'required'=>false,
-                'default'=>[]
+            [
+                'key' => self::crop_option->name,
+                'instruction' => new Input_ruleset(
+                    Data_type::array,
+                    false,
+                    [],
+                    sanitize_fn:function(array &$crop_option, ?string &$err_msg):bool{
+                        $xy_sanitazion = new Input_ruleset(Data_type::int, false, 0);
+                        $size_sanitazion = new Input_ruleset(Data_type::int, false);
+
+                        $start_x = $crop_option['x']??null;
+                        $start_y = $crop_option['y']??null;
+
+                        $width = $crop_option['width']??null;
+                        $height = $crop_option['height']??null;
+
+                        $xy_sanitazion->execute($start_x,$err_msg);
+                        $xy_sanitazion->execute($start_y,$err_msg);
+                        $size_sanitazion->execute($width,$err_msg);
+                        $size_sanitazion->execute($height,$err_msg);
+
+                        $option = [
+                            "start_x"=>$start_x,
+                            "start_y"=>$start_y
+                        ];
+
+                        if($width !== null && $width>0) $option['crop_width'] = $width;
+                        if($height !== null && $height>0) $option['crop_height'] = $height;
+
+                        $crop_option = $option;
+                        return true;
+                    }
+                )
             ]
-        };
-    }
-
-    private function invalid_type(string $type, array &$data, string $k, mixed $default, Upload_err_code &$err_code, string &$extra_msg):bool{
-        if($default !== null) {
-            $data[$k] = $default;
-            return true;                        
-        }
-
-        $err_code = Upload_err_code::invalid_type;
-        $extra_msg = "Field \"{$k}\" must be $type and has no default value";
-        return false;
-    }
-
-    private function in_range(mixed $value, ?callable $compare_fn, array &$data, string $k, mixed $default, ?string &$err_msg):bool{
-        $success = $compare_fn===null || $compare_fn($value, $err_msg);
-
-        if(!$success && $default === null) return false;
-        
-        $data[$k] = $success ? $value : $default;
-        return true;
-    }
-
-    /**
-     * sanitize and validate data. 
-     * 
-     * If the value isn't required and is empty, then if default value don't exist, insert [$key]=>null, else use default value to $data
-     * If is required but no default, false will be returned.
-     * @param string $extra_msg extra message to log when cannot sanitize the value, use to add after main log
-     * @param Upload_err_code $err_code code showing why failed. Can be used to extract main log message
-     * @return bool false if data is required but is empty/null
-     */
-    public function sanitize(array &$data, Upload_err_code &$err_code, ?string &$extra_msg) : bool{
-        $value = $this->sanitization_rule();
-        $k = $this->name;
-
-        $type = $value['type']??'string';
-        $required = $value['required']??true;
-        $default = $value['default']??null;
-        $compare_fn = $value['compare_fn']??null;
-        $err_msg = '';
-
-        if(!\array_key_exists($k, $data) || $data[$k] === null || $data[$k] === ''){
-            if(!$required){
-                //optional field will not removed but became null in case default value is missing
-                $data[$k] = $default;
-                return true;
-            }
-
-            if($default===null){
-                $err_code = Upload_err_code::empty_value;
-                $extra_msg = "The value of field \"{$k}\" is empty and has no default value";
-                return false;
-            }
-        }
-
-        switch($type){
-            case 'string':
-                if(!\is_string($data[$k])) return $this->invalid_type('string',$data,$k,$default,$err_code,$extra_msg);
-
-
-                $res = $this->in_range(mb_trim($data[$k],encoding:ENCODING_CHARSET),$compare_fn,$data,$k,$default,$err_msg);
-                if($res) return true;
-
-                $err_code = Upload_err_code::invalid_value;
-                if($err_msg!=='') $extra_msg = "The value of field \"{$k}\" don't meet condition: [{$err_msg}] and has no default value";
-
-                return false;
-            case 'int':
-                if(\filter_var($data[$k],FILTER_VALIDATE_INT) === false) return $this->invalid_type('int',$data,$k,$default,$err_code,$extra_msg);
-                
-
-                $res = $this->in_range((int)($data[$k]),$compare_fn,$data,$k,$default,$err_msg);
-                if($res) return true;
-
-                $err_code = Upload_err_code::invalid_value;
-                if($err_msg!=='') $extra_msg = "The value of field \"{$k}\" don't meet condition: [{$err_msg}] and has no default value";
-
-                return false;
-            case 'double':
-                $val = 0;
-                if(!\is_numeric($data[$k]) || !\is_finite(($val = (float)$data[$k]))) return $this->invalid_type('valid double',$data,$k,$default,$err_code,$extra_msg);
-
-                $res = $this->in_range($val,$compare_fn,$data,$k,$default,$err_msg);
-                if($res) return true;
-                $err_code = Upload_err_code::invalid_value;
-                if($err_msg!=='') $extra_msg = "The value of field \"{$k}\" don't meet condition: [{$err_msg}] and has no default value";
-
-                return false;
-            case 'array':
-                if(!\is_array($data[$k])) return $this->invalid_type('array',$data,$k,$default,$err_code,$extra_msg);
-
-                $res = $this->in_range($data[$k],$compare_fn,$data,$k,$default,$err_msg);
-
-                if($res) return true;
-                $err_code = Upload_err_code::invalid_value;
-                if($err_msg!=='') $extra_msg = "The value of field \"{$k}\" don't meet condition: [{$err_msg}] and has no default value";
-
-                return false;
-            
-            default:{
-                $err_code = Upload_err_code::invalid_type;
-                $extra_msg = "in Complain_data_fields.sanitize(): invalid type";
-                return false;
-            }
-        }
+        ];
     }
 }
 
@@ -247,6 +191,24 @@ enum Upload_err_code{
     case register_coordinate;
     
     case unknown;
+
+    public static function From_router_code(int $err_code, Complain_data_fields $key) : Upload_err_code{
+        return match($err_code){
+            Input_ruleset::EMPTY_VALUE => self::empty_value,
+            Input_ruleset::INVALID_TYPE => self::invalid_type,
+            Input_ruleset::INVALID_VALUE => self::Get_INVALID_VALUE_err($key),
+            Input_ruleset::SANITIZATION_FAILED => self::err_internal,
+            default => self::unknown
+        };
+    }
+
+    private static function Get_INVALID_VALUE_err(Complain_data_fields $key) : Upload_err_code{
+        return match($key){
+            Complain_data_fields::ang_x, Complain_data_fields::ang_y => self::invalid_coordinate,
+            Complain_data_fields::title, Complain_data_fields::description, Complain_data_fields::location_reference => self::size,
+            default => self::invalid_value
+        };
+    }
 
     private static function map(int $http_code, string $desc, Upload_frontend_err_code $code, array $headers, Error_domain $category){
         return [
@@ -306,25 +268,17 @@ enum Upload_frontend_err_code : int{
     case unknown = -99;
 }
 
-function Upload_complain(?Rate_limiter $IP_limiter, array $captured_args){
-    $data = Get_request_body();
-
-    $err_code = Upload_err_code::none;
-    foreach(Complain_data_fields::cases() as $fields){
-        if($fields->sanitize($data, $err_code, $extra_msg)) continue;
-        Send_response(false, $err_code,$fields, $extra_msg ?? '');
-        exit();
-    }
-
+function Upload_complain(?Rate_limiter $IP_limiter, array $captured_args, array $processed_datas){
     $old_file = null;
     $current_internal_fpath = null;
     if(isset($_FILES[FILE_UPLOAD_FIELD_NAME]['size']) && $_FILES[FILE_UPLOAD_FIELD_NAME]['size']) {
         //send the first finish part if has upload file, else jump straight to database operation, which result only one json response and no new line
         Send_response(true,Upload_err_code::success);
+
         $finfo = Secure_file_upload(
             File_storation_path::Maps,
             [Avaible_extension::jpg, Avaible_extension::png, Avaible_extension::webp],
-            $data['crop_option'],
+            $processed_datas['crop_option'],
             false,
             false
         );
@@ -335,9 +289,9 @@ function Upload_complain(?Rate_limiter $IP_limiter, array $captured_args){
 
     //alredy sanitized, so key always exist(can be null thought)
 
-    $title = $data['title'];
-    $desc = $data['description'];
-    $location_ref = $data['location_reference'];
+    $title = $processed_datas['title'];
+    $desc = $processed_datas['description'];
+    $location_ref = $processed_datas['location_reference'];
 
     $validate_content = ['title'=>$title,'description'=>$desc,'location reference'=>$location_ref];
     foreach($validate_content as $field => $val_target){
@@ -355,13 +309,8 @@ function Upload_complain(?Rate_limiter $IP_limiter, array $captured_args){
         }
     }
 
-    $ang_x = $data['ang_x'];
-    $ang_y = $data['ang_y'];
-    $invalid_reason = '';
-    $valid_coordinate = Validate_coordinate($ang_x, $ang_y, $invalid_reason);
-    if($valid_coordinate !== true) Send_response(false, Upload_err_code::invalid_coordinate,
-                                        $valid_coordinate === 1 ? Complain_data_fields::ang_x : Complain_data_fields::ang_y,
-                                        $invalid_reason, true);
+    $ang_x = $processed_datas['ang_x'];
+    $ang_y = $processed_datas['ang_y'];
 
 
     //insert if location was not found and use that id from insertion, else select by using x and y
@@ -370,8 +319,7 @@ function Upload_complain(?Rate_limiter $IP_limiter, array $captured_args){
 
 
 
-    $complain_type = $data['type'];
-    $intensity_lvl = $data['intensity_level'];
+    $complain_type = $processed_datas['type'];
 
     $uid = $_SESSION['uid'];
     $complain_insert_column= [
@@ -386,10 +334,6 @@ function Upload_complain(?Rate_limiter $IP_limiter, array $captured_args){
         [
             'column' => tb_complain_columns::type,
             'value'=> [$complain_type]
-        ],
-        [
-            'column' => tb_complain_columns::intensity_level,
-            'value'=> [$intensity_lvl]
         ],
         [
             'column'=>tb_complain_columns::user_id,
@@ -448,7 +392,21 @@ function Upload_complain(?Rate_limiter $IP_limiter, array $captured_args){
 
     //db insert success, then discart old file. *obs: since is insert, the old file always result in null
     if($old_file !== null) \unlink($old_file);
-    Send_response(true,Upload_err_code::success, end:true);
+    
+
+    $ip = Get_IP_address_txt();
+    
+    Log_internal(
+        new Error_code(Error_domain::upload, Resource_code::complain, Error_condition::success),
+        Level::Info,
+        "[IP-\"$ip\"] User(uid - $uid) updated new complain with id = [$complain_id]"
+    );
+    Send_response(true,Upload_err_code::success, end:true,internal_fname:$current_internal_fpath);
+}
+
+function Error_handler(int $code, string $key, string $err_msg, int $custom_err){
+    $field = Complain_data_fields::TryGet_case($key);
+    Send_response(false, Upload_err_code::From_router_code($code,$field), $field, $err_msg, end:true); exit();
 }
 
 /**
@@ -456,7 +414,7 @@ function Upload_complain(?Rate_limiter $IP_limiter, array $captured_args){
  * @param Complain_data_fields|null $err_field if null, then response will exclude invalid_field.
  * @param bool $end if true, immedially exit and change some log message
 */
-function Send_response(bool $success ,Upload_err_code $code , ?Complain_data_fields $err_field = null, string $extra_msg = '', bool $end = false, int $complain_id = null){
+function Send_response(bool $success ,Upload_err_code $code , ?Complain_data_fields $err_field = null, string $extra_msg = '', bool $end = false, ?int $complain_id = null, ?string $internal_fname = null){
     if(!$success) $end = true;
     $response = ['complete'=>$success?0:-1];
     $http_code = 200;
@@ -481,6 +439,7 @@ function Send_response(bool $success ,Upload_err_code $code , ?Complain_data_fie
         \header($header);
     }
 
+    $ip = Get_IP_address_txt();
     if(!$success) {
         if($err_field?->value > 0) $response['invalid_field'] = $err_field->value;
 
@@ -492,12 +451,13 @@ function Send_response(bool $success ,Upload_err_code $code , ?Complain_data_fie
         Log_internal(
             new Error_code($type,Resource_code::complain,Error_condition::failed),
             Level::Info,
-            $full_msg
+            "[IP-\"$ip\"] $full_msg"
         );
     }
 
     $has_file = isset($_FILES[FILE_UPLOAD_FIELD_NAME]['size']) && $_FILES[FILE_UPLOAD_FIELD_NAME]['size'] > 100;
     if($complain_id !==null) $response['complain_id'] = $complain_id;
+    if($internal_fname !== null) $response['image_url'] = Generate_img_url(File_storation_path::Maps, $internal_fname);
 
     Send_mime_type(MIME['application']['json']);
     \http_response_code($http_code);
