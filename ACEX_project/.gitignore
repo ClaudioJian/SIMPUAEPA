@@ -1,3 +1,11 @@
 .env
 .env.*
+!.env.example
 vendor/
+.vscode
+Log/*
+.log
+
+WEB/Private/Core/Rate_track/*
+
+WEB/Private/Uploads/*
