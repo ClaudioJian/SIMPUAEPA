@@ -49,7 +49,7 @@ function Validate_coordinate(float $coordinate, ?string &$invalid_reason) : true
 }
 
 function Selection_area_txt(float $x1, float $y1, float $x2, float $y2) : string{
-    return "($x1,$y1),($x2,$y2)";
+    return "($x1, $y1), ($x2, $y2)";
 }
 
 /**

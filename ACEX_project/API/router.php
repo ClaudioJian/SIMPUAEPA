@@ -34,18 +34,22 @@ use ACEX_project\WEB\Private\complain\GET_Complain_fields;
     require_once __DIR__ . "/../WEB/Private/Core/Security/CSRF_manager.php";
     use function ACEX_project\WEB\Private\Core\Security\Handle_CSRF_GET;
     use function ACEX_project\WEB\Private\Auth\User\Login;
-use function ACEX_project\WEB\Private\Auth\User\Profile_upload_ruleset;
-use function ACEX_project\WEB\Private\Auth\User\Send_user_data;
-use function ACEX_project\WEB\Private\Auth\User\Send_user_data_ruleset;
-use function ACEX_project\WEB\Private\complain\Error_handler as Complain_Upload_err_handler;
-use function ACEX_project\WEB\Private\complain\GET_complain;
-use function ACEX_project\WEB\Private\complain\Upload_complain;
+    use function ACEX_project\WEB\Private\Auth\User\Profile_upload_ruleset;
+    use function ACEX_project\WEB\Private\Auth\User\Send_user_data;
+    use function ACEX_project\WEB\Private\Auth\User\Send_user_data_ruleset;
+    use function ACEX_project\WEB\Private\complain\Error_handler as Complain_Upload_err_handler;
+
+    require_once __DIR__ . "/../WEB/Private/complain/Get_complains.php";
+    use function ACEX_project\WEB\Private\complain\GET_complain;
+    
+    require_once __DIR__ . "/../WEB/Private/complain/upload_complain.php";
+    use function ACEX_project\WEB\Private\complain\Upload_complain;
 
     require_once __DIR__ . "/../WEB/Private/Core/Render/html/Display_img.php";
     use function ACEX_project\WEB\Private\Core\Render\html\Send_img;
 
 
-    require_once __DIR__ . "/../WEB/Private/complain/upload_complain.php";
+    
 
     \ini_set('session.cookie_lifetime',(string)(SESSION_ABSOLUTE_TIME+10));
     \ini_set('session.gc_maxlifetime',(string)(SESSION_ABSOLUTE_TIME+10));

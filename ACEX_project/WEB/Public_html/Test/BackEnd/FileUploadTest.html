@@ -48,6 +48,22 @@
         file(opcional): <input name="userfile" type="file" />
         <input type="submit" value="Enviar"/>
     </form>
+
+    <h2>Pegar Reclamacao</h2>
+    <form action="/SIMPUAEPA/complain" method="get">
+        next(opcional): <input name="next">
+        order(default-por prioridade): <input name="order">
+        filter(default- nenhum): <input name="filter">
+        quant: <input name="quant">
+        ang_bbox:     
+            min_x:<input name="ang_bbox[min_ang_x]">
+            min_y:<input name="ang_bbox[min_ang_y]">
+            max_x:<input name="ang_bbox[max_ang_x]">
+            max_y:<input name="ang_bbox[max_ang_y]">
+        attachment(para filtro): <input name="attachment[type]">
+        include_cursor(opcional):<input name="include_cursor" type="number" value="0">
+        <input type="submit" value="Enviar"/>
+    </form>
 </body>
 <script src="../../API/api-client.js"></script>
 </html>

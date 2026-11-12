@@ -152,9 +152,9 @@ use ValueError;
                         'CSRF_TOKEN_MAXLIFE',
                         'REQUEST_MAX_LIFE',
                         'RATE_FILE_MAX_QUANT',
-                        'MAX_LOCATION_SELECTION_AREA',
                         'MAX_ITEM_PER_REQUEST'
                     ];
+
                 }
             }
 
@@ -165,7 +165,7 @@ use ValueError;
             $dotenv->required($required_env)->notEmpty();
 
             if($required_int_env !== []) $dotenv->required($required_int_env)->isInteger();    
-            if($required_bool_env !== []) $dotenv->required($required_bool_env)->isBoolean();      
+            if($required_bool_env !== []) $dotenv->required($required_bool_env)->isBoolean(); 
         }catch(\Dotenv\Exception\ValidationException $e){
             Handle_error(
                 new Error_code(Error_domain::configuration,Resource_code::env,Error_condition::missing),
@@ -210,7 +210,7 @@ use ValueError;
                 /**
                  * Maxium retangle area of coordinate (ang_x,ang_y) to (ang_x,ang_y) can be select per request.
                  */
-                define('MAX_LOCATION_SELECTION_AREA', (int)$_ENV['MAX_LOCATION_SELECTION_AREA']);
+                define('MAX_LOCATION_SELECTION_AREA', doubleval($_ENV['MAX_LOCATION_SELECTION_AREA']));
                 /**
                  * maxium number of complain or comment can be retrieve per request.
                  */

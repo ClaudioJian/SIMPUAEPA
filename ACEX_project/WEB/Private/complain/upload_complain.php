@@ -50,6 +50,8 @@ require_once  __DIR__ . '/../Core/Security/File_upload/File_upload_utils.php';
 require_once __DIR__ . '/../../../API/Field_processor.php';
 require_once __DIR__ . '/../Core/Data_type.php';
 
+require_once __DIR__ . "/Common_complain_fields.php";
+
 
 /**
  * list all field can be send by client

@@ -8,8 +8,10 @@ require_once __DIR__ . "/../Core/Security/Rate_limit_handler.php";
 
 use ACEX_project\API\Input_ruleset;
 use ACEX_project\WEB\Private\Api\database\All_tables;
+use ACEX_project\WEB\Private\Api\database\Query_type;
 use ACEX_project\WEB\Private\Api\database\tb_complain_columns;
-use ACEX_project\WEB\Private\Core\Avaible_extension;
+use ACEX_project\WEB\Private\Api\database\tb_location_columns;
+use ACEX_project\WEB\Private\Api\database\tb_user_columns;
 use ACEX_project\WEB\Private\Core\Data_type;
 use ACEX_project\WEB\Private\Core\File_storation_path;
 use ACEX_project\WEB\Private\Core\Security\Rate_limiter;
@@ -20,13 +22,16 @@ require_once __DIR__ . "/../Error/Error_code.php";
 require_once __DIR__ . "/../Error/Error_manager.php";
 use ACEX_project\WEB\Private\Error\Error_domain;
 use ACEX_project\WEB\Private\Error\Resource_code;
+
 use Monolog\Level;
 
-use function ACEX_project\WEB\Private\Api\database\Database_simple_insert;
-use function ACEX_project\WEB\Private\Api\database\Generate_value_name;
+use function ACEX_project\WEB\Private\Api\database\Connect_database;
+
+use function ACEX_project\WEB\Private\Api\database\Is_query_permitted;
+use function ACEX_project\WEB\Private\Api\database\Limit_clause;
 use function ACEX_project\WEB\Private\Core\Get_IP_address_txt;
 use function ACEX_project\WEB\Private\Core\Security\File_upload\Generate_img_url;
-use function ACEX_project\WEB\Private\Core\Security\File_upload\Secure_file_upload;
+
 use function ACEX_project\WEB\Private\Core\Send_mime_type;
 use function ACEX_project\WEB\Private\Error\Handle_error;
 use function ACEX_project\WEB\Private\Error\Log_internal;
@@ -51,22 +56,37 @@ require_once  __DIR__ . '/../Core/Security/File_upload/File_upload_utils.php';
 require_once __DIR__ . '/../../../API/Field_processor.php';
 require_once __DIR__ . '/../Core/Data_type.php';
 
+require_once __DIR__ . '/Common_complain_fields.php';
+
 
 class Pagination_token{
     private mixed $previous_value;
     private int $previous_id;
-    private ?string $token;
+    private ?string $token = null;
 
-    public function __construct(?string $token, private Order_type $current_order)
+    public function get_log_msg():string{
+        return "Complain id = \"{$this->previous_id}\" | Value = \"{$this->previous_value}\"";
+    }
+
+    public function get_prev_id(): int{return $this->previous_id;}
+    public function get_prev_value(): mixed{return $this->previous_value;}
+
+    public function __construct(?string $token, private int $current_order)
     {
-        self::validate($token, $current_order);
+        self::decode($token);
+        self::validate($token);
     }
 
     public function has_cursor(){
-        return $this->token === null;
+        return $this->token !== null;
     }
 
-    private function decode(string $token) : bool{
+    private function decode(?string $token) : bool{
+        if($token === null || mb_trim($token,encoding:ENCODING_CHARSET) === '') {
+            $this->token = null;
+            return true;
+        }
+
         $decode_base64 = base64_decode($token,true);
 
         if($decode_base64===false) self::invalid_base64($token);
@@ -74,10 +94,8 @@ class Pagination_token{
         $data = json_decode($decode_base64, true);
         if($data===null || json_last_error() !== JSON_ERROR_NONE) self::invalid_json($token);
 
-        $id_validator = new Input_ruleset(Data_type::unsigned_int, true, null);
-
         $id = $data['id'] ?? null;
-        if(!$id_validator->execute($id, $err_msg)) Get_complain_Err::invalid_cursor->Send_response(extra_msg:"$err_msg for complain id");
+        if(!self::validate_id($id, $err_msg)) Get_complain_Err::invalid_cursor->Send_response(extra_msg:"$err_msg for complain id");
         
         $val = $data['value']??null;
         if($val !== null) $val = mb_trim($val,encoding:ENCODING_CHARSET);
@@ -88,12 +106,22 @@ class Pagination_token{
         return true;
     }
 
-
     private static function invalid_base64(string $token):never{
         Get_complain_Err::invalid_cursor->Send_response(extra_msg:"Cannot decode from \"$token\" to base64");
     }
     private static function invalid_json(string $token):never{
         Get_complain_Err::invalid_cursor->Send_response(extra_msg:"Cannot decode from \"$token\" to json");
+    }
+    private static function validate_id(mixed &$id, ?string &$err_msg): bool{
+        $id_validator = new Input_ruleset(Data_type::unsigned_int, true, null);
+
+        $success = $id_validator->execute($id, $err_msg);
+        if(!$success && 
+            $id_validator->current_error === Input_ruleset::INVALID_TYPE
+        ) $err_msg = "$err_msg but value [$id] was given";
+        
+
+        return $success;
     }
 
     private function validate(?string $token) : bool{
@@ -102,26 +130,104 @@ class Pagination_token{
             return true;
         }
 
-        if(!$this->Validate_value($err_msg)) Get_complain_Err::invalid_cursor->Send_response(extra_msg:$err_msg);
+        if(!$this->Validate_value($err_msg, $this->previous_value)) Get_complain_Err::invalid_cursor->Send_response(extra_msg:"$err_msg for value");
+        $this->token = $token;
+        return true;
     }
 
-    private function Validate_value(?string &$err_msg) : bool{
+    /**
+     * Check if current value match order type value 
+     */
+    private function Validate_value(?string &$err_msg, mixed $value) : bool{
+        $case = Order_type::tryFrom(abs($this->current_order));
+        $validation = match($case){
+            Order_type::by_create_at => new Input_ruleset(Data_type::string),
+            Order_type::by_intensity_level,
+            Order_type::by_likes,
+            //Order_type::by_rate,
+            //Order_type::by_views,
+            =>new Input_ruleset(Data_type::unsigned_int,true, 0),
+            default=> new Input_ruleset(Data_type::unsigned_int, true,0)
+        };
 
+        $success = $validation->execute($value, $err_msg);
+        if(!$success && $validation->current_error === Input_ruleset::INVALID_TYPE) $err_msg = "$err_msg but [$value] was given";
+        return $success;
     }
 
-    public static function Generate(int $complain_id, mixed $value){
+    /**
+     * Encode to json then base64. 
+     * Json will be array{
+     *      id: int,
+     *      value: mixed
+     * }
+     */
+    public function encode(int $complain_id, mixed $value) : string{
+        $fn = 'In function Pagination_token::encode()';
+        if(!self::validate_id($complain_id, $err_msg)) Handle_error(
+            new Error_code(Error_domain::server, Resource_code::invalidArgument, Error_condition::invalid),
+            Level::Critical,
+            "$fn: parameter \$complain_id is invalid [id: $complain_id - $err_msg]"
+        );
 
+        if(!$this->Validate_value($err_msg, $value)) Handle_error(
+            new Error_code(Error_domain::server, Resource_code::invalidArgument, Error_condition::invalid),
+            Level::Critical,
+            "$fn: parameter \$value is invalid [value: $value - $err_msg]"
+        );
+
+        $json = json_encode(['id'=>$complain_id, 'value'=>$value]);
+        $json_code = json_last_error();
+
+        if($json===null || $json_code !== JSON_ERROR_NONE) {
+            Handle_error(
+                new Error_code(Error_domain::server, Resource_code::invalidArgument, Error_condition::invalid),
+                Level::Critical,
+                "$fn: Encode to json failed with code $json_code"
+            );
+        }
+
+        return base64_encode($json);
     }
 
     /**
      * 
-     * @return
+     * @return array{
+     *      'sql':string,
+     *      'binded':array{
+     *          ':Tie_pagination_id':int,
+     *          ':Pagination_value':mixed,
+     *          ':Tie_pagination_value':mixed
+     *      }
+     * }
      */
-    public function sql(int $order_type, mixed $new_val, int $id) : array{
-        $column = Order_type::get_column($order_type);
-        $direction = $order_type <0 ? '<' : '>';
+    public function sql() : array{
+        if(!$this->has_cursor()) return [
+            'sql' => '',
+            'binded' => []
+        ];
 
+        $new_val = $this->previous_value;
 
+        $column = Order_type::tryFrom(abs($this->current_order))->column()->name;
+        $direction = $this->current_order <0 ? '<' : '>';
+
+        $bind_id_name = ':Tie_pagination_id';
+        $bind_value_name = ':Pagination_value';
+
+        $tb_target = All_tables::complain->name;
+
+        $bind_tie_value_name = ':Tie_pagination_value';
+        $tie_sql = "OR ({$tb_target}.". All_tables::complain->Get_primaryKey() ." $direction $bind_id_name AND {$tb_target}.{$column} = $bind_tie_value_name)";
+
+        return [
+            'sql'=>"{$tb_target}.$column $direction $bind_value_name $tie_sql",
+            'binded'=>[
+                $bind_value_name=>$new_val,
+                $bind_id_name =>$this->previous_id,
+                $bind_tie_value_name=>$new_val
+            ]
+        ];
     }
 }
 
@@ -130,6 +236,14 @@ class Pagination_token{
 enum Filter_type : int{
     case none = 0;
     case by_type = 1;
+
+    public static function get_key(int $type):string{
+        $case = self::tryFrom($type)?? self::by_type;
+        return match($case){
+            self::by_type=>'type',
+            default=>''
+        };
+    }
 
     public static function Validate(int $val, ?string &$err_msg) : bool{
         $result = self::tryFrom($val);
@@ -141,8 +255,8 @@ enum Filter_type : int{
         return false;
     }
 
-    public static function Validate_attachment(int $type, ?array $attachment, ?string &$err_msg) : Get_complain_Err{
-        $case = self::tryFrom($type)?? self::by_type;
+    public static function Validate_attachment(int $type, ?array &$attachment, ?string &$err_msg) : Get_complain_Err{
+        $case = self::tryFrom($type)?? self::none;
         $type = $case->value;
         
         /**
@@ -206,6 +320,12 @@ enum Filter_type : int{
      * sql to put in where clause.
      * 
      * @param mixed $value value to bind in where clause
+     * @return array{
+     *      sql:string,
+     *      binded:array{
+     *          ':filter_name':mixed
+     *      }
+     * } sql is to put inside where clause and binded is array to put in PDO::execute()
      */
     public function sql(mixed $value) : array{
         return $this->generate_sql($value);
@@ -234,7 +354,10 @@ enum Filter_type : int{
             default => self::none
         };
 
-        if($col === self::none) return [];
+        if($col === self::none) return [
+            'sql'=>'',
+            'binded'=>[]
+        ];
 
         $sql = '';
         $bind_name = ':filter_name';     
@@ -258,7 +381,7 @@ enum Order_type : int{
     case by_intensity_level = 5;
 
     public static function get_column(int $type) : tb_complain_columns{
-        return self::tryFrom($type)?->internal_get_column() 
+        return self::tryFrom(abs($type))?->internal_get_column() 
             ?? tb_complain_columns::priority_level;
     }
 
@@ -279,6 +402,7 @@ enum Order_type : int{
      * Every time insert complain id as order type
      */
     public function sql() : string{
+        
         return $this->generate_sql();
     }
 
@@ -288,7 +412,7 @@ enum Order_type : int{
      * Every time insert complain id as order type
      */
     public static function get_sql(int $type) : string{
-        return self::tryFrom($type)->generate_sql($type>=0);
+        return self::tryFrom(abs($type))->generate_sql($type>=0);
     }
 
     private function internal_get_column() : tb_complain_columns{
@@ -304,12 +428,19 @@ enum Order_type : int{
     private function generate_sql(bool $asc = true) : string{
         $direction = $asc ? 'ASC' : 'DESC';
 
-        $col = $this->internal_get_column();
+        $tb_complain = All_tables::complain->name;
 
-        return "$col->name $direction "
-            . tb_complain_columns::id->name . "direction" .
-            ($col === tb_complain_columns::priority_level) ? '' : tb_complain_columns::priority_level->name . ' direction'
-        ;
+        
+        $col = $this->internal_get_column();
+        $main_col = "{$tb_complain}.{$col->name} $direction";
+        $id_col = "{$tb_complain}.". tb_complain_columns::id->name . " $direction ";
+        $sub_col = $col === tb_complain_columns::priority_level ? null : "$tb_complain." .tb_complain_columns::priority_level->name . " $direction";
+
+        $all_col = [$main_col, $id_col];
+        if($sub_col!==null) $all_col[] = $sub_col;
+
+        return \implode(', ', $all_col);
+        
     }
 }
 
@@ -325,6 +456,7 @@ enum GET_Complain_fields{
     case ang_bbox;
     case attachment;
     case include_cursor;
+    case quant;
 
     public static function TryGet_case(string $name) : GET_Complain_fields{
         $name = strtolower(trim($name));
@@ -341,7 +473,7 @@ enum GET_Complain_fields{
         $height = abs($y2 - $y1);
         $area = $width * $height;
 
-        return true;
+        return $area <= MAX_LOCATION_SELECTION_AREA;
     }
 
     /**
@@ -395,7 +527,7 @@ enum GET_Complain_fields{
                                     return false;
                                 }
                                 
-                                Get_complain_Err::invalid_select_area->Send_response(self::ang_bbox, "value $key is invalid - <<$err_msg>>");
+                                Get_complain_Err::invalid_select_area->Send_response(self::ang_bbox, "value $key is invalid - <<$err_msg but [$coordinate] was given>>");
                                 return false;
                             }
                         }
@@ -414,7 +546,15 @@ enum GET_Complain_fields{
             [
                 'key' => self::include_cursor->name,
                 'instruction' => new Input_ruleset(Data_type::bool, false, false)
-            ]
+            ],
+            [
+                'key' => self::quant->name,
+                'instruction' => new Input_ruleset(Data_type::unsigned_int, false, MAX_ITEM_PER_REQUEST, sanitize_fn:function(?int &$q, ?string &$err_msg){
+                        $q = min($q,MAX_ITEM_PER_REQUEST);
+                        return true;
+                    }
+                )
+            ],
         ];
     }
 }
@@ -432,23 +572,6 @@ enum Get_complain_Err :int{
 
     case unknown = -99;
 
-    public static function From_router_code(int $err_code, Complain_data_fields $key) : Upload_err_code{
-        return match($err_code){
-            Input_ruleset::EMPTY_VALUE => self::empty_value,
-            Input_ruleset::INVALID_TYPE => self::invalid_type,
-            Input_ruleset::INVALID_VALUE => self::Get_INVALID_VALUE_err($key),
-            Input_ruleset::SANITIZATION_FAILED => self::err_internal,
-            default => self::unknown
-        };
-    }
-
-    private static function Get_INVALID_VALUE_err(Complain_data_fields $key) : Upload_err_code{
-        return match($key){
-            Complain_data_fields::ang_x, Complain_data_fields::ang_y => self::invalid_coordinate,
-            Complain_data_fields::title, Complain_data_fields::description, Complain_data_fields::location_reference => self::size,
-            default => self::invalid_value
-        };
-    }
 
     private static function map(int $http_code, string $desc, Error_domain $category =  Error_domain::request, array $headers = [], ){
         return [
@@ -541,12 +664,15 @@ function GET_complain(?Rate_limiter $IP_limiter, array $captured_args, array $pr
 
     //cursor for pagination encoded in base64 of json, can be null.
     $current_cursor = $processed_datas['next'];
+    
 
     /**
      * @var int Order for complains. Possible values are defined in Order_type enum. Default type is assumed to 0(by_priority_level)
      * TODO: implement priority_level
      */
     $order_type = $processed_datas['order'];
+
+
 
     /**
      * @var int Filter for complains. Possible values are defined in Filter_type enum. Default type is assumed to 0(none)
@@ -565,6 +691,8 @@ function GET_complain(?Rate_limiter $IP_limiter, array $captured_args, array $pr
     $select_area = $processed_datas['ang_bbox'];
     $filter_attachment = $processed_datas['attachment'];
     $include_cursor = $processed_datas['include_cursor'];
+    $selected_quant = $processed_datas[GET_Complain_fields::quant->name];
+
 
     /*
      The filter type is validate, if invalid, default will be Filter_type::none.
@@ -575,168 +703,284 @@ function GET_complain(?Rate_limiter $IP_limiter, array $captured_args, array $pr
         !== Get_complain_Err::success
     ) $err_code->Send_response(extra_msg:$err_msg);
 
-    $validate_content = ['title'=>$title,'description'=>$desc,'location reference'=>$location_ref];
-    foreach($validate_content as $field => $val_target){
-        if($val_target==null) continue;
+    $x1 = $select_area['min_ang_x'];
+    $y1 = $select_area['min_ang_y'];
+    $x2 = $select_area['max_ang_x'];
+    $y2 = $select_area['max_ang_y']; 
 
-        $reject_type = 0;
-        $reject_reason = '';
-        if(!Validate_content($val_target, $reject_reason, $reject_type)) {
-            $err = match($reject_type){
-                1=>Upload_err_code::violation_policies_rules,
-                2=>Upload_err_code::inappropriate_content,
-                default=>Upload_err_code::unknown
-            };
-            Send_response(false,$err,Complain_data_fields::tryFrom($field),$reject_reason,true);
-        }
-    }
-
-    $ang_x = $processed_datas['ang_x'];
-    $ang_y = $processed_datas['ang_y'];
-
-
-    //insert if location was not found and use that id from insertion, else select by using x and y
-    $location_id = Upsert_location($ang_x,$ang_y,false,true);
-    if($location_id === null) Send_response(false, Upload_err_code::register_coordinate);
-
-
-
-    $complain_type = $processed_datas['type'];
-
-    $uid = $_SESSION['uid'];
-    $complain_insert_column= [
-        [
-            'column' => tb_complain_columns::title,
-            'value' => [$title]
-        ],
-        [
-            'column' => tb_complain_columns::location_id,
-            'value' => [$location_id]
-        ],
-        [
-            'column' => tb_complain_columns::type,
-            'value'=> [$complain_type]
-        ],
-        [
-            'column'=>tb_complain_columns::user_id,
-            'value'=>[$uid]
-        ]
-    ];
-
-    if($location_ref !== null) {
-        $complain_insert_column[] = [
-            'column'=>tb_complain_columns::location_reference,
-            'value'=>[$location_ref]
-        ];
-    }
-
-    if($desc !== null && $desc !== ''){
-        $complain_insert_column[] = [
-            'column' => tb_complain_columns::description,
-            'value' => [$desc]
-        ];
-    }
-
-    if($current_internal_fpath !== null){
-        $complain_insert_column[] = [
-            'column' => tb_complain_columns::image_name,
-            'value' => [$current_internal_fpath]
-        ];
-    }
-
-
-    $insert_complain = [
-        'table' => All_tables::complain,
-        'insert'=> $complain_insert_column
-    ];
-
-
-    //db insertion
-    $id_list = Database_simple_insert([$insert_complain],true,true);
-    $complain_id = null;
-
-    foreach($id_list?:[] as $complain_ids){
-        if($complain_ids['table'] === All_tables::complain) {
-            $complain_id = (int)$complain_ids['id'];
-            break;
-        }
-    }
-
-    $insert_error = $id_list===false || $complain_id===null;
-    
-
-
-    if($insert_error) {
-        //if db failed, discart user uploaded new img
-        if($current_internal_fpath !== null) \unlink($current_internal_fpath);
-        Send_response(false,Upload_err_code::database_register, end:true);
-    }
-
-    //db insert success, then discart old file. *obs: since is insert, the old file always result in null
-    if($old_file !== null) \unlink($old_file);
-    
-
-    $ip = Get_IP_address_txt();
-    
-    Log_internal(
-        new Error_code(Error_domain::upload, Resource_code::complain, Error_condition::success),
-        Level::Info,
-        "[IP-\"$ip\"] User(uid - $uid) updated new complain with id = [$complain_id]"
+    $retrieve = new Retrieve_complains(
+        $current_cursor, $order_type,
+        $filter_type, $filter_attachment[Filter_type::get_key($filter_type)]??null,
+        $selected_quant,
+        $include_cursor,
+        $x1,$y1,$x2,$y2
     );
-    Send_response(true,Upload_err_code::success,extra_msg:Selection_area_txt());
+
+    $retrieve->execute();
 }
 
+class Retrieve_complains{
+    private const VALUE_NAME_X1 = ':ang_x1';
+    private const VALUE_NAME_X2 = ':ang_x2';
+    private const VALUE_NAME_Y1 = ':ang_y1';
+    private const VALUE_NAME_Y2 = ':ang_y2';   
 
-/**
- * send success response to front end. exit when end
- * @param Complain_data_fields|null $err_field if null, then response will exclude invalid_field.
- * @param bool $end if true, immedially exit and change some log message
-*/
-function Send_sucess_response(bool $success, Get_complain_Err $code , ?GET_Complain_fields $err_field = null, string $extra_msg = '', ?int $complain_id = null){
-    $response = ['complete'=>0];
-    $http_code = 200;
-
-    $info = $code->info($extra_msg, $err_field);
-
-    $desc = $info['description'];
-    $type = $info['err_type'];
+    private const ALIAS_x = 'x';
+    private const ALIAS_y = 'y';
+    private const ALIAS_uid = 'uid';
+    private const ALIAS_profile_img = 'profile_img_url';
     
-    $headers = $info['headers'];
-    $http_code = $info['http_code'];
+    private array $bind = [];
+    private array $return_rows = [];
+    private array $all_rows = [];
 
-    foreach($headers as $header){
-        if(!\is_string($header)) {
-            \http_response_code(500);
-            Handle_error(
-                new Error_Code(Error_domain::server,Resource_code::invalidArgument,Error_condition::type),
+    private bool $updated = false;
+
+    private string $first_cursor;
+
+
+    public function __construct(
+        private readonly ?string $current_cursor,
+        private int $order_type,
+        private readonly int $filter,
+        private readonly mixed $filter_attachment_value,
+        private readonly int $selected_quant,
+        private readonly bool $include_cursor,
+        private readonly float $x1, 
+        private readonly float $y1, 
+        private readonly float $x2, 
+        private readonly float $y2
+    )
+    {
+        self::Exit_if_not_permitted();
+    }
+
+
+    public function execute(){
+        $conn = null;
+        try{
+            $conn = Connect_database();
+
+            if($conn===null) Handle_error(
+                new Error_code(Error_domain::database, Resource_code::connection,Error_condition::failed),
                 Level::Critical,
-                'In Exit_upload_err([array]$headers): value isnt string'
+                'Cannot connect to database while trying retrieve complains'
+            );
+
+            $select_area = $this->Select_area_sql();
+
+            $pagination_token = new Pagination_token($this->current_cursor,$this->order_type);
+            $pagination_condition = $pagination_token->sql();
+
+            $filter_array = Filter_type::get_sql($this->filter, $this->filter_attachment_value);
+            $order = Order_type::get_sql($this->order_type);
+
+            $condition_arr = [$select_area];
+            if($filter_array['sql']!=='') $condition_arr[] = $filter_array['sql'];
+            if($pagination_condition['sql']!=='') $condition_arr[] = $pagination_condition['sql'];
+
+            $condition = \implode(' AND ', 
+                array_map(fn(string $cond)=> "($cond)",$condition_arr)
+            );
+
+            //limit+1 to detect
+            $sql = Limit_clause(Query_type::select, 
+                $this->Select_cols() .
+                ' FROM '. $this->Select_tables() .
+                " WHERE {$condition} ORDER BY {$order}", $this->selected_quant+1) . ';';
+
+            $smtm = $conn->prepare($sql);
+            if($smtm===false) throw new \Exception('Database server failed to prepare statement for select query');
+
+            $this->bind = [...$this->bind, ...$pagination_condition['binded'], ...$filter_array['binded']];
+
+            $smtm->execute($this->bind);
+
+        
+
+            $cursor_col = Order_type::get_column($this->order_type)->name;
+
+            $row_count = 0;
+            $next_cursor = false;
+            do{
+                $row = $smtm->fetch(\PDO::FETCH_ASSOC);
+                $next_cursor = $this->Parse_db_rows($row_count, $row, $pagination_token);
+            }while($next_cursor===null);
+
+            if($row_count===0) Get_complain_Err::coordinate_not_found->Send_response(extra_msg:$this->selection_area_text() . ' with cursor - ['. $pagination_token->get_log_msg().']');
+
+            $last_row = $this->all_rows[$row_count-1];
+            $first_row = $this->all_rows[0];
+
+            $this->updated = $pagination_token->has_cursor() && $first_row[self::ALIAS_uid] !== $pagination_token->get_prev_id() && $first_row[$cursor_col] !== $pagination_token->get_prev_value();
+
+            $last_cursor = !$next_cursor ? null : $pagination_token->encode($last_row['complain_id'], $last_row[$cursor_col]);
+            $this->first_cursor = $pagination_token->encode($first_row['complain_id'], $first_row[$cursor_col]);
+
+            $this->Send_response($last_cursor);
+        }catch(\Throwable $e){
+            if($conn instanceof \PDO && $conn->inTransaction()) $conn->rollBack();
+            Log_internal(
+                new Error_code(Error_domain::database, Resource_code::db_query, Error_condition::unknown),
+                Level::Error,
+                'In Retrieve_complains::execute() failed: ' .$e->getMessage()
+            );
+            \http_response_code(500);
+            exit();
+        }
+    }
+
+    private function Send_response(?string $last_cursor) : never{
+        $ip = Get_IP_address_txt();
+        $attachment = $this->return_rows;
+
+        Log_internal(
+            new Error_code(Error_domain::request,Resource_code::complain,Error_condition::success),
+            Level::Info,
+            "[IP-\"$ip\"] retrieve complains in area ". $this->selection_area_text()
+        );
+        
+        $response = [
+            'success'=>0,
+            'updated'=>$this->updated?0:1,
+            'attachment'=>$attachment,
+            'first_cursor'=>$this->first_cursor
+        ];
+        if($last_cursor !== null) $response['last_cursor'] = $last_cursor;
+
+        Send_mime_type(MIME['application']['json']);
+        \http_response_code(200);
+
+        $json = json_encode($response);   
+        echo $json;
+        exit();
+    }
+
+    /**
+     * @return ?bool indicate has next cursor or no if is bool. if is null mean still have row.
+     */
+    private function Parse_db_rows(int &$row_count, array|false $row, Pagination_token $token) : ?bool{
+        if($row===false) return false;
+        if($row_count >= $this->selected_quant) return true;
+
+        //table and cols names
+        $id_col_name = All_tables::complain->Get_primaryKey();
+        $cursor_col = Order_type::get_column($this->order_type)->name;
+
+        $create_at_col = tb_complain_columns::created_at->name;
+        $title_col = tb_complain_columns::title->name;
+        $desc_col = tb_complain_columns::description->name;
+        $loc_ref_col = tb_complain_columns::location_reference->name;
+        $type_col = tb_complain_columns::type->name;
+        $img_url_col = tb_complain_columns::image_name->name;
+        $likes_col = tb_complain_columns::like_count->name;
+        $dislikes_col = tb_complain_columns::dislike_count->name;
+        $priority_col = tb_complain_columns::priority_level->name;
+
+
+        $insert_to = $internal = [];
+
+
+        $curr_id = $row[$id_col_name];
+        $profile_url = $row[self::ALIAS_profile_img] ?? null;
+        $location_reference = $row[$loc_ref_col]??null;
+        $map_img_url = $row[$img_url_col]??null;
+
+        $insert_to['uid'] = $row[self::ALIAS_uid];
+
+        if($profile_url!==null) $insert_to['profile_url'] = Generate_img_url(File_storation_path::profiles, $profile_url);
+        if($location_reference!==null) $insert_to['location_reference'] = $location_reference;
+        if($map_img_url!==null) $insert_to['image_url'] = Generate_img_url(File_storation_path::Maps, $map_img_url);
+        if($this->include_cursor) $insert_to['last_cursor'] = $token->encode($curr_id, $row[$cursor_col]);
+
+        $insert_to['complain_id'] = $curr_id;
+        $insert_to['created_at'] = $row[$create_at_col];
+        $insert_to['title'] = $row[$title_col];
+        $insert_to['description'] = $row[$desc_col];
+        $insert_to['type'] = $row[$type_col];
+        $insert_to['likes'] = $row[$likes_col];
+        $insert_to['dislikes'] = $row[$dislikes_col];
+        $insert_to['ang_x'] = $row[self::ALIAS_x];
+        $insert_to['ang_y'] = $row[self::ALIAS_y];
+
+
+        $internal[$priority_col] = $row[$priority_col];
+
+        $this->return_rows[$row_count] = $insert_to;
+        $this->all_rows[$row_count] = [...$insert_to, ...$internal];
+        
+        $row_count++;
+        return null;
+    }
+
+    private function Select_cols():string{
+        $tb_complain = All_tables::complain->name;
+        $tb_location = All_tables::location->name;
+        $tb_user = All_tables::user->name;
+        $ang_x_col = tb_location_columns::ang_x->name;
+        $ang_y_col = tb_location_columns::ang_y->name;
+
+        $uid_col = All_tables::user->Get_primaryKey();
+        $img_url = tb_user_columns::profile_image_name->name;
+
+        return "{$tb_complain}.*,
+         {$tb_location}.{$ang_x_col} AS ". self::ALIAS_x.",
+         {$tb_location}.{$ang_y_col} AS ". self::ALIAS_y.", 
+         {$tb_user}.{$uid_col} AS ". self::ALIAS_uid . ", {$tb_user}.{$img_url} AS ". self::ALIAS_profile_img ;
+    }
+
+    private function Select_tables():string{
+        $tb_complain = All_tables::complain->name;
+        $tb_location = All_tables::location->name;
+        $tb_user = All_tables::user->name;
+
+        $complain_location_id_col = tb_complain_columns::location_id->name;
+        $location_id_col = All_tables::location->Get_primaryKey();
+
+        $uid_col = All_tables::user->Get_primaryKey();
+        $complain_uid = tb_complain_columns::user_id->name;
+
+        return "{$tb_complain}
+         INNER JOIN {$tb_location} ON
+            {$tb_complain}.{$complain_location_id_col} = {$tb_location}.{$location_id_col}
+         INNER JOIN {$tb_user} ON
+            {$tb_complain}.{$complain_uid} = {$tb_user}.{$uid_col}";
+    }
+
+    private function selection_area_text():string{return Selection_area_txt($this->x1,$this->y1,$this->x2,$this->y2);}
+
+    private function Select_area_sql() : string{
+        $location_tb_name = All_tables::location->name;
+
+        $ang_x_col = tb_location_columns::ang_x->name;
+        $ang_y_col = tb_location_columns::ang_y->name;
+
+        $this->bind[self::VALUE_NAME_X1] = $this->x1;
+        $this->bind[self::VALUE_NAME_X2] = $this->x2;
+        $this->bind[self::VALUE_NAME_Y1] = $this->y1;
+        $this->bind[self::VALUE_NAME_Y2] = $this->y2;
+
+        return "
+                {$location_tb_name}.{$ang_x_col} BETWEEN ". self::VALUE_NAME_X1 .' AND '. self::VALUE_NAME_X2 ."
+                AND {$location_tb_name}.{$ang_y_col} BETWEEN ". self::VALUE_NAME_Y1 . ' AND ' . self::VALUE_NAME_Y2 .'
+            '
+        ;
+    }
+
+    private static function Exit_if_not_permitted():void{
+        $location_access = Is_query_permitted(HOST, [Query_type::select],All_tables::location);
+        $complain_access = Is_query_permitted(HOST, [Query_type::select],All_tables::complain);
+
+        if(!$location_access || !$complain_access){
+            $denied_table = [];
+            if(!$location_access) $denied_table[] = All_tables::location;
+            if(!$complain_access) $denied_table[] = All_tables::complain;
+
+            Handle_error(
+                    new Error_code(Error_domain::database,Resource_code::db_select,Error_condition::unauthorized),
+                    Level::Critical,
+                    'Get complains - denied table: ' . \implode(' ', $denied_table). ' | user:'. HOST
             );
         }
-        \header($header);
     }
-
-    $ip = Get_IP_address_txt();
-    if(!$success) {
-        $full_msg = '';
-        if($err_field != null) $full_msg = "Field {$err_field->name} - ";
-        $response['err_code'] = $code->value;
-        
-        $full_msg .= $desc;
-        if($full_msg === '') $full_msg = 'unkown error';
-        Log_internal(
-            new Error_code($type,Resource_code::complain,Error_condition::failed),
-            Level::Info,
-            "[IP-\"$ip\"] $full_msg when trying retrieve complains"
-        );
-    }
-
-    if($complain_id !==null) $response['complain_id'] = $complain_id;
-
-    Send_mime_type(MIME['application']['json']);
-    \http_response_code($http_code);
-
-    $json = json_encode($response);   
-    echo $json;
-    exit();
 }

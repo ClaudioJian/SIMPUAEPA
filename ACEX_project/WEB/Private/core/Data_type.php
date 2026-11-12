@@ -35,7 +35,7 @@ enum Data_type{
             case self::unsigned_int:
             case self::int:
                 $val = \filter_var($data,FILTER_VALIDATE_INT);
-                if($val === false || ($this !== self::unsigned_int && $val < 0)) return false;
+                if($val === false || ($this === self::unsigned_int && $val < 0)) return false;
 
                 $data = $val;
                 break;
@@ -59,7 +59,7 @@ enum Data_type{
                 $buffer = \mb_strtolower(mb_trim($data,encoding:ENCODING_CHARSET),ENCODING_CHARSET);
 
                 if(\is_numeric($buffer)) {
-                    $buffer = (float)$buffer !== 0.0;
+                    $buffer = ((float)$buffer) !== 0.0;
                     return true;
                 }
 

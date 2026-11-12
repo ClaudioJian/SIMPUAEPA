@@ -58,6 +58,17 @@ use ACEX_project\WEB\Private\Error\Error_code;
         };
     }
 
+    /**
+     * @param string $sql this should ommit start "SELECT" or similar
+     */
+    function Limit_clause(Query_type $query, string $sql, int $limit):string{
+        return match(DB_TYPE){
+            'mysql', 'postgre', 'sqlite'=> $query->name ." $sql LIMIT $limit",
+            'sqlserver'=> $query->name. "TOP($limit) $sql",
+            default=>''
+        };
+    }
+
     /** table name(should correspond real table name) => enum name that contain all column */
     enum All_tables : string{
         case user = tb_user_columns::class;
@@ -65,11 +76,11 @@ use ACEX_project\WEB\Private\Error\Error_code;
         case location = tb_location_columns::class;
 
         function Get_primaryKey() : string{
-            return match($this){
-                self::user => tb_user_columns::id->name,
-                self::complain => tb_complain_columns::id->name,
-                self::location => tb_complain_columns::id->name,
-            };
+            return (match($this){
+                self::user => tb_user_columns::id,
+                self::complain => tb_complain_columns::id,
+                self::location => tb_location_columns::id,
+            })->name;
         }
     }
 
