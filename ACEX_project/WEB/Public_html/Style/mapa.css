@@ -332,3 +332,99 @@ img {
         transform: translateY(0) scale(1);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* mensagem do formulário de reclamação */
+#status_reclamacao {
+    margin: 8px 0 0;
+    font-size: 14px;
+}
+
+#status_reclamacao:empty {
+    display: none;
+}
+
+#status_reclamacao.erro {
+    color: #b91c1c;
+}
+
+#status_reclamacao.ok {
+    color: #166534;
+}
+
+#status_reclamacao.progresso {
+    color: #4b5563;
+}
+
+/* aviso rápido na parte de baixo da tela */
+.toast-mapa {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: 9000;
+    max-width: min(420px, 90vw);
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: #1f2937;
+    color: white;
+    font: 14px Arial, sans-serif;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+}
+
+.toast-mapa.aberto {
+    opacity: 1;
+}
+
+/* popup das reclamações */
+.popup-reclamacao h3 {
+    margin: 0 0 4px;
+    font-size: 16px;
+}
+
+.popup-reclamacao p {
+    margin: 4px 0;
+}
+
+.popup-reclamacao .popup-tipo {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.popup-reclamacao .popup-rodape {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* o "img" global desse arquivo fixa 60x60, aqui precisa ser maior */
+.popup-reclamacao img.foto-reclamacao {
+    display: block;
+    width: 100%;
+    max-width: 240px;
+    height: auto;
+    margin-top: 8px;
+    border-radius: 6px;
+}

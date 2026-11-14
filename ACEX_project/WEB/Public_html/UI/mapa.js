@@ -1,8 +1,14 @@
 
     import * as L from '../UI/leaflet/leaflet.js'; // importa/extende o arquivo do leaflet para usar no javascript.
-
+    import { iniciarReclamacoes } from './reclamacoes.js';
 
     
+
+
+
+
+
+
 
 
     // função para fazer o botão aparecer o controle de icones.
@@ -75,7 +81,34 @@ const map = new L.Map('map', {
     // Obtém os limites do município.
     const limites = limiteSantoAndre.getBounds();
 
-    criarConjuntosExemplo();
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     // Cria um retângulo maior que o município para cobrir o exterior.
     const limitesExternos = limites.pad(20);
@@ -795,86 +828,43 @@ document.addEventListener("keydown", (evento) => {
 
 //criação da reclamação com o formulario
 
-formularioReclamacao.addEventListener("submit", (evento) => {
-    evento.preventDefault();
-
-    // Recupera o marcador provisório.
-    const marcador = allMarker[0];
-
-    if (!marcador) {
-    abrirAviso(
-        "Localização não encontrada",
-        "Clique no mapa para selecionar o local da reclamação."
-    );
-    return;
-}
-
-    const dadosFormulario = new FormData(formularioReclamacao);
-    const localizacao = marcador.getLatLng();
-
-    const reclamacao = {
-        tipo: dadosFormulario.get("tipo_reclamacao"),
-        titulo: dadosFormulario.get("titulo_reclamacao"),
-        descricao: dadosFormulario.get("descricao_reclamacao"),
-        referencia: dadosFormulario.get("referencia_local"),
-
-        localizacao: {
-            latitude: localizacao.lat,
-            longitude: localizacao.lng
-        }
-    };
-
-    // Escolhe o ícone correspondente ao problema
 
 
 
-// Escolhe o ícone correspondente ao problema
-const icone = obterIconeReclamacao(reclamacao.tipo);
-
-// Monta o conteúdo do popup
-const popupHTML = criarPopupReclamacao(reclamacao);
-
-// Recupera a posição geográfica do marcador provisório
-const posicao = marcador.getLatLng();
-
-// Cria um novo marcador definitivo
-const marcadorReclamacao = new L.Marker(posicao, {
-    icon: icone,
-    draggable: false,
-    interactive: true
-});
-//faz a restrição do icone para somente santo andré
 
 
-// Adiciona o popup com as informações da reclamação
-marcadorReclamacao.bindPopup(popupHTML);
-
-// Adiciona o novo marcador ao mapa
-marcadorReclamacao.addTo(map);
-
-// Abre o popup
-marcadorReclamacao.openPopup();
-
-    // Guarda o novo marcador separadamente
-reclamacoesMarcadores.push(marcadorReclamacao);
-
-// Remove o marcador provisório (default)
-map.removeLayer(marcador);
-
-// Limpa o array de marcadores provisórios
-allMarker = [];
 
 
-// Fecha o formulário de reclamação
-const caixaReclamacao = document.getElementById("caixa_reclamacao");
 
-if (caixaReclamacao) {
-    caixaReclamacao.classList.add("visivel");
-}
 
-// Limpa os campos para a próxima reclamação
-formularioReclamacao.reset();
-});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //separa os icones para a criação do formulario
 
@@ -941,4 +931,69 @@ function criarPopupReclamacao(reclamacao) {
 
     
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// ================= RECLAMAÇÕES (back-end) =================
+
+iniciarReclamacoes({
+    L: L,
+    map: map,
+
+    // grupos de cada tipo (os botões do painel de ícones ligam e desligam cada um)
+    grupos: {
+        perigo: conjunto_perigos,
+        outro: conjunto_outros,
+        esgoto: conjunto_esgotos,
+        poluicao: conjunto_poluicoes,
+        sonora: conjunto_sonoros,
+        rua: conjunto_ruas,
+        eletricidade: conjunto_eletricidades
+    },
+
+    icones: {
+        perigo: perigoIcon,
+        outro: outroIcon,
+        esgoto: esgotoIcon,
+        poluicao: poluicaoIcon,
+        sonora: sonoraIcon,
+        rua: ruaIcon,
+        eletricidade: eletricidadeIcon
+    },
+
+    // marcador provisório (o clique no mapa) e a limpeza dele depois de publicar
+    obterMarcadorProvisorio: function () {
+        return allMarker[0];
+    },
+
+    limparMarcadorProvisorio: function () {
+        allMarker.forEach(function (marcador) {
+            map.removeLayer(marcador);
+        });
+        allMarker = [];
+    },
+
+    abrirAviso: abrirAviso
+});
+
+// Para as reclamações já aparecerem ao abrir o mapa, sem precisar ligar cada tipo
+// no painel de ícones, tire as barras da linha abaixo:
+// conjunto_icones.addTo(map);
     

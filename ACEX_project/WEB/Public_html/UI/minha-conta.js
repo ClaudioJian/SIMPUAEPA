@@ -1,4 +1,4 @@
-
+import { lerObjetosJSON } from './fluxo-json.js';
 
 const BASE = "/SIMPUAEPA";
 
@@ -551,6 +551,28 @@ function gerarImagemFinal(qualidade) {
     });
 }
 
+
+
+
+
+
+
+
+
+// 5.6.3: códigos de erro do upload da imagem
+const MSG_UPLOAD = {
+    "-1": "Extensão inválida. Use JPG, PNG ou WebP.",
+    "-2": "Requisição inválida. Tente novamente.",
+    "-3": "O servidor não conseguiu processar a imagem (problema interno).",
+    "-4": "Muitas requisições em pouco tempo. Aguarde um instante e tente de novo.",
+    "-6": "Falha ao processar a imagem no servidor.",
+    "-7": "Esse formato de imagem não é suportado pelo servidor.",
+    "-8": "A imagem excede o tamanho máximo permitido.",
+    "-9": "Nenhum arquivo chegou ao servidor.",
+    "-10": "Erro no banco de dados do servidor.",
+    "-99": "Erro inesperado no servidor."
+};
+
 btnSalvarFoto.addEventListener('click', async function () {
 
     if (!imagem) {
@@ -559,9 +581,10 @@ btnSalvarFoto.addEventListener('click', async function () {
 
     limparMsg(msgFoto);
     btnSalvarFoto.disabled = true;
+    btnSalvarFoto.textContent = "Enviando...";
 
     try {
-        
+        // reduz a qualidade, se preciso, até caber no limite do servidor
         let arquivo = null;
         const qualidades = [0.9, 0.8, 0.7, 0.6, 0.5];
 
@@ -577,7 +600,7 @@ btnSalvarFoto.addEventListener('click', async function () {
             return;
         }
 
-        
+        // a imagem já está recortada, então o recorte pedido pelo servidor é ela inteira
         const dados = new FormData();
         dados.append(API.enviarFoto.campoArquivo, arquivo, "perfil.jpg");
         dados.append("x", 0);
@@ -585,65 +608,114 @@ btnSalvarFoto.addEventListener('click', async function () {
         dados.append("width", FOTO.tamanhoFinal);
         dados.append("height", FOTO.tamanhoFinal);
 
-        mostrarMsg(msgFoto, TEXTO_ETAPAS[0], "ok");
-
-        
+        // sem Content-Type manual: o navegador monta o multipart sozinho
         const response = await fetch(API.enviarFoto.url, {
             method: API.enviarFoto.method,
             credentials: "same-origin",
             body: dados
         });
 
-        console.log("HTTP:", response.status);
+        // a resposta chega em etapas (stage 0, 1, 2 e 3); só o stage 3 confirma o armazenamento
+        let falha = null;
+        let concluido = false;
 
-        // falhas "de verdade" do HTTP (sessão, endpoint, servidor, limite de requisições)
-        if (response.status === 401 || response.status === 404 ||
-            response.status === 429 || response.status >= 500) {
-            tratarFalha(response.status, null, msgFoto);
-            return;
-        }
 
-        
-        const mensagens = await lerRespostasProgressivas(response, function (msg) {
-            if (sucessoDe(msg) === 0 && TEXTO_ETAPAS[msg.stage]) {
-                mostrarMsg(msgFoto, TEXTO_ETAPAS[msg.stage], "ok");
+
+
+
+
+
+
+
+
+
+
+
+        const lidos = await lerObjetosJSON(response, function (obj) {
+            console.log("Etapa:", obj);
+
+            // o servidor escreve "sucess" (sem o segundo "c") nas etapas 1 a 3
+            const resultado = obj.success !== undefined ? obj.success : obj.sucess;
+
+            if (resultado === -1) {
+                if (!falha) {
+                    falha = obj;
+                }
+            } else if (obj.stage === 3) {
+                concluido = true;
             }
         });
 
-        const falha = mensagens.find(function (m) { return sucessoDe(m) === -1; });
-        const confirmou = mensagens.some(function (m) {
-            return sucessoDe(m) === 0 && m.stage === 3;
-        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        console.log("HTTP:", response.status, "| Resposta (texto):", lidos.texto);
 
         if (falha) {
-            mostrarMsg(msgFoto, ERROS_UPLOAD[String(falha.code)] || "O servidor recusou a imagem.", "erro");
+            mostrarMsg(msgFoto, MSG_UPLOAD[falha.code] || "Não foi possível enviar a imagem.", "erro");
             return;
         }
 
-        
-        if (confirmou) {
+        if (concluido) {
             fecharEditorFoto();
             mostrarMsg(msgFoto, "Foto atualizada com sucesso.", "ok");
-
-            
-            setTimeout(function () { carregarPerfil(true); }, INTERVALO_MS);
+            carregarPerfil(true);   // mostra a foto nova
             return;
         }
 
-        if (response.status === 400) {
-            mostrarMsg(msgFoto, "O servidor não aceitou essa imagem. Tente outra.", "erro");
-            return;
+        // sem falha e sem confirmação
+        if (response.status === 429) {
+            mostrarMsg(msgFoto, MSG_UPLOAD["-4"], "erro");
+        } else if (lidos.quantidade === 0) {
+            tratarFalha(response.status, null, msgFoto);
+        } else {
+            mostrarMsg(msgFoto, "O servidor não confirmou o armazenamento da imagem. Tente novamente.", "erro");
         }
-
-        mostrarMsg(msgFoto, "O servidor não confirmou que a foto foi salva.", "erro");
 
     } catch (error) {
         console.error("Erro na requisição:", error);
         mostrarMsg(msgFoto, "Não foi possível conectar ao servidor.", "erro");
     } finally {
         btnSalvarFoto.disabled = false;
+        btnSalvarFoto.textContent = "Salvar foto";
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // ================= ALTERAR E-MAIL =================
