@@ -19,7 +19,16 @@ namespace ACEX_project\WEB\Private\Api\database;
     use InvalidArgumentException;
     use Monolog\Level;
 
-    use function ACEX_project\WEB\Private\Error\Handle_error;
+use function ACEX_project\WEB\Private\Auth\User\Is_logged;
+use function ACEX_project\WEB\Private\Error\Handle_error;
+
+    require_once __DIR__ . "/../../Auth/User/login.php";
+
+    enum Resource_type{
+        case profile_img;
+        case map_img;
+        case complain;
+    }
 
     /**
      * find if permitted from query type to table and column
@@ -34,6 +43,19 @@ namespace ACEX_project\WEB\Private\Api\database;
             if($permission->Is_permitted($user_name,$table,$query_type,$column)) return true;
         }
         return false;
+    }
+
+    /**
+     * Function not finished.
+     * Check if current logged user has permition to acess
+     */
+    function User_authorized(Resource_type $res) : bool {
+        if(!Is_logged()) return false;
+
+        //get cache version, else grab from databese
+        //...
+
+        return true;
     }
     
     class Permission{

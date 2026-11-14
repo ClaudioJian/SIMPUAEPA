@@ -28,7 +28,15 @@ use ACEX_project\WEB\Private\Error\Error_code;
     use function ACEX_project\WEB\Private\Error\Handle_error;
 
 
+    function Generate_img_url(File_storation_path $category, string $fname) : string{
+        $fname = \strtolower(\trim($fname));
 
+        return match($category){
+            File_storation_path::profiles => '/' . URI_PREFIX . '/image/profile/' . $fname,
+            File_storation_path::Maps => '/' . URI_PREFIX . '/image/maps/' . $fname,
+            default => ''
+        };
+    }
 
 
 

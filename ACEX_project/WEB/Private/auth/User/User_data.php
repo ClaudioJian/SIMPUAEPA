@@ -7,6 +7,7 @@
 */
 namespace ACEX_project\WEB\Private\Auth\User;
 
+use ACEX_project\API\Input_ruleset;
 use Throwable;
 use Exception;
 
@@ -17,12 +18,17 @@ require_once __DIR__ . "/../../Api/database/database_dictionary.php";
 use ACEX_project\WEB\Private\Api\database\All_tables;
 use ACEX_project\WEB\Private\Api\database\Query_type;
 use ACEX_project\WEB\Private\Api\database\tb_user_columns;
+use ACEX_project\WEB\Private\Core\Data_type;
+use ACEX_project\WEB\Private\Core\File_storation_path;
 use ACEX_project\WEB\Private\Core\Security\Rate_limiter;
 
 require_once __DIR__ . "/../../Api/database/Authorization_manager.php";
 
 use function ACEX_project\WEB\Private\Api\database\Connect_database;
 use function ACEX_project\WEB\Private\Api\database\Is_query_permitted;
+
+require_once __DIR__ . "/../../Core/Security/File_upload/File_upload_utils.php";
+use function ACEX_project\WEB\Private\Core\Security\File_upload\Generate_img_url;
 use function ACEX_project\WEB\Private\Core\Security\Get_request_body;
 use function ACEX_project\WEB\Private\Core\Send_mime_type;
 
@@ -38,7 +44,7 @@ use Monolog\Level;
 
 require_once __DIR__ . "/login.php";
 
-    function Send_user_data(?Rate_limiter $ip_limiter, array $captured_args){
+    function Send_user_data(?Rate_limiter $ip_limiter, array $captured_args, array $datas){
         if(\count($captured_args) !== 1){
             \http_response_code(404);
             exit();
@@ -48,7 +54,7 @@ require_once __DIR__ . "/login.php";
 
 
         $data = match($category){
-            'profile' => Get_user_profile_data(),
+            'profile' => Get_user_profile_data($datas),
             default => null
         };
 
@@ -75,9 +81,11 @@ require_once __DIR__ . "/login.php";
      *      img_url: string
      * }
      */
-    function Get_user_profile_data() : array{
-        $data = Get_request_body();
-        $requested_uid = $data['id'] ?? null;
+    function Get_user_profile_data(array $data) : array{
+        $requested_uid = $data['id'];
+        $request_email = $data['email'];
+        $request_name = $data['name'];
+        $request_img = $data['image_url'];
 
         $name = $email = $img_url = '';
 
@@ -97,9 +105,9 @@ require_once __DIR__ . "/login.php";
         //get from database
         $return_data = Get_user_data(
             [
-                'email' => $email === '',
-                'name'=> $name === '',
-                'profile_img_name'=> $img_url === ''
+                'email' => $request_email && $email === '',
+                'name'=> $request_name && $name === '',
+                'profile_img_name'=> $request_img && $img_url === ''
             ],
             $requested_uid ?? ''
         );
@@ -111,16 +119,7 @@ require_once __DIR__ . "/login.php";
         }
 
 
-        $requested_uid = (int)$requested_uid;
 
-        $request_email = $data['email'] ?? false;
-        $request_email = (bool)$request_email;
-
-        $request_name = $data['name'] ?? false;
-        $request_name = (bool)$request_name;
-
-        $request_img = $data['image_url'] ?? false;
-        $request_img = (bool)$request_img;
 
         $data = [];
         if($request_name && $name !== '') $data['name'] = $name;
@@ -133,6 +132,28 @@ require_once __DIR__ . "/login.php";
         }
 
         return $data;
+    }
+
+    function Send_user_data_ruleset(){
+        return [
+            [
+                'key' => 'id',
+                'instruction'=> new Input_ruleset(Data_type::unsigned_int, false)
+            ],
+            [
+                'key' => 'email',
+                'instruction'=> new Input_ruleset(Data_type::bool, false, false)
+            ],
+            [
+                'key' => 'image_url',
+                'instruction'=> new Input_ruleset(Data_type::bool, false, false)
+            ],
+            [
+                'key' => 'name',
+                'instruction'=> new Input_ruleset(Data_type::bool, false, false)
+            ],
+            
+        ];
     }
 
     /**
@@ -206,7 +227,7 @@ require_once __DIR__ . "/login.php";
             if($passwd) $result['password'] = $row[tb_user_columns::password->name];
             if($include_name) $result['name'] = $row[tb_user_columns::name->name];
             if($include_email) $result['email'] = $row[tb_user_columns::email->name];
-            if($include_img) $result['profile_img_url'] = '/' .URI_PREFIX .'/image/profile/' . $row[tb_user_columns::profile_image_name->name];
+            if($include_img) $result['profile_img_url'] = Generate_img_url(File_storation_path::profiles, $row[tb_user_columns::profile_image_name->name]);
 
             $conn->commit();
 

@@ -116,7 +116,7 @@ use Monolog\Handler\StreamHandler;
             //dark gray backgroun and green text
             Level::Debug => "\033[0;90m",
             //yellow background and black text
-            Level::Critical => "\033[1;30;43m",
+            Level::Critical => "\033[0;30;43m",
             //white text
             Level::Emergency => "\033[1;37;41m",
             //red text
@@ -149,12 +149,12 @@ use Monolog\Handler\StreamHandler;
         );
     };
 
-    function MyArray_check(mixed $target, string $msg):void{
+    function MyArray_check(mixed $target, string $target_name, string $origin_fn):void{
         if(!\is_array($target)){
             Handle_error(
-                new Error_Code(Error_domain::database,Resource_code::invalidArgument,Error_condition::type),
+                new Error_Code(Error_domain::server,Resource_code::invalidArgument,Error_condition::type),
                 Level::Critical,
-                $msg
+                "$target_name must be array | from function $origin_fn"
             );
         }
     };
