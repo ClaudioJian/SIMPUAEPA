@@ -85,8 +85,18 @@ img {
     background-color:rgb(197, 197, 197);
 }
 
-.caixa_reclamacao {
-     display: relative;
+
+
+
+
+
+
+
+
+
+
+/* display: relative; */
+.caixa_reclamacao { 
     width: 550px;
     height: 400px;
     z-index: 650;
@@ -98,6 +108,25 @@ img {
     border-radius: 8px;
     
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 .fechar {
     position:absolute;

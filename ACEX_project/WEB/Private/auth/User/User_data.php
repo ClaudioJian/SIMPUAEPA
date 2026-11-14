@@ -120,7 +120,6 @@ require_once __DIR__ . "/login.php";
 
 
 
-
         $data = [];
         if($request_name && $name !== '') $data['name'] = $name;
         if($request_email && $email !== '') $data['email'] = $email;

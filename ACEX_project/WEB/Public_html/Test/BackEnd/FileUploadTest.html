@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fazer Login</title>
 </head>
-<body>  
+<body>
     <h1>Aceita extenção: jpeg, webep, png</h1>
 
     <h2>ENVIAR perfil imagem</h2>
@@ -22,6 +22,25 @@
 
     </form>
 
+
+
+
+
+
+    <h2>ENVIAR mapa imagem(imcompleto)</h2>
+    <form enctype="multipart/form-data" action="/SIMPUAEPA/image/map" method="POST">
+        <!-- MAX_FILE_SIZE must precede the file input field -->
+        <input type="hidden" name="MAX_FILE_SIZE" value="41943040" />
+        <!-- Name of input element determines name in $_FILES array -->
+        Send this file: <input name="userfile" type="file" />
+        <input type="submit" value="Send File" />
+    </form>
+
+
+
+
+
+    
     <h2>Pegar dados de perfil</h2>
     <form action="/SIMPUAEPA/user/profile" method="get">
         id: <input type="number" name="id"/>

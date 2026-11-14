@@ -75,6 +75,8 @@ const map = new L.Map('map', {
     // Obtém os limites do município.
     const limites = limiteSantoAndre.getBounds();
 
+    criarConjuntosExemplo();
+
     // Cria um retângulo maior que o município para cobrir o exterior.
     const limitesExternos = limites.pad(20);
 
@@ -228,6 +230,21 @@ const map = new L.Map('map', {
         return false;
     }
 
+    function restringirDragSantoAndre(marcador) {
+    let ultimaPosicaoValida = marcador.getLatLng();
+
+    marcador.on("drag", (evento) => {
+        const marcadorAtual = evento.target;
+        const novaPosicao = marcadorAtual.getLatLng();
+
+        if (!pontoDentroDeSantoAndre(novaPosicao, dadosSantoAndre)) {
+            marcadorAtual.setLatLng(ultimaPosicaoValida);
+        } else {
+            ultimaPosicaoValida = novaPosicao;
+        }
+    });
+}
+
     // Marcadores criados pelo clique no mapa.
     let allMarker = [];
 
@@ -257,6 +274,7 @@ const map = new L.Map('map', {
     interactive: true
 }).bindPopup(html);
 
+restringirDragSantoAndre(defaultMarkerPopup);
 // Guarda a última posição válida do marcador.
 let ultimaPosicaoValida = e.latlng;
 
@@ -279,80 +297,79 @@ allMarker.push(defaultMarkerPopup);
     // Ativa o evento de clique no mapa.
     map.on("click", clickOnMapDefault);
 
+    
     // Configura o botão que aparece dentro do popup do marcador.
     map.on("popupopen", (e) => {
         const popupElement = e.popup.getElement();
         if (!popupElement) return;
 
         const botao = popupElement.querySelector("#reclamacao");
-        if (!botao || botao.dataset.eventoAdicionado) return;
+        if (!botao) return;
 
-        botao.dataset.eventoAdicionado = "true";
+        botao.onclick = () => {
+    const caixa = document.getElementById("caixa_reclamacao");
 
-        botao.addEventListener("click", () => {
-            const caixa = document.getElementById("caixa_reclamacao");
-
-            if (caixa) {
-                caixa.classList.toggle("visivel");
-            }
-        });
+    if (caixa) {
+        caixa.classList.remove("visivel");
+    }
+};
     });
 
 
     //Declaração de cada icone
-
+    //Importante o IconAnchor estar errado não é natural, isso zoa com o sentido do ponto no mapa, somente para o protótipo
     var perigoIcon = new L.Icon({
         iconUrl: 'images/icones/perigo.png',
         iconSize:     [50, 50],
-        iconAnchor:   [0, 0],
-        popupAnchor:  [25, -3]
+        iconAnchor:   [icon_Width / 2, icon_Height],
+        popupAnchor:  [0, -47]
     }),  
     // também com outros icones
     outroIcon = new L.Icon({
         iconUrl: 'images/icones/outro.png',
         iconSize:     [50, 50],
-        iconAnchor:   [0, 0],
-        popupAnchor:  [25, -3]
+        iconAnchor:   [icon_Width / 2, icon_Height],
+        popupAnchor:  [0, -47]
     }),    
     // icone de esgoto
     esgotoIcon = new L.Icon({
         iconUrl: 'images/icones/esgoto.png',
         iconSize:     [50, 50],
-        iconAnchor:   [0, 0],
-        popupAnchor:  [25, -3]
+        iconAnchor:   [icon_Width / 2, icon_Height],
+        popupAnchor:  [0, -47]
     }),
     //  icone de poluição
     poluicaoIcon = new L.Icon({
         iconUrl: 'images/icones/poluicao.png',
         iconSize:     [50, 50],
-        iconAnchor:   [0, 0],
-        popupAnchor:  [25, -3]
+        iconAnchor:   [icon_Width / 2, icon_Height],
+        popupAnchor:  [0, -47]
     }),
     //  icone de poluição sonora
     sonoraIcon = new L.Icon({
         iconUrl: 'images/icones/sonora.png',
         iconSize:     [50, 50],
-        iconAnchor:   [0, 0],
-        popupAnchor:  [25, -3]
+        iconAnchor:   [icon_Width / 2, icon_Height],
+        popupAnchor:  [0, -47]
     }),
     //  icone da rua
     ruaIcon = new L.Icon({
         iconUrl: 'images/icones/rua.png',
         iconSize:     [50, 50],
-        iconAnchor:   [0, 0],
-        popupAnchor:  [25, -3]
+        iconAnchor:   [icon_Width / 2, icon_Height],
+        popupAnchor:  [0, -47]
     }),
     // icone de eletricidade
     eletricidadeIcon = new L.Icon({
         iconUrl: 'images/icones/eletricidade.png',
         iconSize:     [50, 50],
-        iconAnchor:   [0, 0],
-        popupAnchor:  [25, -3]
+        iconAnchor:   [icon_Width / 2, icon_Height],
+        popupAnchor:  [0, -47]
     });
     
 //Separação dos icones
-
-
+//TESTE de agrupamento
+/*
 //Separação do  icone de perigo
     const conjunto_perigos = new L.LayerGroup([
     new L.Marker([-23.660, -46.553], {icon: perigoIcon}).bindPopup("Eu sou uma marcação de perigo."),
@@ -411,7 +428,291 @@ const conjunto_icones = new L.LayerGroup([
         conjunto_ruas,
         conjunto_eletricidades
     ]);
+*/
 
+//outro parte de exemplos dos icones, porém esse é exemplos similares a realidade com os icones e reclamações.
+
+// Conjuntos de reclamações de demonstração
+let conjunto_perigos = new L.LayerGroup();
+let conjunto_outros = new L.LayerGroup();
+let conjunto_esgotos = new L.LayerGroup();
+let conjunto_poluicoes = new L.LayerGroup();
+let conjunto_sonoros = new L.LayerGroup();
+let conjunto_ruas = new L.LayerGroup();
+let conjunto_eletricidades = new L.LayerGroup();
+
+// Agrupamento geral de todos os conjuntos
+const conjunto_icones = new L.LayerGroup([
+    conjunto_outros,
+    conjunto_perigos,
+    conjunto_esgotos,
+    conjunto_poluicoes,
+    conjunto_sonoros,
+    conjunto_ruas,
+    conjunto_eletricidades
+]);
+
+// Gera uma localização aleatória dentro de Santo André
+function gerarLocalizacaoAleatoria() {
+    const limites = limiteSantoAndre.getBounds();
+
+    let latitude;
+    let longitude;
+    let tentativas = 0;
+
+    do {
+        latitude =
+            limites.getSouth() +
+            Math.random() * (limites.getNorth() - limites.getSouth());
+
+        longitude =
+            limites.getWest() +
+            Math.random() * (limites.getEast() - limites.getWest());
+
+        tentativas++;
+
+        if (tentativas > 10000) {
+            throw new Error("Não foi possível encontrar um ponto dentro de Santo André.");
+        }
+
+    } while (
+        !pontoDentroDeSantoAndre(
+            { lat: latitude, lng: longitude },
+            dadosSantoAndre
+        )
+    );
+
+    return {
+        latitude: latitude,
+        longitude: longitude
+    };
+}
+
+// Cria uma reclamação de demonstração
+function criarReclamacaoExemplo(dados, icone, conjunto) {
+
+    const localizacao = gerarLocalizacaoAleatoria();
+
+    const reclamacao = {
+        tipo: dados.tipo,
+        titulo: dados.titulo,
+        descricao: dados.descricao,
+        referencia: dados.referencia,
+
+        localizacao: {
+            latitude: localizacao.latitude,
+            longitude: localizacao.longitude
+        }
+    };
+
+    const marcador = new L.Marker(
+        [
+            reclamacao.localizacao.latitude,
+            reclamacao.localizacao.longitude
+        ],
+        {
+            icon: icone,
+            draggable: false,
+            interactive: true
+        }
+    );
+
+    marcador.bindPopup(criarPopupReclamacao(reclamacao));
+
+    conjunto.addLayer(marcador);
+
+    return marcador;
+}
+
+function criarConjuntosExemplo() {
+
+    // PERIGO
+    const exemplosPerigos = [
+        {
+            tipo: "perigo",
+            titulo: "Poste com risco de queda",
+            descricao: "Poste apresenta inclinação acentuada e aparenta risco de queda.",
+            referencia: "Próximo a uma área residencial"
+        },
+        {
+            tipo: "perigo",
+            titulo: "Calçada com estrutura danificada",
+            descricao: "Trecho da calçada apresenta rachaduras e partes soltas.",
+            referencia: "Via pública"
+        },
+        {
+            tipo: "perigo",
+            titulo: "Bueiro sem proteção",
+            descricao: "Bueiro encontra-se sem tampa, oferecendo risco aos pedestres.",
+            referencia: "Próximo a um cruzamento"
+        }
+    ];
+
+    // OUTROS
+    const exemplosOutros = [
+        {
+            tipo: "outro",
+            titulo: "Lixeira pública danificada",
+            descricao: "Lixeira apresenta danos e não está sendo utilizada corretamente.",
+            referencia: "Área pública"
+        },
+        {
+            tipo: "outro",
+            titulo: "Placa de sinalização caída",
+            descricao: "Placa de sinalização encontra-se caída e precisa de manutenção.",
+            referencia: "Próximo à via"
+        },
+        {
+            tipo: "outro",
+            titulo: "Banco público quebrado",
+            descricao: "Banco de praça apresenta danos em sua estrutura.",
+            referencia: "Área de convivência"
+        }
+    ];
+
+    // ESGOTO
+    const exemplosEsgotos = [
+        {
+            tipo: "esgoto",
+            titulo: "Vazamento de esgoto",
+            descricao: "Há vazamento de esgoto na via pública.",
+            referencia: "Próximo a residências"
+        },
+        {
+            tipo: "esgoto",
+            titulo: "Bueiro com retorno de esgoto",
+            descricao: "O bueiro apresenta retorno de água com aspecto de esgoto.",
+            referencia: "Rua residencial"
+        },
+        {
+            tipo: "esgoto",
+            titulo: "Mau cheiro próximo à rede",
+            descricao: "Foi identificado um forte odor próximo à rede de esgoto.",
+            referencia: "Via pública"
+        }
+    ];
+
+    // POLUIÇÃO
+    const exemplosPoluicoes = [
+        {
+            tipo: "poluicao",
+            titulo: "Descarte irregular de resíduos",
+            descricao: "Acúmulo de resíduos descartados irregularmente em área pública.",
+            referencia: "Terreno aberto"
+        },
+        {
+            tipo: "poluicao",
+            titulo: "Entulho em calçada",
+            descricao: "Materiais de construção estão ocupando parte da calçada.",
+            referencia: "Próximo a residências"
+        },
+        {
+            tipo: "poluicao",
+            titulo: "Acúmulo de lixo",
+            descricao: "Há grande quantidade de lixo acumulado em local inadequado.",
+            referencia: "Área pública"
+        }
+    ];
+
+    // POLUIÇÃO SONORA
+    const exemplosSonoros = [
+        {
+            tipo: "sonora",
+            titulo: "Ruído excessivo",
+            descricao: "Relato de ruídos frequentes acima do esperado na região.",
+            referencia: "Área residencial"
+        },
+        {
+            tipo: "sonora",
+            titulo: "Obra com ruído intenso",
+            descricao: "Equipamentos de construção estão gerando ruído excessivo.",
+            referencia: "Próximo a residências"
+        },
+        {
+            tipo: "sonora",
+            titulo: "Som alto em estabelecimento",
+            descricao: "Relato de som alto recorrente durante o período noturno.",
+            referencia: "Região comercial"
+        }
+    ];
+
+    // PROBLEMAS NA RUA
+    const exemplosRuas = [
+        {
+            tipo: "rua",
+            titulo: "Buraco na via",
+            descricao: "Buraco de grandes dimensões prejudica a circulação de veículos.",
+            referencia: "Próximo a um cruzamento"
+        },
+        {
+            tipo: "rua",
+            titulo: "Asfalto danificado",
+            descricao: "O asfalto apresenta rachaduras e irregularidades.",
+            referencia: "Via pública"
+        },
+        {
+            tipo: "rua",
+            titulo: "Calçada irregular",
+            descricao: "Trecho da calçada apresenta desníveis que dificultam a passagem.",
+            referencia: "Área de pedestres"
+        }
+    ];
+
+    // ELETRICIDADE
+    const exemplosEletricidades = [
+        {
+            tipo: "eletricidade",
+            titulo: "Lâmpada de iluminação pública apagada",
+            descricao: "Ponto de iluminação pública não está funcionando.",
+            referencia: "Via residencial"
+        },
+        {
+            tipo: "eletricidade",
+            titulo: "Fiação exposta",
+            descricao: "Há fiação exposta em estrutura da rede elétrica.",
+            referencia: "Via pública"
+        },
+        {
+            tipo: "eletricidade",
+            titulo: "Semáforo apagado",
+            descricao: "Semáforo encontra-se sem funcionamento.",
+            referencia: "Cruzamento"
+        }
+    ];
+
+    // Adiciona os exemplos aos respectivos conjuntos
+    exemplosPerigos.forEach(dado =>
+        criarReclamacaoExemplo(dado, perigoIcon, conjunto_perigos)
+    );
+
+    exemplosOutros.forEach(dado =>
+        criarReclamacaoExemplo(dado, outroIcon, conjunto_outros)
+    );
+
+    exemplosEsgotos.forEach(dado =>
+        criarReclamacaoExemplo(dado, esgotoIcon, conjunto_esgotos)
+    );
+
+    exemplosPoluicoes.forEach(dado =>
+        criarReclamacaoExemplo(dado, poluicaoIcon, conjunto_poluicoes)
+    );
+
+    exemplosSonoros.forEach(dado =>
+        criarReclamacaoExemplo(dado, sonoraIcon, conjunto_sonoros)
+    );
+
+    exemplosRuas.forEach(dado =>
+        criarReclamacaoExemplo(dado, ruaIcon, conjunto_ruas)
+    );
+
+    exemplosEletricidades.forEach(dado =>
+        criarReclamacaoExemplo(dado, eletricidadeIcon, conjunto_eletricidades)
+    );
+
+    console.log("Reclamações de demonstração criadas!");
+}
+
+//aqui acaba os exemplos
 
     //Função que seleciona o botão para aparecer ou tirar os icones do tipo do elemento.
 
@@ -491,27 +792,151 @@ document.addEventListener("keydown", (evento) => {
     }
 });
 
+
+//criação da reclamação com o formulario
+
 formularioReclamacao.addEventListener("submit", (evento) => {
     evento.preventDefault();
 
+    // Recupera o marcador provisório.
+    const marcador = allMarker[0];
+
+    if (!marcador) {
+    abrirAviso(
+        "Localização não encontrada",
+        "Clique no mapa para selecionar o local da reclamação."
+    );
+    return;
+}
+
     const dadosFormulario = new FormData(formularioReclamacao);
+    const localizacao = marcador.getLatLng();
 
     const reclamacao = {
         tipo: dadosFormulario.get("tipo_reclamacao"),
         titulo: dadosFormulario.get("titulo_reclamacao"),
         descricao: dadosFormulario.get("descricao_reclamacao"),
-        referencia: dadosFormulario.get("referencia_local")
+        referencia: dadosFormulario.get("referencia_local"),
+
+        localizacao: {
+            latitude: localizacao.lat,
+            longitude: localizacao.lng
+        }
     };
 
-    console.log("Reclamação preenchida:", reclamacao);
+    // Escolhe o ícone correspondente ao problema
 
-    abrirAviso(
-        "Formulário validado!",
-        "Os dados foram preenchidos corretamente, mas ainda não foram salvos."
-    );
+
+
+// Escolhe o ícone correspondente ao problema
+const icone = obterIconeReclamacao(reclamacao.tipo);
+
+// Monta o conteúdo do popup
+const popupHTML = criarPopupReclamacao(reclamacao);
+
+// Recupera a posição geográfica do marcador provisório
+const posicao = marcador.getLatLng();
+
+// Cria um novo marcador definitivo
+const marcadorReclamacao = new L.Marker(posicao, {
+    icon: icone,
+    draggable: false,
+    interactive: true
+});
+//faz a restrição do icone para somente santo andré
+
+
+// Adiciona o popup com as informações da reclamação
+marcadorReclamacao.bindPopup(popupHTML);
+
+// Adiciona o novo marcador ao mapa
+marcadorReclamacao.addTo(map);
+
+// Abre o popup
+marcadorReclamacao.openPopup();
+
+    // Guarda o novo marcador separadamente
+reclamacoesMarcadores.push(marcadorReclamacao);
+
+// Remove o marcador provisório (default)
+map.removeLayer(marcador);
+
+// Limpa o array de marcadores provisórios
+allMarker = [];
+
+
+// Fecha o formulário de reclamação
+const caixaReclamacao = document.getElementById("caixa_reclamacao");
+
+if (caixaReclamacao) {
+    caixaReclamacao.classList.add("visivel");
+}
+
+// Limpa os campos para a próxima reclamação
+formularioReclamacao.reset();
 });
 
+//separa os icones para a criação do formulario
 
+let reclamacoesMarcadores = [];
+
+function obterIconeReclamacao(tipo) {
+    const icones = {
+        rua: ruaIcon,
+        perigo: perigoIcon,
+        eletricidade: eletricidadeIcon,
+        esgoto: esgotoIcon,
+        poluicao: poluicaoIcon,
+        sonora: sonoraIcon, 
+        outro:outroIcon
+    };
+
+    return icones[tipo] || defaultIcon;
+}
+
+
+//ATENÇÃO ISSO É SOMENTE PARA TESTE E PROTOTIPAGEM PARA APRESENTAÇÃO
+//depois tirar para funcionar corretamente com backend
+
+//verifica o texto dos elementos
+
+function escaparHTML(texto) {
+    return String(texto ?? "").replace(/[&<>"']/g, caractere => {
+        const caracteres = {
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        };
+
+        return caracteres[caractere];
+    });
+}
+
+//cria o elemento do formulario, além de utilizar a função anterior
+
+function criarPopupReclamacao(reclamacao) {
+    return `
+        <div class="popup-reclamacao">
+
+            <h3>${escaparHTML(reclamacao.titulo)}</h3>
+
+
+            <p>
+                ${escaparHTML(reclamacao.descricao)}
+            </p>
+
+            ${reclamacao.referencia ? `
+                <p>
+                    <strong>Referência:</strong>
+                    ${escaparHTML(reclamacao.referencia)}
+                </p>
+            ` : ""}
+
+        </div>
+    `;
+}
 
 
     

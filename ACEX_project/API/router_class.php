@@ -138,7 +138,6 @@ use function ACEX_project\WEB\Private\Error\MyArray_missing_key;
                 $IP_rate_limiter = IP_Rate_limit();
             }
 
-
             if($this->require_login && !Is_logged()){
                 $ip = Get_IP_address_txt();
                 

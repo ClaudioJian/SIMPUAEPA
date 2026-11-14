@@ -116,7 +116,6 @@ use ValueError;
                     'MAX_USER_NAME_LENGTH'                    
                 ];                
 
-
                 if(!\defined('DB_SCHEMA')){
                     $required_env = [
                             ...$required_env,
