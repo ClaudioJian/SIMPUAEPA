@@ -74,6 +74,7 @@ use ACEX_project\WEB\Private\Error\Error_code;
         case user = tb_user_columns::class;
         case complain = tb_complain_columns::class;
         case location = tb_location_columns::class;
+        case comment = tb_comment_columns::class;
 
         function Get_primaryKey() : string{
             return (match($this){
@@ -81,6 +82,12 @@ use ACEX_project\WEB\Private\Error\Error_code;
                 self::complain => tb_complain_columns::id,
                 self::location => tb_location_columns::id,
             })->name;
+        }
+
+        public static function from_enum(\UnitEnum $target) : ?All_tables{
+            $cases = self::cases();
+            foreach($cases as $case) if($case->value === $target::class) return $case;
+            return null;
         }
     }
 
@@ -120,6 +127,19 @@ use ACEX_project\WEB\Private\Error\Error_code;
         case ang_y;
     }
 
+    enum tb_comment_columns{
+        case id;
+        case user_id;
+        case complain_id;
+        case description;
+        case like_count;
+        case dislike_count;
+        case etag;
+        //case parent_id;
+        //case create_at;
+        //case updated_at;
+    }
+
     /**
      * be aware when duplicated or have whitelist and blacklist in same column: only last one validated
      *  TODO: redefine table name after model is done
@@ -131,6 +151,7 @@ use ACEX_project\WEB\Private\Error\Error_code;
                 new Permission(HOST,All_tables::user,[Query_type::select,Query_type::insert,Query_type::update]),
                 new Permission(HOST,All_tables::complain, [Query_type::select,Query_type::insert,Query_type::update]),
                 new Permission(HOST,All_tables::location, [Query_type::select,Query_type::insert,Query_type::update]),
+                new Permission(HOST,All_tables::comment,[Query_type::select,Query_type::insert,Query_type::update])
             ]
         );
     }

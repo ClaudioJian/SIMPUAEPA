@@ -94,7 +94,6 @@ namespace ACEX_project\WEB\Private\Api\database;
 
         try{
             $attributes = [];
-            $bind_value = [];
 
             foreach($references as $ref){
                 if(!\is_array($ref)) throw new InvalidArgumentException('Argument is not list of array');
@@ -124,9 +123,9 @@ namespace ACEX_project\WEB\Private\Api\database;
 
                     if($name !== null) {
                         if(!\is_string($constraints['name']) && trim($constraints['name']) === '') throw new InvalidArgumentException();
-                        $constraint_bind_name = uniqid('constraint_name_');
-                        $sql_parts[] = "CONSTRAINT :{$constraint_bind_name}";
-                        $bind_value[$constraint_bind_name] = $constraints['name'];
+
+                        $name = Quote_identifier($name);
+                        if($name !== '') $sql_parts[] = "CONSTRAINT $name";
                     }
 
                     $constraint_args = $constraints['args'] ?? [];
@@ -182,6 +181,17 @@ namespace ACEX_project\WEB\Private\Api\database;
         }
     }
 
+    function Quote_identifier(string $target): string {
+        return match(DB_TYPE) {
+            'mysql' => '`' . str_replace('`', '``', $target) . '`',
+            'postgre', 'sqlite' => '"' . str_replace('"', '""', $target) . '"',
+            'sqlserver' => '[' . str_replace(']', ']]', $target) . ']',
+            default => throw new InvalidArgumentException(
+                'Unsupported database type: ' . DB_TYPE
+            )
+        };
+    }
+
 
     function Query_info(?All_tables $table, ?\UnitEnum $origin_column, ?All_tables $ref_table, ?\UnitEnum $ref_column) : string{
         $query_info = [];
@@ -204,9 +214,10 @@ namespace ACEX_project\WEB\Private\Api\database;
      *         value: list<mixed>,
      *     }>
      * }> $query_arr, on_duplicate set to null mean IGNORE the duplicate. If is array, will do update. Other form to handle conflit is not supported
+     * @param bool $auto_exit exit only if pdo throw any error.
      * @return bool|list<array{table:All_tables,id:string}> false if failed else return inserted id(multi row return FIRST id)
      */
-    function Database_simple_insert(array $query_arr,bool $use_transaction = false, bool $continue=false, bool $auto_commit = true) :bool|array{
+    function Database_simple_insert(array $query_arr,bool $use_transaction = false, bool $continue=false, bool $auto_commit = true, bool $auto_exit = true) :bool|array{
         $conn = null;
         try{
             $conn = Connect_database($continue);
@@ -253,7 +264,7 @@ namespace ACEX_project\WEB\Private\Api\database;
             if($use_transaction && $auto_commit) $conn->commit();
         }catch(Throwable $e){
             if($conn instanceof PDO && $conn->inTransaction()) $conn->rollBack();
-            Handle_query_fail($e,$conn,Resource_code::db_insert);
+            Handle_query_fail($e,$conn,Resource_code::db_insert, $auto_exit);
             return false;
         }
         if($auto_commit) $conn=null;
@@ -261,7 +272,7 @@ namespace ACEX_project\WEB\Private\Api\database;
         return $id_list;
     }
 
-    function Handle_query_fail(Throwable $e, PDO|null &$conn,Resource_code $query = Resource_code::db_query){
+    function Handle_query_fail(Throwable $e, PDO|null &$conn,Resource_code $query = Resource_code::db_query, bool $auto_exit = true):void{
         if ($conn instanceof PDO && $conn->inTransaction()) $conn->rollBack();
 
         Log_internal(
@@ -269,6 +280,7 @@ namespace ACEX_project\WEB\Private\Api\database;
             Level::Error,
             $e->getMessage()
         );
+        if(!$auto_exit) return;
 
         $conn=null;
         \http_response_code(500);
@@ -407,12 +419,15 @@ namespace ACEX_project\WEB\Private\Api\database;
                 );
             }
             $table = $curr_condition['table'] ?? null;
+            $table_name = '';
 
-            $table = $table?->name ?? '';
+            if($table !== null) Column_belong_to_table($table,[$column],true);
+            else $table = All_tables::from_enum($column) ?? null;
+            $table = $table->name;
 
             $named_value = Generate_value_name($i,$i+1,$table);
 
-            $all_condition[] = "{$column->name} = $named_value";
+            $all_condition[] = "{$table}.{$column->name} = $named_value";
             $binded_values[$named_value] = $value;
         };
 

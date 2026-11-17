@@ -105,7 +105,8 @@ use ValueError;
                     'MAX_LOCATION_REFERENCE_LENGTH',                        
                     'MAX_USER_NAME_LENGTH',
 
-                    'ENCODING_CHARSET'
+                    'ENCODING_CHARSET',
+                    'MAX_COMMENT_LENGTH'
                 ];
 
                 $required_int_env = [
@@ -113,7 +114,8 @@ use ValueError;
                     'MAX_TITLE_LENGTH',
                     'MAX_DESCRIPTION_LENGTH',
                     'MAX_LOCATION_REFERENCE_LENGTH',
-                    'MAX_USER_NAME_LENGTH'                    
+                    'MAX_USER_NAME_LENGTH',
+                    'MAX_COMMENT_LENGTH'                    
                 ];                
 
 
@@ -204,7 +206,10 @@ use ValueError;
             //complain related
             define('MAX_TITLE_LENGTH',(int)$_ENV['MAX_TITLE_LENGTH']);
             define('MAX_DESCRIPTION_LENGTH', (int)$_ENV['MAX_DESCRIPTION_LENGTH']);
-            define('MAX_LOCATION_REFERENCE_LENGTH',(int)$_ENV['MAX_LOCATION_REFERENCE_LENGTH']);            
+            define('MAX_LOCATION_REFERENCE_LENGTH',(int)$_ENV['MAX_LOCATION_REFERENCE_LENGTH']);    
+            
+            define('MAX_COMMENT_LENGTH',(int)$_ENV['MAX_COMMENT_LENGTH']);    
+            
 
             if(!\defined('DB_SCHEMA')){
                 /**

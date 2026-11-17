@@ -2,6 +2,7 @@
 
 use ACEX_project\WEB\Private\Api\database\All_tables;
 use ACEX_project\WEB\Private\Api\database\ForeignKey_constraint;
+use ACEX_project\WEB\Private\Api\database\tb_comment_columns;
 use ACEX_project\WEB\Private\Api\database\tb_complain_columns;
 use ACEX_project\WEB\Private\Api\database\tb_location_columns;
 use ACEX_project\WEB\Private\Api\database\tb_user_columns;
@@ -106,10 +107,51 @@ $all_schema = [
                     ]
                 ],
             ], ($complain_foreignKey_bind = []))
-        ) 
-      
+    ) .
+        Create_TABLE_SQL_Wrapper(All_tables::comment, [
+            ['name'=>tb_comment_columns::id, 'type'=>'INT UNSIGNED PRIMARY KEY AUTO_INCREMENT'],
+            ['name'=>tb_comment_columns::user_id, 'type'=> 'INT UNSIGNED'],
+            ['name'=>tb_comment_columns::complain_id, 'type'=> 'INT UNSIGNED'],
+            ['name'=>tb_comment_columns::description, 'type'=> 'VARCHAR('. MAX_COMMENT_LENGTH .')'],
+            ['name'=>tb_comment_columns::like_count, 'type'=>'INT UNSIGNED DEFAULT 0'],
+            ['name'=>tb_comment_columns::dislike_count, 'type'=>'INT UNSIGNED DEFAULT 0'],
+            ['name'=>tb_comment_columns::etag, 'type'=>'CHAR(32)'],
+            //['name'=>tb_comment_columns::create_at, 'type'=>'DATETIME DEFAULT' . SQL_get_current_time()],
+            //['name'=>tb_comment_columns::updated_at, 'type'=>'DATETIME DEFAULT' . SQL_get_current_time() . ' ON UPDATE SET ' . SQL_get_current_time()]
+        ],
+        ForeignKey_reference_wrapper([
+                [   
+                    'table_origin'=>All_tables::comment,
+                    'column_origin'=>tb_comment_columns::user_id,
+                    'table_ref'=>All_tables::user,
+                    'column_ref'=>tb_user_columns::id,
+                    'constraint'=>[
+                        'args'=>[
+                            [
+                                'action'=>ForeignKey_constraint::on_delete,
+                                'reference_option'=>ForeignKey_constraint::cascade
+                            ]
+                        ]
+                    ]
+                ],
+                [
+                    'table_origin'=>All_tables::comment,
+                    'column_origin'=>tb_comment_columns::complain_id,
+                    'table_ref'=>All_tables::complain,
+                    'column_ref'=>tb_complain_columns::id,
+                    'constraint'=>[
+                        'args'=>[
+                            [
+                                'action'=>ForeignKey_constraint::on_delete,
+                                'reference_option'=>ForeignKey_constraint::cascade
+                            ]
+                        ]
+                    ]
+                ],
+            ], ($comment_foreignKey_bind = []))
+        ) . "\n\n"
     ,
-    [...$complain_foreignKey_bind],
+    [...$comment_foreignKey_bind],
     "v0.1.3", db_created:false)
 ];
 

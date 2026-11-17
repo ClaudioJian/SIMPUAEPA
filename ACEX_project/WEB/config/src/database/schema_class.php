@@ -10,6 +10,7 @@ use Monolog\Level;
 use function ACEX_project\WEB\Private\Api\database\Column_belong_to_table;
 use function ACEX_project\WEB\Private\Api\database\Connect_database;
 use function ACEX_project\WEB\Private\Api\database\PDO_Mybind_params;
+use function ACEX_project\WEB\Private\Api\database\Quote_identifier;
 use function ACEX_project\WEB\Private\Error\Log_internal;
 
 if(\php_sapi_name() !== "cli") {
@@ -126,7 +127,10 @@ function Create_TABLE_SQL_Wrapper(All_tables $table, array $columns, string $ext
     foreach($all_columns as $c) $all_columns[] = $c['name'];
     Column_belong_to_table($table,$all_columns);
 
-    $create_sql = "CREATE TABLE $table->name(" . 
+    $db_name = Quote_identifier(DB_NAME);
+    $tb_name = Quote_identifier($table->name);
+
+    $create_sql = "CREATE TABLE IF NOT EXISTS {$db_name}.{$tb_name}(" . 
             implode(", ", 
                 array_map(
                     static fn(array $column) => $column['name']->name .' '. $column['type'],

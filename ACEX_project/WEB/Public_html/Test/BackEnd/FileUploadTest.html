@@ -64,6 +64,13 @@
         include_cursor(opcional):<input name="include_cursor" type="number" value="0">
         <input type="submit" value="Enviar"/>
     </form>
+
+    <h2>Enviar Comentário</h2>
+    <form action="/SIMPUAEPA/upload/comment" method="post">
+        descricao: <input name="description">
+        complain id: <input name="complain_id">
+        <input type="submit" value="Enviar"/>
+    </form>
 </body>
 <script src="../../API/api-client.js"></script>
 </html>

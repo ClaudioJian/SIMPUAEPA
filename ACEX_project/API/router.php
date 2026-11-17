@@ -5,6 +5,7 @@ namespace ACEX_project\API;
 use ACEX_project\WEB\Private\complain\Complain_data_fields;
 use ACEX_project\WEB\Private\complain\Get_complain_Err;
 use ACEX_project\WEB\Private\complain\GET_Complain_fields;
+use ACEX_project\WEB\Private\complain\Post_comment_data_fields;
 
     require_once __DIR__ . "/../WEB/Private/Core/AppCommonVar.php";  
 
@@ -41,14 +42,15 @@ use ACEX_project\WEB\Private\complain\GET_Complain_fields;
 
     require_once __DIR__ . "/../WEB/Private/complain/Get_complains.php";
     use function ACEX_project\WEB\Private\complain\GET_complain;
-    
+use function ACEX_project\WEB\Private\complain\Upload_comment;
+
     require_once __DIR__ . "/../WEB/Private/complain/upload_complain.php";
     use function ACEX_project\WEB\Private\complain\Upload_complain;
 
     require_once __DIR__ . "/../WEB/Private/Core/Render/html/Display_img.php";
     use function ACEX_project\WEB\Private\Core\Render\html\Send_img;
 
-
+    require_once __DIR__ . "/../WEB/Private/complain/post_comments.php";
     
 
     \ini_set('session.cookie_lifetime',(string)(SESSION_ABSOLUTE_TIME+10));
@@ -77,6 +79,7 @@ use ACEX_project\WEB\Private\complain\GET_Complain_fields;
         new Route('/logout',"POST",Logout(...), require_login:true),
         new Route('/image/profile',"POST",Upload_profile(...),require_login:true, rate_limit_option:RATE_ENDPOINT_IMG_UPLOAD, ruleset:Profile_upload_ruleset()),
         new Route('/upload/complain',"POST",Upload_complain(...),require_login:true, require_nonce:true, ruleset: Complain_data_fields::sanitization_rule(),invalid_field_handler:Complain_Upload_err_handler(...)),
+        new Route('/upload/comment',"POST",Upload_comment(...),require_login:true, require_nonce:true, ruleset: Post_comment_data_fields::sanitization_rule(),invalid_field_handler:Post_comment_data_fields::Error_handler(...)),
     ];
 
 

@@ -227,7 +227,10 @@ require_once __DIR__ . "/login.php";
             if($passwd) $result['password'] = $row[tb_user_columns::password->name];
             if($include_name) $result['name'] = $row[tb_user_columns::name->name];
             if($include_email) $result['email'] = $row[tb_user_columns::email->name];
-            if($include_img) $result['profile_img_url'] = Generate_img_url(File_storation_path::profiles, $row[tb_user_columns::profile_image_name->name]);
+            if($include_img) {
+                $profile_img = $row[tb_user_columns::profile_image_name->name]??null;
+                if($profile_img!==null)$result['profile_img_url'] = Generate_img_url(File_storation_path::profiles, $profile_img);
+            }
 
             $conn->commit();
 
